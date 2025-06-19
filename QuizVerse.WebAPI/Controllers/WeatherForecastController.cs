@@ -2,10 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs;
 
-namespace QuizVerse_Backend.Controllers
+namespace QuizVerse.WebAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("weather-forecast")]
     public class WeatherForecastController : ControllerBase
     {
         private readonly ILogger<WeatherForecastController> _logger;

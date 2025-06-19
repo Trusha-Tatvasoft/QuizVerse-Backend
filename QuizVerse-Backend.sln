@@ -3,15 +3,15 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35222.181
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuizVerse.WebAPI", "QuizVerse-Backend\QuizVerse.WebAPI.csproj", "{8F11E2D4-EA7A-42A0-9786-A891BEEE6EBE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuizVerse.Domain", "QuizVerse.Domain\QuizVerse.Domain.csproj", "{B590A1B6-D163-4807-B7D5-65E829FEF49B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuizVerse.Domain", "QuizVerse.Domain\QuizVerse.Domain.csproj", "{B590A1B6-D163-4807-B7D5-65E829FEF49B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuizVerse.Application", "QuizVerse.Application\QuizVerse.Application.csproj", "{CBB3C801-8E0A-41BF-AE2A-01495A534329}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuizVerse.Application", "QuizVerse.Application\QuizVerse.Application.csproj", "{CBB3C801-8E0A-41BF-AE2A-01495A534329}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuizVerse.Infrastructure", "QuizVerse.Infrastructure\QuizVerse.Infrastructure.csproj", "{088041B7-5350-4519-BF10-A3A3103DAC7B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuizVerse.Infrastructure", "QuizVerse.Infrastructure\QuizVerse.Infrastructure.csproj", "{088041B7-5350-4519-BF10-A3A3103DAC7B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuizVerse.UnitTests", "QuizVerse.UnitTests\QuizVerse.UnitTests.csproj", "{C07A79F3-FE69-4160-86B2-A43D70D2913A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuizVerse.UnitTests", "QuizVerse.UnitTests\QuizVerse.UnitTests.csproj", "{C07A79F3-FE69-4160-86B2-A43D70D2913A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuizVerse.WebAPI", "QuizVerse.WebAPI\QuizVerse.WebAPI.csproj", "{C1BE1BF6-9DF6-488A-9B21-E8E12E817EBE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,10 +19,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8F11E2D4-EA7A-42A0-9786-A891BEEE6EBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8F11E2D4-EA7A-42A0-9786-A891BEEE6EBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8F11E2D4-EA7A-42A0-9786-A891BEEE6EBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8F11E2D4-EA7A-42A0-9786-A891BEEE6EBE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B590A1B6-D163-4807-B7D5-65E829FEF49B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B590A1B6-D163-4807-B7D5-65E829FEF49B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B590A1B6-D163-4807-B7D5-65E829FEF49B}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -39,6 +35,10 @@ Global
 		{C07A79F3-FE69-4160-86B2-A43D70D2913A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C07A79F3-FE69-4160-86B2-A43D70D2913A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C07A79F3-FE69-4160-86B2-A43D70D2913A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1BE1BF6-9DF6-488A-9B21-E8E12E817EBE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1BE1BF6-9DF6-488A-9B21-E8E12E817EBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1BE1BF6-9DF6-488A-9B21-E8E12E817EBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1BE1BF6-9DF6-488A-9B21-E8E12E817EBE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
