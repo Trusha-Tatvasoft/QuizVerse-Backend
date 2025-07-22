@@ -5,19 +5,19 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class BattleQuesDifficultyMap
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int battle_id { get; set; }
+    public int BattleId { get; set; }
 
-    public int que_difficulty_id { get; set; }
+    public int QueDifficultyId { get; set; }
 
-    public int no_of_ques { get; set; }
+    public int NoOfQues { get; set; }
 
-    public DateTime qus_time { get; set; }
+    public DateTime QusTime { get; set; }
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public virtual BattleList battle { get; set; } = null!;
+    public virtual BattleList Battle { get; set; } = null!;
 
-    public virtual QuestionDifficulty que_difficulty { get; set; } = null!;
+    public virtual QuestionDifficulty QueDifficulty { get; set; } = null!;
 }

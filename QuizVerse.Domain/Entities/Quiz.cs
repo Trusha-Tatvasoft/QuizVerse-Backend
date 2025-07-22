@@ -5,47 +5,55 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class Quiz
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public string name { get; set; } = null!;
+    public string Name { get; set; } = null!;
 
-    public string description { get; set; } = null!;
+    public string Description { get; set; } = null!;
 
-    public int total_time { get; set; }
+    public int TotalTime { get; set; }
 
-    public int total_question { get; set; }
+    public int TotalQuestion { get; set; }
 
-    public int no_of_person_attempted { get; set; }
+    public int NoOfPersonAttempted { get; set; }
 
-    public bool is_paid { get; set; }
+    public bool IsPaid { get; set; }
 
-    public decimal price { get; set; }
+    public decimal Price { get; set; }
 
-    public decimal rating { get; set; }
+    public decimal Rating { get; set; }
 
-    public int no_of_attempts { get; set; }
+    public int NoOfAttempts { get; set; }
 
-    public int total_xp { get; set; }
+    public int TotalXp { get; set; }
 
-    public int status { get; set; }
+    public int Status { get; set; }
 
-    public int difficulty_level_id { get; set; }
+    public int DifficultyLevelId { get; set; }
 
-    public bool is_featured { get; set; }
+    public bool IsFeatured { get; set; }
 
-    public int category_id { get; set; }
+    public int CategoryId { get; set; }
 
-    public int created_by { get; set; }
+    public int CreatedBy { get; set; }
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public int? modified_by { get; set; }
+    public int? ModifiedBy { get; set; }
 
-    public DateTime? modified_date { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
-    public bool is_deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
     public virtual ICollection<BattleList> BattleLists { get; set; } = new List<BattleList>();
+
+    public virtual QuizCategory Category { get; set; } = null!;
+
+    public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual QuizDifficulty DifficultyLevel { get; set; } = null!;
+
+    public virtual User? ModifiedByNavigation { get; set; }
 
     public virtual ICollection<QuestionIssueReport> QuestionIssueReports { get; set; } = new List<QuestionIssueReport>();
 
@@ -60,12 +68,4 @@ public partial class Quiz
     public virtual ICollection<QuizToBaseQuestionMap> QuizToBaseQuestionMaps { get; set; } = new List<QuizToBaseQuestionMap>();
 
     public virtual ICollection<UserFavoriteQuiz> UserFavoriteQuizzes { get; set; } = new List<UserFavoriteQuiz>();
-
-    public virtual QuizCategory category { get; set; } = null!;
-
-    public virtual User created_byNavigation { get; set; } = null!;
-
-    public virtual QuizDifficulty difficulty_level { get; set; } = null!;
-
-    public virtual User? modified_byNavigation { get; set; }
 }

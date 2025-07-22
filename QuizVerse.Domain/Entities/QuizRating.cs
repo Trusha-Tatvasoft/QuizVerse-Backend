@@ -5,19 +5,19 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class QuizRating
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int quiz_id { get; set; }
+    public int QuizId { get; set; }
 
-    public int user_id { get; set; }
+    public int UserId { get; set; }
 
-    public int quiz_rating { get; set; }
+    public int QuizRating1 { get; set; }
 
-    public string? feedback { get; set; }
+    public string? Feedback { get; set; }
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public virtual Quiz quiz { get; set; } = null!;
+    public virtual Quiz Quiz { get; set; } = null!;
 
-    public virtual User user { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 }

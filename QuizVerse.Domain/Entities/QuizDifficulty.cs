@@ -5,25 +5,25 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class QuizDifficulty
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public string name { get; set; } = null!;
+    public string Name { get; set; } = null!;
 
-    public string description { get; set; } = null!;
+    public string Description { get; set; } = null!;
 
-    public bool is_deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public int created_by { get; set; }
+    public int CreatedBy { get; set; }
 
-    public DateTime? modified_date { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
-    public int? modified_by { get; set; }
+    public int? ModifiedBy { get; set; }
+
+    public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual User? ModifiedByNavigation { get; set; }
 
     public virtual ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();
-
-    public virtual User created_byNavigation { get; set; } = null!;
-
-    public virtual User? modified_byNavigation { get; set; }
 }

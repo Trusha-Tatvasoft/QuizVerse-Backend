@@ -5,11 +5,11 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class UserRankByLevel
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public string rank_name { get; set; } = null!;
+    public string RankName { get; set; } = null!;
 
-    public int minimum_level { get; set; }
+    public int MinimumLevel { get; set; }
 
-    public int maximum_level { get; set; }
+    public int MaximumLevel { get; set; }
 }

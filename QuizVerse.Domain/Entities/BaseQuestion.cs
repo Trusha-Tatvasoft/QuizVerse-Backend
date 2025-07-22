@@ -5,39 +5,39 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class BaseQuestion
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int category_id { get; set; }
+    public int CategoryId { get; set; }
 
-    public int que_difficulty_id { get; set; }
+    public int QueDifficultyId { get; set; }
 
-    public string que_text { get; set; } = null!;
+    public string QueText { get; set; } = null!;
 
-    public int que_type_id { get; set; }
+    public int QueTypeId { get; set; }
 
-    public bool is_deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public int created_by { get; set; }
+    public int CreatedBy { get; set; }
 
-    public DateTime? modified_date { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
-    public int? modified_by { get; set; }
+    public int? ModifiedBy { get; set; }
+
+    public virtual QuizCategory Category { get; set; } = null!;
+
+    public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual User? ModifiedByNavigation { get; set; }
+
+    public virtual QuestionDifficulty QueDifficulty { get; set; } = null!;
 
     public virtual ICollection<QueOptionsAn> QueOptionsAns { get; set; } = new List<QueOptionsAn>();
+
+    public virtual QuestionType QueType { get; set; } = null!;
 
     public virtual ICollection<QuestionIssueReport> QuestionIssueReports { get; set; } = new List<QuestionIssueReport>();
 
     public virtual ICollection<QuizToBaseQuestionMap> QuizToBaseQuestionMaps { get; set; } = new List<QuizToBaseQuestionMap>();
-
-    public virtual QuizCategory category { get; set; } = null!;
-
-    public virtual User created_byNavigation { get; set; } = null!;
-
-    public virtual User? modified_byNavigation { get; set; }
-
-    public virtual QuestionDifficulty que_difficulty { get; set; } = null!;
-
-    public virtual QuestionType que_type { get; set; } = null!;
 }

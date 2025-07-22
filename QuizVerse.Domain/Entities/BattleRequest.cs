@@ -5,21 +5,21 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class BattleRequest
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int sender_id { get; set; }
+    public int SenderId { get; set; }
 
-    public int receiver_id { get; set; }
+    public int ReceiverId { get; set; }
 
-    public int status { get; set; }
+    public int Status { get; set; }
 
-    public DateTime sending_date { get; set; }
+    public DateTime SendingDate { get; set; }
 
-    public DateTime? modified_date { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
-    public bool is_deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
-    public virtual User receiver { get; set; } = null!;
+    public virtual User Receiver { get; set; } = null!;
 
-    public virtual User sender { get; set; } = null!;
+    public virtual User Sender { get; set; } = null!;
 }

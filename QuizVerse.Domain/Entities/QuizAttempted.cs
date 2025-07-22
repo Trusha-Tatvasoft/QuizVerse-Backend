@@ -5,29 +5,29 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class QuizAttempted
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int quiz_id { get; set; }
+    public int QuizId { get; set; }
 
-    public int user_id { get; set; }
+    public int UserId { get; set; }
 
-    public int total_que { get; set; }
+    public int TotalQue { get; set; }
 
-    public int corrected_que { get; set; }
+    public int CorrectedQue { get; set; }
 
-    public TimeSpan time_spent { get; set; }
+    public TimeSpan TimeSpent { get; set; }
 
-    public int xp_earned { get; set; }
+    public int XpEarned { get; set; }
 
-    public int grade { get; set; }
+    public int Grade { get; set; }
 
-    public int attempt_left { get; set; }
+    public int AttemptLeft { get; set; }
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public virtual GradeForQuizResult gradeNavigation { get; set; } = null!;
+    public virtual GradeForQuizResult GradeNavigation { get; set; } = null!;
 
-    public virtual Quiz quiz { get; set; } = null!;
+    public virtual Quiz Quiz { get; set; } = null!;
 
-    public virtual User user { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 }

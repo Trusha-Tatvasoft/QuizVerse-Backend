@@ -5,15 +5,15 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class UserBadgesEarned
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int user_id { get; set; }
+    public int UserId { get; set; }
 
-    public int badge_id { get; set; }
+    public int BadgeId { get; set; }
 
-    public DateTime date_earned { get; set; }
+    public DateTime DateEarned { get; set; }
 
-    public virtual Badge badge { get; set; } = null!;
+    public virtual Badge Badge { get; set; } = null!;
 
-    public virtual User user { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 }

@@ -5,17 +5,17 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class PlatformConfiguration
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public string configuration_name { get; set; } = null!;
+    public string ConfigurationName { get; set; } = null!;
 
-    public string description { get; set; } = null!;
+    public string Description { get; set; } = null!;
 
-    public string values { get; set; } = null!;
+    public string Values { get; set; } = null!;
 
-    public DateTime? modified_date { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
-    public int? modified_by { get; set; }
+    public int? ModifiedBy { get; set; }
 
-    public virtual User? modified_byNavigation { get; set; }
+    public virtual User? ModifiedByNavigation { get; set; }
 }

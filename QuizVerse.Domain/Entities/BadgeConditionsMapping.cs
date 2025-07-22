@@ -5,13 +5,13 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class BadgeConditionsMapping
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int badge_id { get; set; }
+    public int BadgeId { get; set; }
 
-    public int condition_type { get; set; }
+    public int ConditionType { get; set; }
 
-    public string condition_value { get; set; } = null!;
+    public string ConditionValue { get; set; } = null!;
 
-    public virtual Badge badge { get; set; } = null!;
+    public virtual Badge Badge { get; set; } = null!;
 }

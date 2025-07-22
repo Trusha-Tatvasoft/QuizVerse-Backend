@@ -5,11 +5,11 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class LevelByExp
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int level_order { get; set; }
+    public int LevelOrder { get; set; }
 
-    public int minimum_exp { get; set; }
+    public int MinimumExp { get; set; }
 
-    public int maximum_exp { get; set; }
+    public int MaximumExp { get; set; }
 }

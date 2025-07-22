@@ -5,29 +5,29 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class QuizCategory
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public string category_name { get; set; } = null!;
+    public string CategoryName { get; set; } = null!;
 
-    public string? icon { get; set; }
+    public string? Icon { get; set; }
 
-    public bool status { get; set; }
+    public bool Status { get; set; }
 
-    public bool is_deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public int created_by { get; set; }
+    public int CreatedBy { get; set; }
 
-    public DateTime? modified_date { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
-    public int? modified_by { get; set; }
+    public int? ModifiedBy { get; set; }
 
     public virtual ICollection<BaseQuestion> BaseQuestions { get; set; } = new List<BaseQuestion>();
 
+    public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual User? ModifiedByNavigation { get; set; }
+
     public virtual ICollection<Quiz> Quizzes { get; set; } = new List<Quiz>();
-
-    public virtual User created_byNavigation { get; set; } = null!;
-
-    public virtual User? modified_byNavigation { get; set; }
 }

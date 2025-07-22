@@ -88,789 +88,1193 @@ public partial class QuizVerseDbContext : DbContext
     {
         modelBuilder.Entity<Badge>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("Badges_pkey");
+            entity.HasKey(e => e.Id).HasName("Badges_pkey");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.description).HasMaxLength(300);
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.name).HasMaxLength(100);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.BadgeType).HasColumnName("badge_type");
+            entity.Property(e => e.CategoryType).HasColumnName("category_type");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Description)
+                .HasMaxLength(300)
+                .HasColumnName("description");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Name)
+                .HasMaxLength(100)
+                .HasColumnName("name");
+            entity.Property(e => e.Xp).HasColumnName("xp");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.Badgecreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.BadgeCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Badges_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.Badgemodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.BadgeModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("Badges_modified_by_fkey");
         });
 
         modelBuilder.Entity<BadgeConditionsMapping>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("BadgeConditionsMapping_pkey");
+            entity.HasKey(e => e.Id).HasName("BadgeConditionsMapping_pkey");
 
             entity.ToTable("BadgeConditionsMapping");
 
-            entity.Property(e => e.condition_type).HasDefaultValue(1);
-            entity.Property(e => e.condition_value)
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.BadgeId).HasColumnName("badge_id");
+            entity.Property(e => e.ConditionType)
+                .HasDefaultValue(1)
+                .HasColumnName("condition_type");
+            entity.Property(e => e.ConditionValue)
                 .HasDefaultValueSql("'0'::character varying")
-                .HasColumnType("character varying");
+                .HasColumnType("character varying")
+                .HasColumnName("condition_value");
 
-            entity.HasOne(d => d.badge).WithMany(p => p.BadgeConditionsMappings)
-                .HasForeignKey(d => d.badge_id)
+            entity.HasOne(d => d.Badge).WithMany(p => p.BadgeConditionsMappings)
+                .HasForeignKey(d => d.BadgeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BadgeConditionsMapping_badge_id_fkey");
         });
 
         modelBuilder.Entity<BaseQuestion>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("BaseQuestions_pkey");
+            entity.HasKey(e => e.Id).HasName("BaseQuestions_pkey");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.que_text).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.QueDifficultyId).HasColumnName("que_difficulty_id");
+            entity.Property(e => e.QueText)
+                .HasColumnType("character varying")
+                .HasColumnName("que_text");
+            entity.Property(e => e.QueTypeId).HasColumnName("que_type_id");
 
-            entity.HasOne(d => d.category).WithMany(p => p.BaseQuestions)
-                .HasForeignKey(d => d.category_id)
+            entity.HasOne(d => d.Category).WithMany(p => p.BaseQuestions)
+                .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BaseQuestions_category_id_fkey");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.BaseQuestioncreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.BaseQuestionCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BaseQuestions_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.BaseQuestionmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.BaseQuestionModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("BaseQuestions_modified_by_fkey");
 
-            entity.HasOne(d => d.que_difficulty).WithMany(p => p.BaseQuestions)
-                .HasForeignKey(d => d.que_difficulty_id)
+            entity.HasOne(d => d.QueDifficulty).WithMany(p => p.BaseQuestions)
+                .HasForeignKey(d => d.QueDifficultyId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BaseQuestions_que_difficulty_id_fkey");
 
-            entity.HasOne(d => d.que_type).WithMany(p => p.BaseQuestions)
-                .HasForeignKey(d => d.que_type_id)
+            entity.HasOne(d => d.QueType).WithMany(p => p.BaseQuestions)
+                .HasForeignKey(d => d.QueTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BaseQuestions_que_type_id_fkey");
         });
 
         modelBuilder.Entity<BattleList>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("BattleList_pkey");
+            entity.HasKey(e => e.Id).HasName("BattleList_pkey");
 
             entity.ToTable("BattleList");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.EndDate).HasColumnName("end_date");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.StartDate).HasColumnName("start_date");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.BattleListcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.BattleListCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleList_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.BattleListmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.BattleListModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("BattleList_modified_by_fkey");
 
-            entity.HasOne(d => d.quiz).WithMany(p => p.BattleLists)
-                .HasForeignKey(d => d.quiz_id)
+            entity.HasOne(d => d.Quiz).WithMany(p => p.BattleLists)
+                .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleList_quiz_id_fkey");
         });
 
         modelBuilder.Entity<BattleQuesDifficultyMap>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("BattleQuesDifficultyMap_pkey");
+            entity.HasKey(e => e.Id).HasName("BattleQuesDifficultyMap_pkey");
 
             entity.ToTable("BattleQuesDifficultyMap");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.BattleId).HasColumnName("battle_id");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.NoOfQues).HasColumnName("no_of_ques");
+            entity.Property(e => e.QueDifficultyId).HasColumnName("que_difficulty_id");
+            entity.Property(e => e.QusTime).HasColumnName("qus_time");
 
-            entity.HasOne(d => d.battle).WithMany(p => p.BattleQuesDifficultyMaps)
-                .HasForeignKey(d => d.battle_id)
+            entity.HasOne(d => d.Battle).WithMany(p => p.BattleQuesDifficultyMaps)
+                .HasForeignKey(d => d.BattleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleQuesDifficultyMap_battle_id_fkey");
 
-            entity.HasOne(d => d.que_difficulty).WithMany(p => p.BattleQuesDifficultyMaps)
-                .HasForeignKey(d => d.que_difficulty_id)
+            entity.HasOne(d => d.QueDifficulty).WithMany(p => p.BattleQuesDifficultyMaps)
+                .HasForeignKey(d => d.QueDifficultyId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleQuesDifficultyMap_que_difficulty_id_fkey");
         });
 
         modelBuilder.Entity<BattleRequest>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("BattleRequest_pkey");
+            entity.HasKey(e => e.Id).HasName("BattleRequest_pkey");
 
             entity.ToTable("BattleRequest");
 
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.sending_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.status).HasDefaultValue(3);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.ReceiverId).HasColumnName("receiver_id");
+            entity.Property(e => e.SenderId).HasColumnName("sender_id");
+            entity.Property(e => e.SendingDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("sending_date");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(3)
+                .HasColumnName("status");
 
-            entity.HasOne(d => d.receiver).WithMany(p => p.BattleRequestreceivers)
-                .HasForeignKey(d => d.receiver_id)
+            entity.HasOne(d => d.Receiver).WithMany(p => p.BattleRequestReceivers)
+                .HasForeignKey(d => d.ReceiverId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleRequest_receiver_id_fkey");
 
-            entity.HasOne(d => d.sender).WithMany(p => p.BattleRequestsenders)
-                .HasForeignKey(d => d.sender_id)
+            entity.HasOne(d => d.Sender).WithMany(p => p.BattleRequestSenders)
+                .HasForeignKey(d => d.SenderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleRequest_sender_id_fkey");
         });
 
         modelBuilder.Entity<BattleResult>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("BattleResult_pkey");
+            entity.HasKey(e => e.Id).HasName("BattleResult_pkey");
 
             entity.ToTable("BattleResult");
 
-            entity.Property(e => e.looser_gained_xp).HasDefaultValue(0);
-            entity.Property(e => e.winner_gained_xp).HasDefaultValue(0);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.BattleStatus).HasColumnName("battle_status");
+            entity.Property(e => e.LooserGainedXp)
+                .HasDefaultValue(0)
+                .HasColumnName("looser_gained_xp");
+            entity.Property(e => e.User1CorrectedAns).HasColumnName("user1_corrected_ans");
+            entity.Property(e => e.User1TakenTime).HasColumnName("user1_taken_time");
+            entity.Property(e => e.User2CorrectedAns).HasColumnName("user2_corrected_ans");
+            entity.Property(e => e.User2TakenTime).HasColumnName("user2_taken_time");
+            entity.Property(e => e.WinnerGainedXp)
+                .HasDefaultValue(0)
+                .HasColumnName("winner_gained_xp");
+            entity.Property(e => e.WinnerId).HasColumnName("winner_id");
 
-            entity.HasOne(d => d.battle_statusNavigation).WithMany(p => p.BattleResults)
-                .HasForeignKey(d => d.battle_status)
+            entity.HasOne(d => d.BattleStatusNavigation).WithMany(p => p.BattleResults)
+                .HasForeignKey(d => d.BattleStatus)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleResult_battle_status_fkey");
 
-            entity.HasOne(d => d.winner).WithMany(p => p.BattleResults)
-                .HasForeignKey(d => d.winner_id)
+            entity.HasOne(d => d.Winner).WithMany(p => p.BattleResults)
+                .HasForeignKey(d => d.WinnerId)
                 .HasConstraintName("BattleResult_winner_id_fkey");
         });
 
         modelBuilder.Entity<BattleStatus>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("BattleStatus_pkey");
+            entity.HasKey(e => e.Id).HasName("BattleStatus_pkey");
 
             entity.ToTable("BattleStatus");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.BattleId).HasColumnName("battle_id");
+            entity.Property(e => e.BattleStatus1).HasColumnName("battle_status");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.User1Id).HasColumnName("user1_id");
+            entity.Property(e => e.User2Id).HasColumnName("user2_id");
 
-            entity.HasOne(d => d.battle).WithMany(p => p.BattleStatuses)
-                .HasForeignKey(d => d.battle_id)
+            entity.HasOne(d => d.Battle).WithMany(p => p.BattleStatuses)
+                .HasForeignKey(d => d.BattleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleStatus_battle_id_fkey");
 
-            entity.HasOne(d => d.user1).WithMany(p => p.BattleStatususer1s)
-                .HasForeignKey(d => d.user1_id)
+            entity.HasOne(d => d.User1).WithMany(p => p.BattleStatusUser1s)
+                .HasForeignKey(d => d.User1Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleStatus_user1_id_fkey");
 
-            entity.HasOne(d => d.user2).WithMany(p => p.BattleStatususer2s)
-                .HasForeignKey(d => d.user2_id)
+            entity.HasOne(d => d.User2).WithMany(p => p.BattleStatusUser2s)
+                .HasForeignKey(d => d.User2Id)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BattleStatus_user2_id_fkey");
         });
 
         modelBuilder.Entity<EmailTemplete>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("EmailTemplete_pkey");
+            entity.HasKey(e => e.Id).HasName("EmailTemplete_pkey");
 
             entity.ToTable("EmailTemplete");
 
-            entity.Property(e => e.body).HasColumnType("character varying");
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.status).HasDefaultValue(true);
-            entity.Property(e => e.subject).HasColumnType("character varying");
-            entity.Property(e => e.title).HasMaxLength(255);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Body)
+                .HasColumnType("character varying")
+                .HasColumnName("body");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(true)
+                .HasColumnName("status");
+            entity.Property(e => e.Subject)
+                .HasColumnType("character varying")
+                .HasColumnName("subject");
+            entity.Property(e => e.TemplateType).HasColumnName("template_type");
+            entity.Property(e => e.Title)
+                .HasMaxLength(255)
+                .HasColumnName("title");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.EmailTempletecreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.EmailTempleteCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("EmailTemplete_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.EmailTempletemodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.EmailTempleteModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("EmailTemplete_modified_by_fkey");
         });
 
         modelBuilder.Entity<GlobalPayment>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("GlobalPayment_pkey");
+            entity.HasKey(e => e.Id).HasName("GlobalPayment_pkey");
 
             entity.ToTable("GlobalPayment");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.description).HasColumnType("character varying");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.payment_id).HasColumnType("character varying");
-            entity.Property(e => e.payment_status).HasDefaultValue(1);
-            entity.Property(e => e.received_by).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.PaidByUserId).HasColumnName("paid_by_user_id");
+            entity.Property(e => e.PaymentAmount).HasColumnName("payment_amount");
+            entity.Property(e => e.PaymentId)
+                .HasColumnType("character varying")
+                .HasColumnName("payment_id");
+            entity.Property(e => e.PaymentPlatformId).HasColumnName("payment_platform_id");
+            entity.Property(e => e.PaymentStatus)
+                .HasDefaultValue(1)
+                .HasColumnName("payment_status");
+            entity.Property(e => e.PaymentTypeId).HasColumnName("payment_type_id");
+            entity.Property(e => e.ReceivedBy)
+                .HasColumnType("character varying")
+                .HasColumnName("received_by");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.GlobalPaymentcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.GlobalPaymentCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("GlobalPayment_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.GlobalPaymentmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.GlobalPaymentModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("GlobalPayment_modified_by_fkey");
 
-            entity.HasOne(d => d.paid_by_user).WithMany(p => p.GlobalPaymentpaid_by_users)
-                .HasForeignKey(d => d.paid_by_user_id)
+            entity.HasOne(d => d.PaidByUser).WithMany(p => p.GlobalPaymentPaidByUsers)
+                .HasForeignKey(d => d.PaidByUserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("GlobalPayment_paid_by_user_id_fkey");
 
-            entity.HasOne(d => d.payment_platform).WithMany(p => p.GlobalPayments)
-                .HasForeignKey(d => d.payment_platform_id)
+            entity.HasOne(d => d.PaymentPlatform).WithMany(p => p.GlobalPayments)
+                .HasForeignKey(d => d.PaymentPlatformId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("GlobalPayment_payment_platform_id_fkey");
 
-            entity.HasOne(d => d.payment_type).WithMany(p => p.GlobalPayments)
-                .HasForeignKey(d => d.payment_type_id)
+            entity.HasOne(d => d.PaymentType).WithMany(p => p.GlobalPayments)
+                .HasForeignKey(d => d.PaymentTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("GlobalPayment_payment_type_id_fkey");
         });
 
         modelBuilder.Entity<GradeForQuizResult>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("GradeForQuizResult_pkey");
+            entity.HasKey(e => e.Id).HasName("GradeForQuizResult_pkey");
 
             entity.ToTable("GradeForQuizResult");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.grade).HasColumnType("character varying");
-            entity.Property(e => e.max_percentage).HasPrecision(5, 2);
-            entity.Property(e => e.min_percentage).HasPrecision(5, 2);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Grade)
+                .HasColumnType("character varying")
+                .HasColumnName("grade");
+            entity.Property(e => e.MaxPercentage)
+                .HasPrecision(5, 2)
+                .HasColumnName("max_percentage");
+            entity.Property(e => e.MinPercentage)
+                .HasPrecision(5, 2)
+                .HasColumnName("min_percentage");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.GradeForQuizResultcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.GradeForQuizResultCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("GradeForQuizResult_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.GradeForQuizResultmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.GradeForQuizResultModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("GradeForQuizResult_modified_by_fkey");
         });
 
         modelBuilder.Entity<LevelByExp>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("LevelByExp_pkey");
+            entity.HasKey(e => e.Id).HasName("LevelByExp_pkey");
 
             entity.ToTable("LevelByExp");
 
-            entity.HasIndex(e => e.level_order, "LevelByExp_level_order_key").IsUnique();
+            entity.HasIndex(e => e.LevelOrder, "LevelByExp_level_order_key").IsUnique();
 
-            entity.Property(e => e.maximum_exp).HasDefaultValue(0);
-            entity.Property(e => e.minimum_exp).HasDefaultValue(0);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LevelOrder).HasColumnName("level_order");
+            entity.Property(e => e.MaximumExp)
+                .HasDefaultValue(0)
+                .HasColumnName("maximum_exp");
+            entity.Property(e => e.MinimumExp)
+                .HasDefaultValue(0)
+                .HasColumnName("minimum_exp");
         });
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("Notifications_pkey");
+            entity.HasKey(e => e.Id).HasName("Notifications_pkey");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.is_global).HasDefaultValue(false);
-            entity.Property(e => e.is_urgent).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.notification_message).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.IsGlobal)
+                .HasDefaultValue(false)
+                .HasColumnName("is_global");
+            entity.Property(e => e.IsUrgent)
+                .HasDefaultValue(false)
+                .HasColumnName("is_urgent");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.NotificationCategory).HasColumnName("notification_category");
+            entity.Property(e => e.NotificationMessage)
+                .HasColumnType("character varying")
+                .HasColumnName("notification_message");
+            entity.Property(e => e.NotificationType).HasColumnName("notification_type");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.Notificationcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.NotificationCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Notifications_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.Notificationmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.NotificationModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("Notifications_modified_by_fkey");
         });
 
         modelBuilder.Entity<PaymentPlatform>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("PaymentPlatform_pkey");
+            entity.HasKey(e => e.Id).HasName("PaymentPlatform_pkey");
 
             entity.ToTable("PaymentPlatform");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.name).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Name)
+                .HasColumnType("character varying")
+                .HasColumnName("name");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.PaymentPlatformcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.PaymentPlatformCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("PaymentPlatform_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.PaymentPlatformmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.PaymentPlatformModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("PaymentPlatform_modified_by_fkey");
         });
 
         modelBuilder.Entity<PaymentType>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("PaymentType_pkey");
+            entity.HasKey(e => e.Id).HasName("PaymentType_pkey");
 
             entity.ToTable("PaymentType");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.description).HasColumnType("character varying");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.PaymentTypecreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.PaymentTypeCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("PaymentType_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.PaymentTypemodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.PaymentTypeModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("PaymentType_modified_by_fkey");
         });
 
         modelBuilder.Entity<PlatformConfiguration>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("PlatformConfiguration_pkey");
+            entity.HasKey(e => e.Id).HasName("PlatformConfiguration_pkey");
 
             entity.ToTable("PlatformConfiguration");
 
-            entity.Property(e => e.configuration_name).HasColumnType("character varying");
-            entity.Property(e => e.description).HasColumnType("character varying");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.values).HasColumnType("json");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.ConfigurationName)
+                .HasColumnType("character varying")
+                .HasColumnName("configuration_name");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Values)
+                .HasColumnType("json")
+                .HasColumnName("values");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.PlatformConfigurations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.PlatformConfigurations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("PlatformConfiguration_modified_by_fkey");
         });
 
         modelBuilder.Entity<QueOptionsAn>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QueOptionsAns_pkey");
+            entity.HasKey(e => e.Id).HasName("QueOptionsAns_pkey");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.key).HasColumnType("character varying");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.value).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.Key)
+                .HasColumnType("character varying")
+                .HasColumnName("key");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.QuestionId).HasColumnName("question_id");
+            entity.Property(e => e.Value)
+                .HasColumnType("character varying")
+                .HasColumnName("value");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.QueOptionsAncreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QueOptionsAnCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QueOptionsAns_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.QueOptionsAnmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QueOptionsAnModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("QueOptionsAns_modified_by_fkey");
 
-            entity.HasOne(d => d.question).WithMany(p => p.QueOptionsAns)
-                .HasForeignKey(d => d.question_id)
+            entity.HasOne(d => d.Question).WithMany(p => p.QueOptionsAns)
+                .HasForeignKey(d => d.QuestionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QueOptionsAns_question_id_fkey");
         });
 
         modelBuilder.Entity<QuestionDifficulty>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuestionDifficulty_pkey");
+            entity.HasKey(e => e.Id).HasName("QuestionDifficulty_pkey");
 
             entity.ToTable("QuestionDifficulty");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.description).HasColumnType("character varying");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.name).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Name)
+                .HasColumnType("character varying")
+                .HasColumnName("name");
+            entity.Property(e => e.XpGained).HasColumnName("xp_gained");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.QuestionDifficultycreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuestionDifficultyCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuestionDifficulty_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.QuestionDifficultymodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuestionDifficultyModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("QuestionDifficulty_modified_by_fkey");
         });
 
         modelBuilder.Entity<QuestionIssueReport>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuestionIssueReports_pkey");
+            entity.HasKey(e => e.Id).HasName("QuestionIssueReports_pkey");
 
-            entity.Property(e => e.description).HasColumnType("character varying");
-            entity.Property(e => e.is_resolved).HasDefaultValue(false);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
+            entity.Property(e => e.IsResolved)
+                .HasDefaultValue(false)
+                .HasColumnName("is_resolved");
+            entity.Property(e => e.QuestionId).HasColumnName("question_id");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.question).WithMany(p => p.QuestionIssueReports)
-                .HasForeignKey(d => d.question_id)
+            entity.HasOne(d => d.Question).WithMany(p => p.QuestionIssueReports)
+                .HasForeignKey(d => d.QuestionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuestionIssueReports_question_id_fkey");
 
-            entity.HasOne(d => d.quiz).WithMany(p => p.QuestionIssueReports)
-                .HasForeignKey(d => d.quiz_id)
+            entity.HasOne(d => d.Quiz).WithMany(p => p.QuestionIssueReports)
+                .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuestionIssueReports_quiz_id_fkey");
 
-            entity.HasOne(d => d.user).WithMany(p => p.QuestionIssueReports)
-                .HasForeignKey(d => d.user_id)
+            entity.HasOne(d => d.User).WithMany(p => p.QuestionIssueReports)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuestionIssueReports_user_id_fkey");
         });
 
         modelBuilder.Entity<QuestionType>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuestionType_pkey");
+            entity.HasKey(e => e.Id).HasName("QuestionType_pkey");
 
             entity.ToTable("QuestionType");
 
-            entity.Property(e => e.description).HasColumnType("character varying");
-            entity.Property(e => e.type_name).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
+            entity.Property(e => e.TypeName)
+                .HasColumnType("character varying")
+                .HasColumnName("type_name");
         });
 
         modelBuilder.Entity<Quiz>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("Quiz_pkey");
+            entity.HasKey(e => e.Id).HasName("Quiz_pkey");
 
             entity.ToTable("Quiz");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.description).HasColumnType("character varying");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.is_featured).HasDefaultValue(false);
-            entity.Property(e => e.is_paid).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.name).HasMaxLength(255);
-            entity.Property(e => e.no_of_person_attempted).HasDefaultValue(0);
-            entity.Property(e => e.price).HasPrecision(10, 2);
-            entity.Property(e => e.rating).HasPrecision(2, 1);
-            entity.Property(e => e.total_xp).HasDefaultValue(0);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CategoryId).HasColumnName("category_id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
+            entity.Property(e => e.DifficultyLevelId).HasColumnName("difficulty_level_id");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.IsFeatured)
+                .HasDefaultValue(false)
+                .HasColumnName("is_featured");
+            entity.Property(e => e.IsPaid)
+                .HasDefaultValue(false)
+                .HasColumnName("is_paid");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
+            entity.Property(e => e.NoOfAttempts).HasColumnName("no_of_attempts");
+            entity.Property(e => e.NoOfPersonAttempted)
+                .HasDefaultValue(0)
+                .HasColumnName("no_of_person_attempted");
+            entity.Property(e => e.Price)
+                .HasPrecision(10, 2)
+                .HasColumnName("price");
+            entity.Property(e => e.Rating)
+                .HasPrecision(2, 1)
+                .HasColumnName("rating");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.TotalQuestion).HasColumnName("total_question");
+            entity.Property(e => e.TotalTime).HasColumnName("total_time");
+            entity.Property(e => e.TotalXp)
+                .HasDefaultValue(0)
+                .HasColumnName("total_xp");
 
-            entity.HasOne(d => d.category).WithMany(p => p.Quizzes)
-                .HasForeignKey(d => d.category_id)
+            entity.HasOne(d => d.Category).WithMany(p => p.Quizzes)
+                .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Quiz_category_id_fkey");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.Quizcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuizCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Quiz_created_by_fkey");
 
-            entity.HasOne(d => d.difficulty_level).WithMany(p => p.Quizzes)
-                .HasForeignKey(d => d.difficulty_level_id)
+            entity.HasOne(d => d.DifficultyLevel).WithMany(p => p.Quizzes)
+                .HasForeignKey(d => d.DifficultyLevelId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Quiz_difficulty_level_id_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.Quizmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuizModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("Quiz_modified_by_fkey");
         });
 
         modelBuilder.Entity<QuizAttempted>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuizAttempted_pkey");
+            entity.HasKey(e => e.Id).HasName("QuizAttempted_pkey");
 
             entity.ToTable("QuizAttempted");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.AttemptLeft).HasColumnName("attempt_left");
+            entity.Property(e => e.CorrectedQue).HasColumnName("corrected_que");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Grade).HasColumnName("grade");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.TimeSpent).HasColumnName("time_spent");
+            entity.Property(e => e.TotalQue).HasColumnName("total_que");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.XpEarned).HasColumnName("xp_earned");
 
-            entity.HasOne(d => d.gradeNavigation).WithMany(p => p.QuizAttempteds)
-                .HasForeignKey(d => d.grade)
+            entity.HasOne(d => d.GradeNavigation).WithMany(p => p.QuizAttempteds)
+                .HasForeignKey(d => d.Grade)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizAttempted_grade_fkey");
 
-            entity.HasOne(d => d.quiz).WithMany(p => p.QuizAttempteds)
-                .HasForeignKey(d => d.quiz_id)
+            entity.HasOne(d => d.Quiz).WithMany(p => p.QuizAttempteds)
+                .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizAttempted_quiz_id_fkey");
 
-            entity.HasOne(d => d.user).WithMany(p => p.QuizAttempteds)
-                .HasForeignKey(d => d.user_id)
+            entity.HasOne(d => d.User).WithMany(p => p.QuizAttempteds)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizAttempted_user_id_fkey");
         });
 
         modelBuilder.Entity<QuizCategory>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuizCategory_pkey");
+            entity.HasKey(e => e.Id).HasName("QuizCategory_pkey");
 
             entity.ToTable("QuizCategory");
 
-            entity.Property(e => e.category_name).HasMaxLength(255);
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.icon).HasColumnType("character varying");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.status).HasDefaultValue(true);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CategoryName)
+                .HasMaxLength(255)
+                .HasColumnName("category_name");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Icon)
+                .HasColumnType("character varying")
+                .HasColumnName("icon");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(true)
+                .HasColumnName("status");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.QuizCategorycreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuizCategoryCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizCategory_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.QuizCategorymodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuizCategoryModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("QuizCategory_modified_by_fkey");
         });
 
         modelBuilder.Entity<QuizDifficulty>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuizDifficulty_pkey");
+            entity.HasKey(e => e.Id).HasName("QuizDifficulty_pkey");
 
             entity.ToTable("QuizDifficulty");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.description).HasColumnType("character varying");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.name).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Name)
+                .HasColumnType("character varying")
+                .HasColumnName("name");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.QuizDifficultycreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuizDifficultyCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizDifficulty_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.QuizDifficultymodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuizDifficultyModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("QuizDifficulty_modified_by_fkey");
         });
 
         modelBuilder.Entity<QuizPurchased>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuizPurchased_pkey");
+            entity.HasKey(e => e.Id).HasName("QuizPurchased_pkey");
 
             entity.ToTable("QuizPurchased");
 
-            entity.Property(e => e.purchased_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PurchasedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("purchased_date");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.quiz).WithMany(p => p.QuizPurchaseds)
-                .HasForeignKey(d => d.quiz_id)
+            entity.HasOne(d => d.Quiz).WithMany(p => p.QuizPurchaseds)
+                .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizPurchased_quiz_id_fkey");
 
-            entity.HasOne(d => d.user).WithMany(p => p.QuizPurchaseds)
-                .HasForeignKey(d => d.user_id)
+            entity.HasOne(d => d.User).WithMany(p => p.QuizPurchaseds)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizPurchased_user_id_fkey");
         });
 
         modelBuilder.Entity<QuizRating>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuizRating_pkey");
+            entity.HasKey(e => e.Id).HasName("QuizRating_pkey");
 
             entity.ToTable("QuizRating");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.feedback).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Feedback)
+                .HasColumnType("character varying")
+                .HasColumnName("feedback");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.QuizRating1).HasColumnName("quiz_rating");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.quiz).WithMany(p => p.QuizRatings)
-                .HasForeignKey(d => d.quiz_id)
+            entity.HasOne(d => d.Quiz).WithMany(p => p.QuizRatings)
+                .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizRating_quiz_id_fkey");
 
-            entity.HasOne(d => d.user).WithMany(p => p.QuizRatings)
-                .HasForeignKey(d => d.user_id)
+            entity.HasOne(d => d.User).WithMany(p => p.QuizRatings)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizRating_user_id_fkey");
         });
 
         modelBuilder.Entity<QuizTag>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuizTag_pkey");
+            entity.HasKey(e => e.Id).HasName("QuizTag_pkey");
 
             entity.ToTable("QuizTag");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.tag_name).HasMaxLength(255);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.TagName)
+                .HasMaxLength(255)
+                .HasColumnName("tag_name");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.QuizTagcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuizTagCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizTag_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.QuizTagmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuizTagModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("QuizTag_modified_by_fkey");
         });
 
         modelBuilder.Entity<QuizTagMapping>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuizTagMapping_pkey");
+            entity.HasKey(e => e.Id).HasName("QuizTagMapping_pkey");
 
             entity.ToTable("QuizTagMapping");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.TagId).HasColumnName("tag_id");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.QuizTagMappingcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuizTagMappingCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizTagMapping_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.QuizTagMappingmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuizTagMappingModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("QuizTagMapping_modified_by_fkey");
 
-            entity.HasOne(d => d.quiz).WithMany(p => p.QuizTagMappings)
-                .HasForeignKey(d => d.quiz_id)
+            entity.HasOne(d => d.Quiz).WithMany(p => p.QuizTagMappings)
+                .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizTagMapping_quiz_id_fkey");
 
-            entity.HasOne(d => d.tag).WithMany(p => p.QuizTagMappings)
-                .HasForeignKey(d => d.tag_id)
+            entity.HasOne(d => d.Tag).WithMany(p => p.QuizTagMappings)
+                .HasForeignKey(d => d.TagId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizTagMapping_tag_id_fkey");
         });
 
         modelBuilder.Entity<QuizToBaseQuestionMap>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("QuizToBaseQuestionMap_pkey");
+            entity.HasKey(e => e.Id).HasName("QuizToBaseQuestionMap_pkey");
 
             entity.ToTable("QuizToBaseQuestionMap");
 
-            entity.HasOne(d => d.que).WithMany(p => p.QuizToBaseQuestionMaps)
-                .HasForeignKey(d => d.que_id)
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.QueId).HasColumnName("que_id");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+
+            entity.HasOne(d => d.Que).WithMany(p => p.QuizToBaseQuestionMaps)
+                .HasForeignKey(d => d.QueId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizToBaseQuestionMap_que_id_fkey");
 
-            entity.HasOne(d => d.quiz).WithMany(p => p.QuizToBaseQuestionMaps)
-                .HasForeignKey(d => d.quiz_id)
+            entity.HasOne(d => d.Quiz).WithMany(p => p.QuizToBaseQuestionMaps)
+                .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizToBaseQuestionMap_quiz_id_fkey");
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("Users_pkey");
+            entity.HasKey(e => e.Id).HasName("Users_pkey");
 
-            entity.HasIndex(e => e.email, "Users_email_key").IsUnique();
+            entity.HasIndex(e => e.Email, "Users_email_key").IsUnique();
 
-            entity.HasIndex(e => e.user_name, "Users_user_name_key").IsUnique();
+            entity.HasIndex(e => e.UserName, "Users_user_name_key").IsUnique();
 
-            entity.Property(e => e.bio).HasMaxLength(255);
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.email).HasColumnType("character varying");
-            entity.Property(e => e.first_time_login).HasDefaultValue(true);
-            entity.Property(e => e.full_name).HasMaxLength(255);
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.last_login).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.password).HasColumnType("character varying");
-            entity.Property(e => e.profile_pic).HasColumnType("character varying");
-            entity.Property(e => e.user_name).HasMaxLength(255);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Bio)
+                .HasMaxLength(255)
+                .HasColumnName("bio");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.Email)
+                .HasColumnType("character varying")
+                .HasColumnName("email");
+            entity.Property(e => e.FirstTimeLogin)
+                .HasDefaultValue(true)
+                .HasColumnName("first_time_login");
+            entity.Property(e => e.FullName)
+                .HasMaxLength(255)
+                .HasColumnName("full_name");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.LastLogin)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("last_login");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.Password)
+                .HasColumnType("character varying")
+                .HasColumnName("password");
+            entity.Property(e => e.ProfilePic)
+                .HasColumnType("character varying")
+                .HasColumnName("profile_pic");
+            entity.Property(e => e.RoleId).HasColumnName("role_id");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.UserName)
+                .HasMaxLength(255)
+                .HasColumnName("user_name");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.Inversecreated_byNavigation)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.InverseCreatedByNavigation)
+                .HasForeignKey(d => d.CreatedBy)
                 .HasConstraintName("Users_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.Inversemodified_byNavigation)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.InverseModifiedByNavigation)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("Users_modified_by_fkey");
 
-            entity.HasOne(d => d.role).WithMany(p => p.Users)
-                .HasForeignKey(d => d.role_id)
+            entity.HasOne(d => d.Role).WithMany(p => p.Users)
+                .HasForeignKey(d => d.RoleId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Users_role_id_fkey");
         });
 
         modelBuilder.Entity<UserBadgesEarned>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("UserBadgesEarned_pkey");
+            entity.HasKey(e => e.Id).HasName("UserBadgesEarned_pkey");
 
             entity.ToTable("UserBadgesEarned");
 
-            entity.Property(e => e.date_earned).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.BadgeId).HasColumnName("badge_id");
+            entity.Property(e => e.DateEarned)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("date_earned");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.badge).WithMany(p => p.UserBadgesEarneds)
-                .HasForeignKey(d => d.badge_id)
+            entity.HasOne(d => d.Badge).WithMany(p => p.UserBadgesEarneds)
+                .HasForeignKey(d => d.BadgeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserBadgesEarned_badge_id_fkey");
 
-            entity.HasOne(d => d.user).WithMany(p => p.UserBadgesEarneds)
-                .HasForeignKey(d => d.user_id)
+            entity.HasOne(d => d.User).WithMany(p => p.UserBadgesEarneds)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserBadgesEarned_user_id_fkey");
         });
 
         modelBuilder.Entity<UserFavoriteQuiz>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("UserFavoriteQuizzes_pkey");
+            entity.HasKey(e => e.Id).HasName("UserFavoriteQuizzes_pkey");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.UserFavoriteQuizcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.UserFavoriteQuizCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserFavoriteQuizzes_created_by_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.UserFavoriteQuizmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.UserFavoriteQuizModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("UserFavoriteQuizzes_modified_by_fkey");
 
-            entity.HasOne(d => d.quiz).WithMany(p => p.UserFavoriteQuizzes)
-                .HasForeignKey(d => d.quiz_id)
+            entity.HasOne(d => d.Quiz).WithMany(p => p.UserFavoriteQuizzes)
+                .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserFavoriteQuizzes_quiz_id_fkey");
 
-            entity.HasOne(d => d.user).WithMany(p => p.UserFavoriteQuizusers)
-                .HasForeignKey(d => d.user_id)
+            entity.HasOne(d => d.User).WithMany(p => p.UserFavoriteQuizUsers)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserFavoriteQuizzes_user_id_fkey");
         });
 
         modelBuilder.Entity<UserNotification>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("UserNotifications_pkey");
+            entity.HasKey(e => e.Id).HasName("UserNotifications_pkey");
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.is_deleted).HasDefaultValue(false);
-            entity.Property(e => e.is_read).HasDefaultValue(false);
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.GlobalNotificationId).HasColumnName("global_notification_id");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.IsRead)
+                .HasDefaultValue(false)
+                .HasColumnName("is_read");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.created_byNavigation).WithMany(p => p.UserNotificationcreated_byNavigations)
-                .HasForeignKey(d => d.created_by)
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.UserNotificationCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserNotifications_created_by_fkey");
 
-            entity.HasOne(d => d.global_notification).WithMany(p => p.UserNotifications)
-                .HasForeignKey(d => d.global_notification_id)
+            entity.HasOne(d => d.GlobalNotification).WithMany(p => p.UserNotifications)
+                .HasForeignKey(d => d.GlobalNotificationId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserNotifications_global_notification_id_fkey");
 
-            entity.HasOne(d => d.modified_byNavigation).WithMany(p => p.UserNotificationmodified_byNavigations)
-                .HasForeignKey(d => d.modified_by)
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.UserNotificationModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("UserNotifications_modified_by_fkey");
 
-            entity.HasOne(d => d.user).WithMany(p => p.UserNotificationusers)
-                .HasForeignKey(d => d.user_id)
+            entity.HasOne(d => d.User).WithMany(p => p.UserNotificationUsers)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserNotifications_user_id_fkey");
         });
 
         modelBuilder.Entity<UserPerformanceDetail>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("UserPerformanceDetails_pkey");
+            entity.HasKey(e => e.Id).HasName("UserPerformanceDetails_pkey");
 
-            entity.HasIndex(e => e.new_global_rank, "UserPerformanceDetails_new_global_rank_key").IsUnique();
+            entity.HasIndex(e => e.NewGlobalRank, "UserPerformanceDetails_new_global_rank_key").IsUnique();
 
-            entity.HasIndex(e => e.old_global_rank, "UserPerformanceDetails_old_global_rank_key").IsUnique();
+            entity.HasIndex(e => e.OldGlobalRank, "UserPerformanceDetails_old_global_rank_key").IsUnique();
 
-            entity.Property(e => e.created_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.modified_date).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.CurrentLevel).HasColumnName("current_level");
+            entity.Property(e => e.CurrentStreak).HasColumnName("current_streak");
+            entity.Property(e => e.HighestStreak).HasColumnName("highest_streak");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.NewGlobalRank).HasColumnName("new_global_rank");
+            entity.Property(e => e.OldGlobalRank).HasColumnName("old_global_rank");
+            entity.Property(e => e.TotalXp).HasColumnName("total_xp");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.user).WithMany(p => p.UserPerformanceDetails)
-                .HasForeignKey(d => d.user_id)
+            entity.HasOne(d => d.User).WithMany(p => p.UserPerformanceDetails)
+                .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserPerformanceDetails_user_id_fkey");
         });
 
         modelBuilder.Entity<UserRankByLevel>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("UserRankByLevel_pkey");
+            entity.HasKey(e => e.Id).HasName("UserRankByLevel_pkey");
 
             entity.ToTable("UserRankByLevel");
 
-            entity.Property(e => e.rank_name).HasColumnType("character varying");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.MaximumLevel).HasColumnName("maximum_level");
+            entity.Property(e => e.MinimumLevel).HasColumnName("minimum_level");
+            entity.Property(e => e.RankName)
+                .HasColumnType("character varying")
+                .HasColumnName("rank_name");
         });
 
         modelBuilder.Entity<UserRole>(entity =>
         {
-            entity.HasKey(e => e.id).HasName("UserRoles_pkey");
+            entity.HasKey(e => e.Id).HasName("UserRoles_pkey");
 
-            entity.Property(e => e.name).HasMaxLength(255);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name)
+                .HasMaxLength(255)
+                .HasColumnName("name");
         });
 
         OnModelCreatingPartial(modelBuilder);

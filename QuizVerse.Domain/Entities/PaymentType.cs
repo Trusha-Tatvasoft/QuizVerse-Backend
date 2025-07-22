@@ -5,21 +5,21 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class PaymentType
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public string description { get; set; } = null!;
+    public string Description { get; set; } = null!;
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public int created_by { get; set; }
+    public int CreatedBy { get; set; }
 
-    public DateTime? modified_date { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
-    public int? modified_by { get; set; }
+    public int? ModifiedBy { get; set; }
+
+    public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<GlobalPayment> GlobalPayments { get; set; } = new List<GlobalPayment>();
 
-    public virtual User created_byNavigation { get; set; } = null!;
-
-    public virtual User? modified_byNavigation { get; set; }
+    public virtual User? ModifiedByNavigation { get; set; }
 }

@@ -5,21 +5,21 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class QuestionIssueReport
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int user_id { get; set; }
+    public int UserId { get; set; }
 
-    public string description { get; set; } = null!;
+    public string Description { get; set; } = null!;
 
-    public int quiz_id { get; set; }
+    public int QuizId { get; set; }
 
-    public int question_id { get; set; }
+    public int QuestionId { get; set; }
 
-    public bool is_resolved { get; set; }
+    public bool IsResolved { get; set; }
 
-    public virtual BaseQuestion question { get; set; } = null!;
+    public virtual BaseQuestion Question { get; set; } = null!;
 
-    public virtual Quiz quiz { get; set; } = null!;
+    public virtual Quiz Quiz { get; set; } = null!;
 
-    public virtual User user { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 }

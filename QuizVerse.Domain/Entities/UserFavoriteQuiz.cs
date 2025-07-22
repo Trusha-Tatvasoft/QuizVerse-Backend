@@ -5,27 +5,27 @@ namespace QuizVerse.Domain.Entities;
 
 public partial class UserFavoriteQuiz
 {
-    public int id { get; set; }
+    public int Id { get; set; }
 
-    public int quiz_id { get; set; }
+    public int QuizId { get; set; }
 
-    public int user_id { get; set; }
+    public int UserId { get; set; }
 
-    public bool is_deleted { get; set; }
+    public bool IsDeleted { get; set; }
 
-    public DateTime created_date { get; set; }
+    public DateTime CreatedDate { get; set; }
 
-    public int created_by { get; set; }
+    public int CreatedBy { get; set; }
 
-    public DateTime? modified_date { get; set; }
+    public DateTime? ModifiedDate { get; set; }
 
-    public int? modified_by { get; set; }
+    public int? ModifiedBy { get; set; }
 
-    public virtual User created_byNavigation { get; set; } = null!;
+    public virtual User CreatedByNavigation { get; set; } = null!;
 
-    public virtual User? modified_byNavigation { get; set; }
+    public virtual User? ModifiedByNavigation { get; set; }
 
-    public virtual Quiz quiz { get; set; } = null!;
+    public virtual Quiz Quiz { get; set; } = null!;
 
-    public virtual User user { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
 }
