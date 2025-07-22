@@ -1,8 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using QuizVerse.Domain.Data;
 using QuizVerse.WebAPI.Helper;
 using QuizVerse.WebAPI.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<QuizVerseDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
 
