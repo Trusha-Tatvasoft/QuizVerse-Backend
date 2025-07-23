@@ -21,8 +21,6 @@ public partial class QuizAttempted
 
     public int Grade { get; set; }
 
-    public int AttemptLeft { get; set; }
-
     public DateTime CreatedDate { get; set; }
 
     public virtual GradeForQuizResult GradeNavigation { get; set; } = null!;

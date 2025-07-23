@@ -773,7 +773,6 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.Name)
                 .HasMaxLength(255)
                 .HasColumnName("name");
-            entity.Property(e => e.NoOfAttempts).HasColumnName("no_of_attempts");
             entity.Property(e => e.NoOfPersonAttempted)
                 .HasDefaultValue(0)
                 .HasColumnName("no_of_person_attempted");
@@ -817,7 +816,6 @@ public partial class QuizVerseDbContext : DbContext
             entity.ToTable("QuizAttempted");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.AttemptLeft).HasColumnName("attempt_left");
             entity.Property(e => e.CorrectedQue).HasColumnName("corrected_que");
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")

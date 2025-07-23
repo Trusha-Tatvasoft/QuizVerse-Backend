@@ -23,8 +23,6 @@ public partial class Quiz
 
     public decimal Rating { get; set; }
 
-    public int NoOfAttempts { get; set; }
-
     public int TotalXp { get; set; }
 
     public int Status { get; set; }
