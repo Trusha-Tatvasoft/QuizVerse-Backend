@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QuizVerse.Application.Core.Interface;
+using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Data;
+using QuizVerse.Infrastructure.Interface;
+using QuizVerse.Infrastructure.Repository;
 using QuizVerse.WebAPI.Helper;
 using QuizVerse.WebAPI.Middlewares;
 
@@ -8,6 +12,26 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<QuizVerseDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// ------------------ CORS ------------------
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200")
+                      .AllowAnyHeader()
+                      .AllowAnyMethod()
+                      .AllowCredentials();
+    });
+});
+
+
+// ------------------ Repositories & Services ------------------
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+
 
 // Add services to the container.
 
