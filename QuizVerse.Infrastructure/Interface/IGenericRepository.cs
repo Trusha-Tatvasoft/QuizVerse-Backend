@@ -22,9 +22,5 @@ public interface IGenericRepository<T> where T : class
 
     Task DeleteRangeAsync(List<T> entity);
 
-    void Detach(T entity);
-
-    void ClearChangeTracker();
-
     Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
 }

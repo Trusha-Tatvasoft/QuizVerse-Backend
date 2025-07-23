@@ -58,16 +58,6 @@ public class GenericRepository<T>(QuizVerseDbContext _context) : IGenericReposit
         await _context.SaveChangesAsync();
     }
 
-    public void Detach(T entity)
-    {
-        _context.Entry(entity).State = EntityState.Detached;
-    }
-
-    public void ClearChangeTracker()
-    {
-        _context.ChangeTracker.Clear();
-    }
-
     public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
     {
         DbSet<T> dbSet = _context.Set<T>();
