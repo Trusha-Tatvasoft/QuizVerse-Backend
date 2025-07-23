@@ -5,16 +5,9 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Infrastructure.Repository;
 
-public class GenericRepository<T> : IGenericRepository<T>
+public class GenericRepository<T>(QuizVerseDbContext _context) : IGenericRepository<T>
            where T : class
 {
-    private readonly QuizVerseDbContext _context;
-
-    public GenericRepository(QuizVerseDbContext _context)
-    {
-        this._context = _context;
-    }
-
     public async Task<bool> Exists(Expression<Func<T, bool>> expression)
     {
         return await _context.Set<T>().AsNoTracking().Where(expression).AnyAsync();
@@ -25,7 +18,7 @@ public class GenericRepository<T> : IGenericRepository<T>
         return await _context.Set<T>().AsNoTracking().Where(expression).FirstOrDefaultAsync().ConfigureAwait(false);
     }
 
-    public async Task<IEnumerable<T>> GetAllAsync()
+    public async Task<List<T>> GetAllAsync()
     {
         return await _context.Set<T>().AsNoTracking().ToListAsync();
     }
@@ -37,13 +30,18 @@ public class GenericRepository<T> : IGenericRepository<T>
 
     public async Task AddAsync(T entity)
     {
-        _context.Set<T>().Add(entity);
+        await _context.Set<T>().AddAsync(entity);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task AddRangeAsync(List<T> entities)
+    {
+        await _context.Set<T>().AddRangeAsync(entities);
         await _context.SaveChangesAsync();
     }
 
     public async Task UpdateAsync(T entity)
     {
-        _context.Entry(entity).State = EntityState.Detached;
         _context.Set<T>().Update(entity);
         await _context.SaveChangesAsync();
     }
