@@ -17,6 +17,18 @@ public partial class QuestionIssueReport
 
     public bool IsResolved { get; set; }
 
+    public DateTime CreatedDate { get; set; }
+
+    public int CreatedBy { get; set; }
+
+    public DateTime? ModifiedDate { get; set; }
+
+    public int? ModifiedBy { get; set; }
+
+    public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual User? ModifiedByNavigation { get; set; }
+
     public virtual BaseQuestion Question { get; set; } = null!;
 
     public virtual Quiz Quiz { get; set; } = null!;

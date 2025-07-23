@@ -103,7 +103,11 @@ public partial class User
 
     public virtual ICollection<QuestionDifficulty> QuestionDifficultyModifiedByNavigations { get; set; } = new List<QuestionDifficulty>();
 
-    public virtual ICollection<QuestionIssueReport> QuestionIssueReports { get; set; } = new List<QuestionIssueReport>();
+    public virtual ICollection<QuestionIssueReport> QuestionIssueReportCreatedByNavigations { get; set; } = new List<QuestionIssueReport>();
+
+    public virtual ICollection<QuestionIssueReport> QuestionIssueReportModifiedByNavigations { get; set; } = new List<QuestionIssueReport>();
+
+    public virtual ICollection<QuestionIssueReport> QuestionIssueReportUsers { get; set; } = new List<QuestionIssueReport>();
 
     public virtual ICollection<QuizAttempted> QuizAttempteds { get; set; } = new List<QuizAttempted>();
 
