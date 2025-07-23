@@ -1,10 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Core\Interface\" />
+    <Folder Include="Core\Service\" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\QuizVerse.Infrastructure\QuizVerse.Infrastructure.csproj" />
   </ItemGroup>
+
 </Project>
