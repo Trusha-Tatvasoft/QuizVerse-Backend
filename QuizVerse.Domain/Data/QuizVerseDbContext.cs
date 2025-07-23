@@ -700,15 +700,32 @@ public partial class QuizVerseDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("QuestionIssueReports_pkey");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
             entity.Property(e => e.Description)
                 .HasColumnType("character varying")
                 .HasColumnName("description");
             entity.Property(e => e.IsResolved)
                 .HasDefaultValue(false)
                 .HasColumnName("is_resolved");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
             entity.Property(e => e.QuestionId).HasColumnName("question_id");
             entity.Property(e => e.QuizId).HasColumnName("quiz_id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuestionIssueReportCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("QuestionIssueReports_created_by_fkey");
+
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuestionIssueReportModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
+                .HasConstraintName("QuestionIssueReports_modified_by_fkey");
 
             entity.HasOne(d => d.Question).WithMany(p => p.QuestionIssueReports)
                 .HasForeignKey(d => d.QuestionId)
@@ -720,7 +737,7 @@ public partial class QuizVerseDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuestionIssueReports_quiz_id_fkey");
 
-            entity.HasOne(d => d.User).WithMany(p => p.QuestionIssueReports)
+            entity.HasOne(d => d.User).WithMany(p => p.QuestionIssueReportUsers)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuestionIssueReports_user_id_fkey");
