@@ -4,5 +4,5 @@ namespace QuizVerse.Application.Core.Interface;
 
 public interface ILandingPageService
 {
-    public Task<LandingPageData> GetLandingPageDataAsync();
+    Task<LandingPageData> GetLandingPageDataAsync();
 }
