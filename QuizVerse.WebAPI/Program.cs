@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QuizVerse.Application.Core.Interface;
+using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Data;
+using QuizVerse.Infrastructure.Interface;
+using QuizVerse.Infrastructure.Repository;
 using QuizVerse.WebAPI.Helper;
 using QuizVerse.WebAPI.Middlewares;
 
@@ -10,6 +14,9 @@ builder.Services.AddDbContext<QuizVerseDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add services to the container.
+
+builder.Services.AddScoped<ILandingPageService, LandingPageService>();
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 builder.Services.AddControllers();
 
