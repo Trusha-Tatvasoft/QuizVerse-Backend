@@ -12,5 +12,9 @@ namespace QuizVerse.Infrastructure.Common
         {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
         };
+
+        public const string QUIZVERSE_DEFAULT_QUOTE = "Welcome to QuizVerse!";
+
+        public const string FETCH_DATA_MESSAGE = "Data Fetched Successfully";
     }
 }

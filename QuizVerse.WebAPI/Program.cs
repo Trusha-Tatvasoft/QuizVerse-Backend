@@ -1,14 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using QuizVerse.Application.Core.Interface;
-using QuizVerse.Application.Core.Service;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Domain.Data;
-using QuizVerse.Infrastructure.Interface;
-using QuizVerse.Infrastructure.Repository;
+using QuizVerse.WebAPI;
 using QuizVerse.WebAPI.Configurations;
 using QuizVerse.WebAPI.Helper;
 using QuizVerse.WebAPI.Middlewares;
-using QuizVerse.Infrastructure.Common;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,25 +13,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<QuizVerseDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// ------------------ CORS ------------------
+//allow CORS for Angular app
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(SystemConstants.CORS_POLICY_NAME, policy =>
     {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
     });
 });
 
-
-// ------------------ Repositories & Services ------------------
-builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICustomService, CustomService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-
-
-// Add services to the container.
+builder.Services.RegisterDependency();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddControllers();
 
@@ -90,9 +78,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler(options => { });
 
-app.UseHttpsRedirection();
+app.UseCors(SystemConstants.CORS_POLICY_NAME);
 
-app.UseCors("AllowAngularApp");
+app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
