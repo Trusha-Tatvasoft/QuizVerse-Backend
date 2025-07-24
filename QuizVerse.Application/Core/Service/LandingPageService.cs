@@ -28,7 +28,7 @@ public class LandingPageService : ILandingPageService
         long questionAns = await _baseQuestionRepository.CountAsync(u => u.IsDeleted == false);
         string quote = "Welcome to QuizVerse!";
 
-        PlatformConfiguration platformConfiguration = await _platformConfigurationRepository.GetAsync(u => u.ConfigurationName == "Platform Quote");
+        PlatformConfiguration? platformConfiguration = await _platformConfigurationRepository.GetAsync(u => u.ConfigurationName == "Platform Quote");
 
         if (!string.IsNullOrWhiteSpace(platformConfiguration?.Values))
         {
@@ -37,7 +37,7 @@ public class LandingPageService : ILandingPageService
                 using JsonDocument doc = JsonDocument.Parse(platformConfiguration.Values);
                 if (doc.RootElement.TryGetProperty("PlatformQuote", out JsonElement quoteElement))
                 {
-                    quote = quoteElement.GetString() ?? quote;
+                    quote = quoteElement.GetString()! ?? quote;
                 }
             }
             catch

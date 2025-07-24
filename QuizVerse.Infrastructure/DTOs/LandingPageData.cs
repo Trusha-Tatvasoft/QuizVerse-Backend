@@ -5,7 +5,7 @@ namespace QuizVerse.Infrastructure.DTOs;
 public class LandingPageData
 {
     [Required]
-    public string Quote { get; set; }
+    public string Quote { get; set; } = string.Empty;
 
     public long ActivePlayer { get; set; }
 
