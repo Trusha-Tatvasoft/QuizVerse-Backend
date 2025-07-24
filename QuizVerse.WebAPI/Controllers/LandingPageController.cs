@@ -6,16 +6,9 @@ using QuizVerse.Infrastructure.DTOs;
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
-[Route("LandingPage")]
-public class LandingPageController : ControllerBase
+[Route("api/[controller]")]
+public class LandingPageController(ILandingPageService landingPageService) : ControllerBase
 {
-    private readonly ILandingPageService _landingPageService;
-
-    public LandingPageController(ILandingPageService landingPageService)
-    {
-        _landingPageService = landingPageService;
-    }
-
     [HttpGet("GetLandingPageData")]
     public async Task<IActionResult> GetLandingPageData()
     {
@@ -24,7 +17,7 @@ public class LandingPageController : ControllerBase
             Result = true,
             StatusCode = StatusCodes.Status200OK,
             Message = "Landing page data retrieved successfully",
-            Data = await _landingPageService.GetLandingPageDataAsync()
+            Data = await landingPageService.GetLandingPageDataAsync()
         };
 
         return Ok(response);
