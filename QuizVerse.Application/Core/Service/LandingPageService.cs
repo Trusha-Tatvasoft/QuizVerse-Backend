@@ -2,6 +2,7 @@ using System.Text.Json;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
@@ -23,7 +24,7 @@ public class LandingPageService : ILandingPageService
 
     public async Task<LandingPageData> GetLandingPageDataAsync()
     {
-        long activePlayers = await _userRepository.CountAsync(u => u.Status == 0);
+        long activePlayers = await _userRepository.CountAsync(u => u.Status == (int)UserStatus.Active && u.IsDeleted == false);
         long quizCreated = await _quizRepository.CountAsync(u => u.IsDeleted == false);
         long questionAns = await _baseQuestionRepository.CountAsync(u => u.IsDeleted == false);
         string quote = "Welcome to QuizVerse!";
