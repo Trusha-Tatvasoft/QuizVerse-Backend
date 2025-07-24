@@ -5,8 +5,10 @@ using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Data;
 using QuizVerse.Infrastructure.Interface;
 using QuizVerse.Infrastructure.Repository;
+using QuizVerse.WebAPI.Configurations;
 using QuizVerse.WebAPI.Helper;
 using QuizVerse.WebAPI.Middlewares;
+using QuizVerse.Infrastructure.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,12 +18,9 @@ builder.Services.AddDbContext<QuizVerseDbContext>(options =>
 // ------------------ CORS ------------------
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngularApp", policy =>
+    options.AddPolicy(SystemConstants.CORS_POLICY_NAME, policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
-                      .AllowAnyHeader()
-                      .AllowAnyMethod()
-                      .AllowCredentials();
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials();
     });
 });
 
@@ -30,11 +29,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICustomService, CustomService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
 
 // Add services to the container.
-
+builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddControllers();
 
 // for returning validation error in ApiResponse Formate
@@ -67,6 +67,9 @@ app.UseExceptionHandler(options => { });
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowAngularApp");
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

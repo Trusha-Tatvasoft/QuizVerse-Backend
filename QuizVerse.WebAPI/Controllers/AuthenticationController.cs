@@ -8,19 +8,14 @@ namespace QuizVerse.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthenticationController : ControllerBase
+    public class AuthenticationController(IAuthService authService) : ControllerBase
     {
-        public readonly IAuthService _authService;
-
-        public AuthenticationController(IAuthService authService)
-        {
-            _authService = authService;
-        }
+        public readonly IAuthService _authService = authService;
 
         [HttpPost("login", Name = "Login")]
         public async Task<IActionResult> Login(UserLoginDTO userLoginDTO)
         {
-            (User? user, string accessToken, string refreshToken) = await _authService.AuthenticateUser(userLoginDTO);
+            (string accessToken, string refreshToken) = await _authService.AuthenticateUser(userLoginDTO);
             ApiResponse<LoginResponseDTO> response = new()
             {
                 Result = true,
@@ -28,7 +23,26 @@ namespace QuizVerse.WebAPI.Controllers
                 StatusCode = StatusCodes.Status200OK,
                 Data = new LoginResponseDTO
                 {
-                    User = user,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken
+                },
+            };
+
+            return Ok(response);
+        }
+
+
+        [HttpPost("refersh-token", Name = "ValidateAndRegenerateRefreshToken")]
+        public async Task<IActionResult> ValidateAndRegenerateRefreshToken(string refereshToken)
+        {
+            (string accessToken, string refreshToken) = await _authService.ValidateRefreshTokens(refereshToken);
+            ApiResponse<LoginResponseDTO> response = new()
+            {
+                Result = true,
+                Message = "Tokens regenerated successfully",
+                StatusCode = StatusCodes.Status200OK,
+                Data = new LoginResponseDTO
+                {
                     AccessToken = accessToken,
                     RefreshToken = refreshToken
                 },
