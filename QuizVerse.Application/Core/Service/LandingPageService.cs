@@ -1,6 +1,7 @@
 using System.Text.Json;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
@@ -14,12 +15,12 @@ public class LandingPageService(
     IGenericRepository<PlatformConfiguration> platformConfigurationRepository
 ) : ILandingPageService
 {
-    public async Task<LandingPageData> GetLandingPageDataAsync()
+    public async Task<LandingPageData> GetLandingPageData()
     {
         long activePlayers = await userRepository.CountAsync(u => u.Status == (int)UserStatus.Active && u.IsDeleted == false);
         long quizCreated = await quizRepository.CountAsync(u => u.IsDeleted == false);
         long questionAns = await baseQuestionRepository.CountAsync(u => u.IsDeleted == false);
-        string quote = "Welcome to QuizVerse!";
+        string quote = Constants.QUIZVERSE_DEFAULT_QUOTE;
 
         PlatformConfiguration? platformConfiguration = await platformConfigurationRepository.GetAsync(u => u.ConfigurationName == "Platform Quote");
 
