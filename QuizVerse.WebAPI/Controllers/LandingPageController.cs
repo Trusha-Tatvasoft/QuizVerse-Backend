@@ -6,7 +6,7 @@ using QuizVerse.Infrastructure.DTOs;
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
-[Route("landing-page")]
+[Route("LandingPage")]
 public class LandingPageController : ControllerBase
 {
     private readonly ILandingPageService _landingPageService;
@@ -16,7 +16,7 @@ public class LandingPageController : ControllerBase
         _landingPageService = landingPageService;
     }
 
-    [HttpGet(Name = "GetLandingPageData")]
+    [HttpGet("GetLandingPageData")]
     public async Task<IActionResult> GetLandingPageData()
     {
         ApiResponse<LandingPageData> response = new ApiResponse<LandingPageData>

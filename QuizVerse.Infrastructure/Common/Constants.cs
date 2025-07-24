@@ -12,5 +12,7 @@ namespace QuizVerse.Infrastructure.Common
         {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
         };
+
+        public static readonly string AngularBaseUrl = "http://localhost:4200";
     }
 }
