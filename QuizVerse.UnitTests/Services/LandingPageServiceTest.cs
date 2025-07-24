@@ -1,5 +1,3 @@
-namespace QuizVerse.UnitTests.Services;
-
 using System.Text.Json;
 using Moq;
 using QuizVerse.Application.Core.Service;
@@ -7,8 +5,9 @@ using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.Interface;
 using Xunit;
-using System.Threading.Tasks;
 using System.Linq.Expressions;
+
+namespace QuizVerse.UnitTests.Services;
 
 public class LandingPageServiceTests
 {
