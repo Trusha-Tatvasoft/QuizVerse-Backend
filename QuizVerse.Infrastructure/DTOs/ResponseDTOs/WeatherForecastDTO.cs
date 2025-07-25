@@ -1,4 +1,4 @@
-﻿namespace QuizVerse.Infrastructure.DTOs
+﻿namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs
 {
     public class WeatherForecastDTO
     {

@@ -5,7 +5,7 @@ using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 
@@ -110,7 +110,8 @@ namespace QuizVerse.Application.Core.Service
                 throw new ArgumentException(Constants.INVALID_USER_ID_MESSAGE);
             }
 
-            User? user = await _genericUserRepository.GetAsync(u => u.Id == userId && !u.IsDeleted)
+            User? user = await _genericUserRepository.GetAsync(u => u.Id == userId && !u.IsDeleted,
+                query => query.Include(u => u.Role))
                 ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
 
             if (user.Status != (int)UserStatus.Active)

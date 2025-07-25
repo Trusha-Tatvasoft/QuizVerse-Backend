@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.ApiResponse;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.WebAPI.Controllers
 {

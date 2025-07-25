@@ -2,7 +2,7 @@ using System.Text.Json;
 using Moq;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 using Xunit;
 using System.Linq.Expressions;
