@@ -1,4 +1,4 @@
-using QuizVerse.Application.Core.Interface;
+using QuizVerse.Application.Core.Service;
 using Xunit;
 
 namespace QuizVerse.UnitTests.Services
