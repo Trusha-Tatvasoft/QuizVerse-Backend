@@ -6,4 +6,11 @@ namespace QuizVerse.Infrastructure.Enums
         Inactive = 2,
         Suspended = 3,
     }
+
+    public enum UserRoles
+    {
+        Admin = 1,
+        Player = 2
+    }
+
 }

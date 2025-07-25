@@ -42,7 +42,7 @@ public class LandingPageServiceTests
         var service = CreateService();
 
         // Act
-        LandingPageData result = await service.GetLandingPageDataAsync();
+        LandingPageData result = await service.GetLandingPageData();
 
         // Assert
         Assert.Equal("Test Quote from Config", result.Quote);
@@ -68,7 +68,7 @@ public class LandingPageServiceTests
         var service = CreateService();
 
         // Act
-        var result = await service.GetLandingPageDataAsync();
+        var result = await service.GetLandingPageData();
 
         // Assert
         Assert.Equal("Welcome to QuizVerse!", result.Quote);
@@ -94,7 +94,7 @@ public class LandingPageServiceTests
         var service = CreateService();
 
         // Act
-        var result = await service.GetLandingPageDataAsync();
+        var result = await service.GetLandingPageData();
 
         // Assert
         Assert.Equal("Welcome to QuizVerse!", result.Quote);
