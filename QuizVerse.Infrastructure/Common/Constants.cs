@@ -49,5 +49,8 @@ namespace QuizVerse.Infrastructure.Common
 
         public const string USER_SUSPENDED_MESSAGE = "You have been suspended. Remaining suspension time: {0} days and {1} hours.";
 
+        public const string USER_LOGIN_SUCCESS_MESSAGE = "Logged in successfully.";
+
+        public const string VALIDATE_AND_REGENERATE_REFERESH_TOKEN_SUCCESS_MESSAGE = "Tokens regenerated successfully.";
     }
 }

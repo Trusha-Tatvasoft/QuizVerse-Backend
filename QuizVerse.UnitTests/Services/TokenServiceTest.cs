@@ -39,14 +39,14 @@ namespace QuizVerse.UnitTests.Services
             };
 
         [Fact]
-        public void GenerateAccessTokenAsync_Returns_ValidToken()
+        public void GenerateAccessToken_Returns_ValidToken()
         {
             // Arrange
             var service = CreateService();
             var user = CreateTestUser();
 
             // Act
-            var token = service.GenerateAccessTokenAsync(user);
+            var token = service.GenerateAccessToken(user);
 
             // Assert
             Assert.False(string.IsNullOrEmpty(token));
@@ -63,7 +63,7 @@ namespace QuizVerse.UnitTests.Services
         }
 
         [Fact]
-        public void GenerateRefreshTokenAsync_Returns_ValidToken_WithRememberMe()
+        public void GenerateRefreshToken_Returns_ValidToken_WithRememberMe()
         {
             // Arrange
             var service = CreateService();
@@ -71,7 +71,7 @@ namespace QuizVerse.UnitTests.Services
             bool rememberMe = true;
 
             // Act
-            var token = service.GenerateRefreshTokenAsync(user, rememberMe);
+            var token = service.GenerateRefreshToken(user, rememberMe);
 
             // Assert
             Assert.False(string.IsNullOrEmpty(token));
@@ -92,7 +92,7 @@ namespace QuizVerse.UnitTests.Services
             // Arrange
             var service = CreateService();
             var user = CreateTestUser();
-            var token = service.GenerateAccessTokenAsync(user);
+            var token = service.GenerateAccessToken(user);
 
             // Act
             var principal = service.ValidateToken(token);
@@ -123,7 +123,7 @@ namespace QuizVerse.UnitTests.Services
             // Arrange
             var service = CreateService();
             var user = CreateTestUser();
-            var token = service.GenerateRefreshTokenAsync(user, true);
+            var token = service.GenerateRefreshToken(user, true);
 
             var principal = service.ValidateToken(token);
 
@@ -140,7 +140,7 @@ namespace QuizVerse.UnitTests.Services
             // Arrange
             var service = CreateService();
             var user = CreateTestUser();
-            var token = service.GenerateAccessTokenAsync(user);
+            var token = service.GenerateAccessToken(user);
             var principal = service.ValidateToken(token);
 
             // Act
@@ -156,7 +156,7 @@ namespace QuizVerse.UnitTests.Services
             // Arrange
             var service = CreateService();
             var user = CreateTestUser();
-            var token = service.GenerateAccessTokenAsync(user);
+            var token = service.GenerateAccessToken(user);
 
             // Act
             var expiration = service.GetTokenExpiration(token);
@@ -166,13 +166,13 @@ namespace QuizVerse.UnitTests.Services
         }
 
         [Fact]
-        public void GenerateAccessTokenAsync_Throws_WhenUserIsNull()
+        public void GenerateAccessToken_Throws_WhenUserIsNull()
         {
             // Arrange
             var service = CreateService();
 
             // Act & Assert
-            var ex = Assert.Throws<ArgumentException>(() => service.GenerateAccessTokenAsync(null));
+            var ex = Assert.Throws<ArgumentException>(() => service.GenerateAccessToken(null));
             Assert.Equal(Constants.USER_NOT_FOUND_MESSAGE, ex.Message);
         }
 

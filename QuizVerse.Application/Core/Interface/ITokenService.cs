@@ -5,9 +5,9 @@ namespace QuizVerse.Application.Core.Interface
 {
     public interface ITokenService
     {
-        string GenerateAccessTokenAsync(User? user);
+        string GenerateAccessToken(User? user);
 
-        string GenerateRefreshTokenAsync(User user, bool rememberMe);
+        string GenerateRefreshToken(User user, bool rememberMe);
 
         ClaimsPrincipal ValidateToken(string token, bool validateLifetime = true);
 

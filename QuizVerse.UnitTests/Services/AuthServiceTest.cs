@@ -53,9 +53,9 @@ namespace QuizVerse.UnitTests.Services
             _customServiceMock.Setup(s => s.VerifyPassword(userDto.Password, user.Password))
                 .Returns(true);
 
-            _tokenServiceMock.Setup(t => t.GenerateAccessTokenAsync(user))
+            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user))
                 .Returns("mock_access_token");
-            _tokenServiceMock.Setup(t => t.GenerateRefreshTokenAsync(user, userDto.RememberMe))
+            _tokenServiceMock.Setup(t => t.GenerateRefreshToken(user, userDto.RememberMe))
                 .Returns("mock_refresh_token");
 
             var service = CreateService();

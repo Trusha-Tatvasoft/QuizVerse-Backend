@@ -11,19 +11,8 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService : IAuthService
+    public class AuthService(ITokenService tokenService, ICustomService _customService, IGenericRepository<User> _genericUserRepository) : IAuthService
     {
-        private readonly ITokenService _tokenService;
-        private readonly ICustomService _customService;
-        private readonly IGenericRepository<User> _genericUserRepository;
-
-        public AuthService(ITokenService tokenService, ICustomService customService, IGenericRepository<User> genericUserRepository)
-        {
-            _tokenService = tokenService;
-            _customService = customService;
-            _genericUserRepository = genericUserRepository;
-        }
-
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
         {
             if (userLoginDto == null || string.IsNullOrEmpty(userLoginDto.Email) || string.IsNullOrEmpty(userLoginDto.Password))
@@ -66,8 +55,8 @@ namespace QuizVerse.Application.Core.Service
                 throw new ArgumentException(Constants.INVALID_PASSWORD_MESSAGE);
             }
 
-            string accessToken = _tokenService.GenerateAccessTokenAsync(user);
-            string refreshToken = _tokenService.GenerateRefreshTokenAsync(user, userLoginDto.RememberMe);
+            string accessToken = tokenService.GenerateAccessToken(user);
+            string refreshToken = tokenService.GenerateRefreshToken(user, userLoginDto.RememberMe);
             if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
             {
                 throw new Exception(Constants.FAILED_TOKEN_GENERATION_MESSAGE);
@@ -91,11 +80,11 @@ namespace QuizVerse.Application.Core.Service
 
             try
             {
-                principal = _tokenService.ValidateToken(refreshToken, validateLifetime: true);
+                principal = tokenService.ValidateToken(refreshToken, validateLifetime: true);
             }
             catch (AppException ex) when (ex.StatusCode == StatusCodes.Status401Unauthorized && ex.Message.Contains("expired"))
             {
-                principal = _tokenService.ValidateToken(refreshToken, validateLifetime: false);
+                principal = tokenService.ValidateToken(refreshToken, validateLifetime: false);
                 isExpired = true;
             }
 
@@ -104,7 +93,7 @@ namespace QuizVerse.Application.Core.Service
                 throw new ArgumentException(Constants.INVALID_DATA_MESSAGE);
             }
 
-            var userIdStr = _tokenService.GetUserIdFromToken(principal);
+            var userIdStr = tokenService.GetUserIdFromToken(principal);
             if (!int.TryParse(userIdStr, out int userId))
             {
                 throw new ArgumentException(Constants.INVALID_USER_ID_MESSAGE);
@@ -137,15 +126,15 @@ namespace QuizVerse.Application.Core.Service
 
             if (isExpired)
             {
-                bool rememberMe = _tokenService.IsRememberMeEnabled(principal);
+                bool rememberMe = tokenService.IsRememberMeEnabled(principal);
                 if (!rememberMe)
                 {
                     throw new AppException(Constants.EXPIRED_LOGIN_SESSION_MESSAGE, StatusCodes.Status401Unauthorized);
                 }
             }
 
-            string newAccessToken = _tokenService.GenerateAccessTokenAsync(user);
-            string newRefreshToken = _tokenService.GenerateRefreshTokenAsync(user, _tokenService.IsRememberMeEnabled(principal));
+            string newAccessToken = tokenService.GenerateAccessToken(user);
+            string newRefreshToken = tokenService.GenerateRefreshToken(user, tokenService.IsRememberMeEnabled(principal));
 
             if (string.IsNullOrEmpty(newAccessToken) || string.IsNullOrEmpty(newRefreshToken))
             {

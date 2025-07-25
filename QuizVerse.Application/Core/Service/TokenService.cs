@@ -12,25 +12,14 @@ using QuizVerse.Infrastructure.Common;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class TokenService : ITokenService
+    public class TokenService(IConfiguration _configuration) : ITokenService
     {
-        private readonly IConfiguration _configuration;
-
-        public TokenService(IConfiguration configuration)
-        {
-            _configuration = configuration;
-        }
-
-        public string GenerateAccessTokenAsync(User? user)
+        public string GenerateAccessToken(User? user)
         {
             if (user == null)
             {
                 throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
             }
-
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration[SystemConstants.JWT_CONFIGURATION_KEY] ?? throw new InvalidOperationException("JWT Key is not configured.")));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
             {
@@ -39,37 +28,40 @@ namespace QuizVerse.Application.Core.Service
                 new Claim(ClaimTypes.Role, user.Role.Name.ToString())
             };
 
-            var token = new JwtSecurityToken(
-                issuer: _configuration[SystemConstants.JWT_CONFIGURATION_ISSUER],
-                audience: _configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(30),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            // ⬇️ Use helper
+            return CreateToken(claims, DateTime.UtcNow.AddMinutes(30));
         }
 
-        public string GenerateRefreshTokenAsync(User user, bool rememberMe)
+        public string GenerateRefreshToken(User user, bool rememberMe)
         {
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration[SystemConstants.JWT_CONFIGURATION_KEY] ?? throw new InvalidOperationException("JWT Key is not configured.")));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.UserData, user.Id.ToString()),
                 new Claim(SystemConstants.REMEMBER_ME_CLAIM_NAME, rememberMe.ToString())
             };
+
+            // ⬇️ Use helper
+            return CreateToken(claims, DateTime.UtcNow.AddDays(7));
+        }
+
+        // ✅ Private reusable method
+        private string CreateToken(IEnumerable<Claim> claims, DateTime expires)
+        {
+            var keyString = _configuration[SystemConstants.JWT_CONFIGURATION_KEY] ?? throw new InvalidOperationException("JWT Key is not configured.");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
             var token = new JwtSecurityToken(
                 issuer: _configuration[SystemConstants.JWT_CONFIGURATION_ISSUER],
                 audience: _configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE],
                 claims: claims,
-                expires: DateTime.UtcNow.AddDays(7),
+                expires: expires,
                 signingCredentials: creds
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
 
         public ClaimsPrincipal ValidateToken(string token, bool validateLifetime = true)
         {

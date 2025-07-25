@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
-using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.ApiResponse;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
@@ -20,7 +20,7 @@ namespace QuizVerse.WebAPI.Controllers
             ApiResponse<LoginResponseDTO> response = new()
             {
                 Result = true,
-                Message = "Logged in successfully",
+                Message = Constants.USER_LOGIN_SUCCESS_MESSAGE,
                 StatusCode = StatusCodes.Status200OK,
                 Data = new LoginResponseDTO
                 {
@@ -40,7 +40,7 @@ namespace QuizVerse.WebAPI.Controllers
             ApiResponse<LoginResponseDTO> response = new()
             {
                 Result = true,
-                Message = "Tokens regenerated successfully",
+                Message = Constants.VALIDATE_AND_REGENERATE_REFERESH_TOKEN_SUCCESS_MESSAGE,
                 StatusCode = StatusCodes.Status200OK,
                 Data = new LoginResponseDTO
                 {
