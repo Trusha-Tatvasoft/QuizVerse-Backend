@@ -2,7 +2,7 @@ using System.Text.Json;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 
@@ -22,7 +22,7 @@ public class LandingPageService(
         long questionAns = await baseQuestionRepository.CountAsync(u => u.IsDeleted == false);
         string quote = Constants.QUIZVERSE_DEFAULT_QUOTE;
 
-        PlatformConfiguration? platformConfiguration = await platformConfigurationRepository.GetAsync(u => u.ConfigurationName == "Platform Quote");
+        PlatformConfiguration? platformConfiguration = await platformConfigurationRepository.GetAsync(u => u.ConfigurationName == "Platform Quote", null);
 
         if (!string.IsNullOrWhiteSpace(platformConfiguration?.Values))
         {

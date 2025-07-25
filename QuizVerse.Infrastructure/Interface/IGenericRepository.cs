@@ -6,7 +6,7 @@ public interface IGenericRepository<T> where T : class
 {
     Task<bool> Exists(Expression<Func<T, bool>> expression);
 
-    Task<T?> GetAsync(Expression<Func<T, bool>> expression);
+    Task<T?> GetAsync(Expression<Func<T, bool>> expression, Func<IQueryable<T>, IQueryable<T>>? includes = null);
 
     Task<List<T>> GetAllAsync();
 
