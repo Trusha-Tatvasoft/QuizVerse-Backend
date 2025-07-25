@@ -1,8 +1,9 @@
 using System.Security.Claims;
-using BCrypt.Net;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.Enums;
@@ -16,7 +17,7 @@ namespace QuizVerse.Application.Core.Service
         private readonly ICustomService _customService;
         private readonly IGenericRepository<User> _genericUserRepository;
 
-        public AuthService(ITokenService tokenService,ICustomService customService, IGenericRepository<User> genericUserRepository)
+        public AuthService(ITokenService tokenService, ICustomService customService, IGenericRepository<User> genericUserRepository)
         {
             _tokenService = tokenService;
             _customService = customService;
@@ -27,28 +28,49 @@ namespace QuizVerse.Application.Core.Service
         {
             if (userLoginDto == null || string.IsNullOrEmpty(userLoginDto.Email) || string.IsNullOrEmpty(userLoginDto.Password))
             {
-                throw new ArgumentException("Empty User Login Details.");
+                throw new ArgumentException(Constants.INVALID_LOGIN_CREDENTIALS_MESSAGE);
             }
 
-            User? user = await _genericUserRepository.GetAsync(u => u.Email.ToLower() == userLoginDto.Email.ToLower() && !u.IsDeleted) ?? throw new ArgumentException("User not found.");
+            User? user = await _genericUserRepository.GetAsync(u => u.Email.ToLower() == userLoginDto.Email.ToLower() && !u.IsDeleted,
+    query => query.Include(u => u.Role)) ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
 
             if (user.Status != (int)UserStatus.Active)
             {
-                throw new ArgumentException("User is not active. PLease Ask Admin to Activate your Account.");
-            }
+                if (user.Status == (int)UserStatus.Inactive)
+                {
+                    throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
+                }
+                else
+                {
+                    DateTime? ModifiedDate = user.ModifiedDate;
+                    DateTime currentTime = DateTime.UtcNow;
+                    TimeSpan elapsed = currentTime - (ModifiedDate ?? throw new ArgumentException(Constants.NULL_MODIFIED_DATE_MESSAGE));
 
-            /* Check if first time login user then send to register user page (remain do after the reset-password gets completed)*/
+                    TimeSpan totalDuration = TimeSpan.FromDays(30);
+                    TimeSpan remaining = totalDuration - elapsed;
+                    if (remaining > TimeSpan.Zero)
+                    {
+                        int remainingDays = remaining.Days;
+                        int remainingHours = remaining.Hours;
+                        throw new ArgumentException($"You have been suspended. Remaining suspension time: {remainingDays} days and {remainingHours} hours.");
+                    }
+                    else
+                    {
+                        user.Status = (int)UserStatus.Active;
+                    }
+                }
+            }
 
             if (!_customService.VerifyPassword(userLoginDto.Password, user.Password))
             {
-                throw new ArgumentException("Invalid password.");
+                throw new ArgumentException(Constants.INVALID_PASSWORD_MESSAGE);
             }
 
             string accessToken = _tokenService.GenerateAccessTokenAsync(user);
             string refreshToken = _tokenService.GenerateRefreshTokenAsync(user, userLoginDto.RememberMe);
             if (string.IsNullOrEmpty(accessToken) || string.IsNullOrEmpty(refreshToken))
             {
-                throw new Exception("Failed to generate tokens.");
+                throw new Exception(Constants.FAILED_TOKEN_GENERATION_MESSAGE);
             }
             user.LastLogin = DateTime.UtcNow;
 
@@ -61,7 +83,7 @@ namespace QuizVerse.Application.Core.Service
         {
             if (string.IsNullOrEmpty(refreshToken))
             {
-                throw new ArgumentException("Refresh token is required.");
+                throw new ArgumentException(Constants.REFRESH_TOKEN_REQUIRED_MESSAGE);
             }
 
             ClaimsPrincipal principal;
@@ -79,21 +101,37 @@ namespace QuizVerse.Application.Core.Service
 
             if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
             {
-                throw new ArgumentException("Invalid refresh token.");
+                throw new ArgumentException(Constants.INVALID_DATA_MESSAGE);
             }
 
             var userIdStr = _tokenService.GetUserIdFromToken(principal);
             if (!int.TryParse(userIdStr, out int userId))
             {
-                throw new ArgumentException("Invalid user ID in refresh token.");
+                throw new ArgumentException(Constants.INVALID_USER_ID_MESSAGE);
             }
 
             User? user = await _genericUserRepository.GetAsync(u => u.Id == userId && !u.IsDeleted)
-                ?? throw new ArgumentException("User not found.");
+                ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
 
             if (user.Status != (int)UserStatus.Active)
             {
-                throw new ArgumentException("User is not active. Please contact the administrator.");
+                if (user.Status == (int)UserStatus.Inactive)
+                {
+                    throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
+                }
+                else
+                {
+                    DateTime? ModifiedDate = user.ModifiedDate;
+                    DateTime currentTime = DateTime.UtcNow;
+                    TimeSpan elapsed = currentTime - (ModifiedDate ?? throw new ArgumentException(Constants.NULL_MODIFIED_DATE_MESSAGE));
+
+                    TimeSpan totalDuration = TimeSpan.FromDays(30);
+                    TimeSpan remaining = totalDuration - elapsed;
+
+                    int remainingDays = remaining.Days;
+                    int remainingHours = remaining.Hours;
+                    throw new ArgumentException(string.Format(Constants.USER_SUSPENDED_MESSAGE, remainingDays, remainingHours));
+                }
             }
 
             if (isExpired)
@@ -101,7 +139,7 @@ namespace QuizVerse.Application.Core.Service
                 bool rememberMe = _tokenService.IsRememberMeEnabled(principal);
                 if (!rememberMe)
                 {
-                    throw new AppException("Your Login Session has expired. Please login again.", StatusCodes.Status401Unauthorized);
+                    throw new AppException(Constants.EXPIRED_LOGIN_SESSION_MESSAGE, StatusCodes.Status401Unauthorized);
                 }
             }
 
@@ -110,7 +148,7 @@ namespace QuizVerse.Application.Core.Service
 
             if (string.IsNullOrEmpty(newAccessToken) || string.IsNullOrEmpty(newRefreshToken))
             {
-                throw new Exception("Failed to generate new tokens.");
+                throw new Exception(Constants.FAILED_TOKEN_GENERATION_MESSAGE);
             }
 
             user.LastLogin = DateTime.UtcNow;

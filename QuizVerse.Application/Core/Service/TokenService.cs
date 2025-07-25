@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using Microsoft.AspNetCore.Http;
+using QuizVerse.Infrastructure.Common;
 
 
 namespace QuizVerse.Application.Core.Service
@@ -24,23 +25,23 @@ namespace QuizVerse.Application.Core.Service
         {
             if (user == null)
             {
-                throw new ArgumentException("User Not Found.");
+                throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
             }
 
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.")));
+                Encoding.UTF8.GetBytes(_configuration[SystemConstants.JWT_CONFIGURATION_KEY] ?? throw new InvalidOperationException("JWT Key is not configured.")));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.UserData, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.RoleId.ToString())
+                new Claim(ClaimTypes.Role, user.Role.Name.ToString())
             };
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["JwtSettings:Issuer"],
-                audience: _configuration["JwtSettings:Audience"],
+                issuer: _configuration[SystemConstants.JWT_CONFIGURATION_ISSUER],
+                audience: _configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE],
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(30),
                 signingCredentials: creds
@@ -52,16 +53,16 @@ namespace QuizVerse.Application.Core.Service
         public string GenerateRefreshTokenAsync(User user, bool rememberMe)
         {
             var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.")));
+                Encoding.UTF8.GetBytes(_configuration[SystemConstants.JWT_CONFIGURATION_KEY] ?? throw new InvalidOperationException("JWT Key is not configured.")));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.UserData, user.Id.ToString()),
-                new Claim("remember_me", rememberMe.ToString())
+                new Claim(SystemConstants.REMEMBER_ME_CLAIM_NAME, rememberMe.ToString())
             };
             var token = new JwtSecurityToken(
-                issuer: _configuration["JwtSettings:Issuer"],
-                audience: _configuration["JwtSettings:Audience"],
+                issuer: _configuration[SystemConstants.JWT_CONFIGURATION_ISSUER],
+                audience: _configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE],
                 claims: claims,
                 expires: DateTime.UtcNow.AddDays(7),
                 signingCredentials: creds
@@ -74,13 +75,13 @@ namespace QuizVerse.Application.Core.Service
         {
             if (string.IsNullOrWhiteSpace(token))
             {
-                throw new ArgumentException("Token must not be null or empty.");
+                throw new ArgumentException(Constants.EMPTY_TOKEN_MESSAGE);
             }
 
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var key = Encoding.UTF8.GetBytes(
-                _configuration["JwtSettings:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.")
+                _configuration[SystemConstants.JWT_CONFIGURATION_KEY] ?? throw new InvalidOperationException(Constants.JWT_KEY_ERROR_MESSAGE)
             );
 
             var validationParameters = new TokenValidationParameters
@@ -88,9 +89,9 @@ namespace QuizVerse.Application.Core.Service
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ValidateIssuer = true,
-                ValidIssuer = _configuration["JwtSettings:Issuer"],
+                ValidIssuer = _configuration[SystemConstants.JWT_CONFIGURATION_ISSUER],
                 ValidateAudience = true,
-                ValidAudience = _configuration["JwtSettings:Audience"],
+                ValidAudience = _configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE],
                 ValidateLifetime = validateLifetime,
                 ClockSkew = TimeSpan.Zero
             };
@@ -102,36 +103,36 @@ namespace QuizVerse.Application.Core.Service
                 if (validatedToken is not JwtSecurityToken jwtToken ||
                     !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    throw new AppException("Invalid token.");
+                    throw new AppException(Constants.INVALID_TOKEN_MESSAGE);
                 }
 
                 return principal;
             }
             catch (SecurityTokenExpiredException)
             {
-                throw new AppException("Token has expired.", StatusCodes.Status401Unauthorized);
+                throw new AppException(Constants.EXPIRED_TOKEN_MESSAGE, StatusCodes.Status401Unauthorized);
             }
             catch (SecurityTokenException)
             {
-                throw new AppException("Invalid token.", StatusCodes.Status401Unauthorized);
+                throw new AppException(Constants.INVALID_TOKEN_MESSAGE, StatusCodes.Status401Unauthorized);
             }
             catch (ArgumentException)
             {
-                throw new AppException("Invalid token format.", StatusCodes.Status401Unauthorized);
+                throw new AppException(Constants.INVALID_TOKEN_FORMAT_MESSAGE, StatusCodes.Status401Unauthorized);
             }
             catch (FormatException)
             {
-                throw new AppException("Invalid token format.", StatusCodes.Status401Unauthorized);
+                throw new AppException(Constants.INVALID_TOKEN_FORMAT_MESSAGE, StatusCodes.Status401Unauthorized);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new AppException("An error occurred while validating the token.", StatusCodes.Status500InternalServerError);
+                throw new AppException(ex.Message, StatusCodes.Status500InternalServerError);
             }
         }
 
         public bool IsRememberMeEnabled(ClaimsPrincipal principal)
         {
-            var rememberMeClaim = principal.FindFirst("remember_me")?.Value;
+            var rememberMeClaim = principal.FindFirst(SystemConstants.REMEMBER_ME_CLAIM_NAME)?.Value;
             return bool.TryParse(rememberMeClaim, out var rememberMe) && rememberMe;
         }
 

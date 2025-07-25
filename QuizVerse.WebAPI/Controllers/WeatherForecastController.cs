@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers
 {
     [ApiController]
+    [Authorize(Roles = nameof(UserRole.Admin))]
     [Route("weather-forecast")]
     public class WeatherForecastController : ControllerBase
     {

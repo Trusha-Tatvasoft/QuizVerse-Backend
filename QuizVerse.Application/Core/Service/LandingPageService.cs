@@ -22,7 +22,7 @@ public class LandingPageService(
         long questionAns = await baseQuestionRepository.CountAsync(u => u.IsDeleted == false);
         string quote = Constants.QUIZVERSE_DEFAULT_QUOTE;
 
-        PlatformConfiguration? platformConfiguration = await platformConfigurationRepository.GetAsync(u => u.ConfigurationName == "Platform Quote");
+        PlatformConfiguration? platformConfiguration = await platformConfigurationRepository.GetAsync(u => u.ConfigurationName == "Platform Quote", null);
 
         if (!string.IsNullOrWhiteSpace(platformConfiguration?.Values))
         {

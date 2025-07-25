@@ -11,7 +11,7 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<QuizVerseDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString(SystemConstants.DB_CONNECTION_STRING_NAME)));
 
 //allow CORS for Angular app
 builder.Services.AddCors(options =>
@@ -42,16 +42,16 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "QuizVerse API", Version = "v1" });
+    c.SwaggerDoc(SystemConstants.SYSTEM_VERSION, new OpenApiInfo { Title = SystemConstants.SWAGGER_PAGE_TITLE, Version = SystemConstants.SYSTEM_VERSION });
 
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    c.AddSecurityDefinition(SystemConstants.SCEURITY_SCHEME, new OpenApiSecurityScheme
     {
-        Name = "Authorization",
+        Name = SystemConstants.JWT_ACCESS_TOKEN_HEADER_NAME,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
+        Scheme = SystemConstants.SCEURITY_SCHEME,
+        BearerFormat = SystemConstants.BEARER_FORMAT,
         In = ParameterLocation.Header,
-        Description = @"Bearer token."
+        Description = SystemConstants.HEADER_TOKEN_DESCRIPTION
     });
 
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -59,7 +59,7 @@ builder.Services.AddSwaggerGen(c =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = SystemConstants.SCEURITY_SCHEME }
             },
             new List<string>()
         }

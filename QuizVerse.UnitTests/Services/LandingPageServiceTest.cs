@@ -36,13 +36,14 @@ public class LandingPageServiceTests
                          .ReturnsAsync(300);
 
         var configJson = JsonSerializer.Serialize(new { PlatformQuote = "Test Quote from Config" });
-        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>()))
-                               .ReturnsAsync(new PlatformConfiguration { Values = configJson });
+        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>(), null))
+                                .ReturnsAsync(new PlatformConfiguration { Values = configJson });
+
 
         var service = CreateService();
 
         // Act
-        LandingPageData result = await service.GetLandingPageDataAsync();
+        LandingPageData result = await service.GetLandingPageData();
 
         // Assert
         Assert.Equal("Test Quote from Config", result.Quote);
@@ -62,13 +63,13 @@ public class LandingPageServiceTests
         _questionRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<BaseQuestion, bool>>>()))
                          .ReturnsAsync(3);
 
-        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>()))
+        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>(), null))
                                .ReturnsAsync((PlatformConfiguration?)null);
 
         var service = CreateService();
 
         // Act
-        var result = await service.GetLandingPageDataAsync();
+        var result = await service.GetLandingPageData();
 
         // Assert
         Assert.Equal("Welcome to QuizVerse!", result.Quote);
@@ -88,13 +89,13 @@ public class LandingPageServiceTests
         _questionRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<BaseQuestion, bool>>>()))
                          .ReturnsAsync(30);
 
-        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>()))
+        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>(), null))
                                .ReturnsAsync(new PlatformConfiguration { Values = "invalid json" });
 
         var service = CreateService();
 
         // Act
-        var result = await service.GetLandingPageDataAsync();
+        var result = await service.GetLandingPageData();
 
         // Assert
         Assert.Equal("Welcome to QuizVerse!", result.Quote);
