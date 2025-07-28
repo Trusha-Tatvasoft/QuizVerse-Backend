@@ -27,7 +27,7 @@ namespace QuizVerse.Application.Core.Service
                 new Claim(ClaimTypes.Role, user.Role.Name)
             };
 
-            var expiryMinutesString = _configuration["AccessTokenExpiryMinutes"] ?? throw new InvalidOperationException("AccessTokenExpiryMinutes is not configured.");
+            var expiryMinutesString = _configuration["AccessTokenExpiryMinutes"] ?? throw new InvalidOperationException(Constants.ACCESS_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE);
             return CreateToken(claims, DateTime.UtcNow.AddMinutes(double.Parse(expiryMinutesString)));
         }
 
@@ -38,13 +38,13 @@ namespace QuizVerse.Application.Core.Service
                 new Claim(ClaimTypes.UserData, user.Id.ToString()),
                 new Claim(SystemConstants.REMEMBER_ME_CLAIM_NAME, rememberMe.ToString())
             };
-            var expiryDaysString = _configuration["RefreshTokenExpiryDays"] ?? throw new InvalidOperationException("RefreshTokenExpiryDays is not configured.");
+            var expiryDaysString = _configuration["RefreshTokenExpiryDays"] ?? throw new InvalidOperationException(Constants.REFRESH_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE);
             return CreateToken(claims, DateTime.UtcNow.AddDays(double.Parse(expiryDaysString)));
         }
 
         private string CreateToken(IEnumerable<Claim> claims, DateTime expires)
         {
-            var keyString = _configuration["JwtSettings:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.");
+            var keyString = _configuration["JwtSettings:Key"] ?? throw new InvalidOperationException(Constants.JWT_KEY_ERROR_MESSAGE);
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

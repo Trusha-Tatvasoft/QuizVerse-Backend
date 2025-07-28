@@ -51,5 +51,8 @@ namespace QuizVerse.Infrastructure.Common
         public const string USER_LOGIN_SUCCESS_MESSAGE = "Logged in successfully.";
 
         public const string VALIDATE_AND_REGENERATE_REFERESH_TOKEN_SUCCESS_MESSAGE = "Tokens regenerated successfully.";
+
+        public const string ACCESS_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE = "AccessTokenExpiryMinutes is not configured.";
+        public const string REFRESH_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE = "RefreshTokenExpiryDays is not configured.";
     }
 }
