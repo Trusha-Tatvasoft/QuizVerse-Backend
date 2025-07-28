@@ -23,7 +23,6 @@ namespace QuizVerse.Application.Core.Service
             User? user = await _genericUserRepository.GetAsync(u => u.Email.ToLower() == userLoginDto.Email.ToLower() && !u.IsDeleted,
     query => query.Include(u => u.Role)) ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
 
-
             if (user.Status == (int)UserStatus.Inactive)
             {
                 throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
@@ -86,7 +85,7 @@ namespace QuizVerse.Application.Core.Service
             {
                 throw new ArgumentException(Constants.INVALID_DATA_MESSAGE);
             }
-            
+
             var userIdStr = tokenService.GetUserIdFromToken(principal);
             if (!int.TryParse(userIdStr, out int userId))
             {
@@ -140,7 +139,6 @@ namespace QuizVerse.Application.Core.Service
 
             return (newAccessToken, newRefreshToken);
         }
-
 
         private static TimeSpan CalculateSuspensionRemainingTime(User user)
         {

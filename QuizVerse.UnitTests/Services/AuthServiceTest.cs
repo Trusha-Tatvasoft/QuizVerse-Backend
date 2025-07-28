@@ -245,7 +245,6 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal(Constants.USER_NOT_FOUND_MESSAGE, ex.Message);
         }
 
-
         [Fact]
         public async Task ValidateRefreshTokens_Throws_WhenUserInactive()
         {
@@ -280,7 +279,6 @@ namespace QuizVerse.UnitTests.Services
             Assert.Contains("You have been suspended", ex.Message);
         }
 
-
         [Fact]
         public async Task ValidateRefreshTokens_Throws_WhenExpiredAndNotRemembered()
         {
@@ -302,7 +300,6 @@ namespace QuizVerse.UnitTests.Services
             var ex = await Assert.ThrowsAsync<AppException>(() => service.ValidateRefreshTokens("token"));
             Assert.Equal(Constants.EXPIRED_LOGIN_SESSION_MESSAGE, ex.Message);
         }
-
 
         [Fact]
         public async Task ValidateRefreshTokens_ReturnsNewTokens_WhenValid()
@@ -332,6 +329,5 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal("new_access", result.accessToken);
             Assert.Equal("new_refresh", result.refreshToken);
         }
-
     }
 }

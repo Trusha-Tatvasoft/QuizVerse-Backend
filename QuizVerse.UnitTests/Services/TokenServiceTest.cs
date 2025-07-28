@@ -18,15 +18,18 @@ namespace QuizVerse.UnitTests.Services
         public TokenServiceTests()
         {
             var inMemorySettings = new Dictionary<string, string?> {
-                { "JwtSettings:Key", "super_secret_jwt_key_for_testing_1234567890" },
-                { "JwtSettings:Issuer", "QuizVerseIssuer" },
-                { "JwtSettings:Audience", "QuizVerseAudience" }
-            };
+        { "JwtSettings:Key", "super_secret_jwt_key_for_testing_1234567890" },
+        { "JwtSettings:Issuer", "QuizVerseIssuer" },
+        { "JwtSettings:Audience", "QuizVerseAudience" },
+        { "AccessTokenExpiryMinutes", "30" },     
+        { "RefreshTokenExpiryDays", "7" }         
+    };
 
             _configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(inMemorySettings)
                 .Build();
         }
+
 
         private TokenService CreateService() => new TokenService(_configuration);
 
@@ -41,14 +44,11 @@ namespace QuizVerse.UnitTests.Services
         [Fact]
         public void GenerateAccessToken_Returns_ValidToken()
         {
-            // Arrange
             var service = CreateService();
             var user = CreateTestUser();
 
-            // Act
             var token = service.GenerateAccessToken(user);
 
-            // Assert
             Assert.False(string.IsNullOrEmpty(token));
 
             var handler = new JwtSecurityTokenHandler();
@@ -65,15 +65,12 @@ namespace QuizVerse.UnitTests.Services
         [Fact]
         public void GenerateRefreshToken_Returns_ValidToken_WithRememberMe()
         {
-            // Arrange
             var service = CreateService();
             var user = CreateTestUser();
             bool rememberMe = true;
 
-            // Act
             var token = service.GenerateRefreshToken(user, rememberMe);
 
-            // Assert
             Assert.False(string.IsNullOrEmpty(token));
 
             var handler = new JwtSecurityTokenHandler();
@@ -86,18 +83,16 @@ namespace QuizVerse.UnitTests.Services
             Assert.Contains(jwtToken.Claims, c => c.Type == SystemConstants.REMEMBER_ME_CLAIM_NAME && c.Value == rememberMe.ToString());
         }
 
+
         [Fact]
         public void ValidateToken_ValidToken_ReturnsPrincipal()
         {
-            // Arrange
             var service = CreateService();
             var user = CreateTestUser();
             var token = service.GenerateAccessToken(user);
 
-            // Act
             var principal = service.ValidateToken(token);
 
-            // Assert
             Assert.NotNull(principal);
             Assert.True(principal.Identity!.IsAuthenticated);
             Assert.Equal(user.Email, principal.FindFirst(ClaimTypes.Email)?.Value);
@@ -120,48 +115,39 @@ namespace QuizVerse.UnitTests.Services
         [Fact]
         public void IsRememberMeEnabled_Returns_CorrectValue()
         {
-            // Arrange
             var service = CreateService();
             var user = CreateTestUser();
             var token = service.GenerateRefreshToken(user, true);
 
             var principal = service.ValidateToken(token);
 
-            // Act
             var result = service.IsRememberMeEnabled(principal);
 
-            // Assert
             Assert.True(result);
         }
 
         [Fact]
         public void GetUserIdFromToken_Returns_CorrectUserId()
         {
-            // Arrange
             var service = CreateService();
             var user = CreateTestUser();
             var token = service.GenerateAccessToken(user);
             var principal = service.ValidateToken(token);
 
-            // Act
             var userId = service.GetUserIdFromToken(principal);
 
-            // Assert
             Assert.Equal(user.Id.ToString(), userId);
         }
 
         [Fact]
         public void GetTokenExpiration_Returns_CorrectExpiration()
         {
-            // Arrange
             var service = CreateService();
             var user = CreateTestUser();
             var token = service.GenerateAccessToken(user);
 
-            // Act
             var expiration = service.GetTokenExpiration(token);
 
-            // Assert
             Assert.True(expiration > DateTime.UtcNow);
         }
 

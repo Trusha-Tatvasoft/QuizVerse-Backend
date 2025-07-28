@@ -27,7 +27,6 @@ public class LandingPageServiceTests
     [Fact]
     public async Task GetLandingPageDataAsync_ReturnsCorrectData_WithQuoteFromConfig()
     {
-        // Arrange
         _userRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<User, bool>>>()))
                      .ReturnsAsync(100);
         _quizRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<Quiz, bool>>>()))
@@ -42,10 +41,8 @@ public class LandingPageServiceTests
 
         var service = CreateService();
 
-        // Act
         LandingPageData result = await service.GetLandingPageData();
 
-        // Assert
         Assert.Equal("Test Quote from Config", result.Quote);
         Assert.Equal(100, result.ActivePlayer);
         Assert.Equal(200, result.QuizCreated);
@@ -55,7 +52,6 @@ public class LandingPageServiceTests
     [Fact]
     public async Task GetLandingPageDataAsync_UsesDefaultQuote_WhenConfigIsMissing()
     {
-        // Arrange
         _userRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<User, bool>>>()))
                      .ReturnsAsync(1);
         _quizRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<Quiz, bool>>>()))
@@ -68,10 +64,8 @@ public class LandingPageServiceTests
 
         var service = CreateService();
 
-        // Act
         var result = await service.GetLandingPageData();
 
-        // Assert
         Assert.Equal("Welcome to QuizVerse!", result.Quote);
         Assert.Equal(1, result.ActivePlayer);
         Assert.Equal(2, result.QuizCreated);
@@ -81,7 +75,6 @@ public class LandingPageServiceTests
     [Fact]
     public async Task GetLandingPageDataAsync_UsesDefaultQuote_WhenConfigValueIsInvalidJson()
     {
-        // Arrange
         _userRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<User, bool>>>()))
                      .ReturnsAsync(10);
         _quizRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<Quiz, bool>>>()))
@@ -94,10 +87,8 @@ public class LandingPageServiceTests
 
         var service = CreateService();
 
-        // Act
         var result = await service.GetLandingPageData();
 
-        // Assert
         Assert.Equal("Welcome to QuizVerse!", result.Quote);
         Assert.Equal(10, result.ActivePlayer);
         Assert.Equal(20, result.QuizCreated);
