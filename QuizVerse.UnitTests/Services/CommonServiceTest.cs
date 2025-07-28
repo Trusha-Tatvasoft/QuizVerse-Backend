@@ -3,9 +3,9 @@ using Xunit;
 
 namespace QuizVerse.UnitTests.Services
 {
-    public class CustomServiceTests
+    public class CommonServiceTests
     {
-        private readonly CustomService _service = new();
+        private readonly CommonService _service = new();
 
         [Fact]
         public void VerifyPassword_ReturnsTrue_WhenPasswordMatchesHash()

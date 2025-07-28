@@ -18,9 +18,9 @@ namespace QuizVerse.UnitTests.Services
         public TokenServiceTests()
         {
             var inMemorySettings = new Dictionary<string, string?> {
-                { SystemConstants.JWT_CONFIGURATION_KEY, "super_secret_jwt_key_for_testing_1234567890" },
-                { SystemConstants.JWT_CONFIGURATION_ISSUER, "QuizVerseIssuer" },
-                { SystemConstants.JWT_CONFIGURATION_AUDIENCE, "QuizVerseAudience" }
+                { "JwtSettings:Key", "super_secret_jwt_key_for_testing_1234567890" },
+                { "JwtSettings:Issuer", "QuizVerseIssuer" },
+                { "JwtSettings:Audience", "QuizVerseAudience" }
             };
 
             _configuration = new ConfigurationBuilder()
@@ -54,8 +54,8 @@ namespace QuizVerse.UnitTests.Services
             var handler = new JwtSecurityTokenHandler();
             var jwtToken = handler.ReadJwtToken(token);
 
-            Assert.Equal(_configuration[SystemConstants.JWT_CONFIGURATION_ISSUER], jwtToken.Issuer);
-            Assert.Equal(_configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE], jwtToken.Audiences.First());
+            Assert.Equal(_configuration["JwtSettings:Issuer"], jwtToken.Issuer);
+            Assert.Equal(_configuration["JwtSettings:Audience"], jwtToken.Audiences.First());
 
             Assert.Contains(jwtToken.Claims, c => c.Type == ClaimTypes.Email && c.Value == user.Email);
             Assert.Contains(jwtToken.Claims, c => c.Type == ClaimTypes.UserData && c.Value == user.Id.ToString());
@@ -79,8 +79,8 @@ namespace QuizVerse.UnitTests.Services
             var handler = new JwtSecurityTokenHandler();
             var jwtToken = handler.ReadJwtToken(token);
 
-            Assert.Equal(_configuration[SystemConstants.JWT_CONFIGURATION_ISSUER], jwtToken.Issuer);
-            Assert.Equal(_configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE], jwtToken.Audiences.First());
+            Assert.Equal(_configuration["JwtSettings:Issuer"], jwtToken.Issuer);
+            Assert.Equal(_configuration["JwtSettings:Audience"], jwtToken.Audiences.First());
 
             Assert.Contains(jwtToken.Claims, c => c.Type == ClaimTypes.UserData && c.Value == user.Id.ToString());
             Assert.Contains(jwtToken.Claims, c => c.Type == SystemConstants.REMEMBER_ME_CLAIM_NAME && c.Value == rememberMe.ToString());
@@ -184,7 +184,7 @@ namespace QuizVerse.UnitTests.Services
             var user = CreateTestUser();
 
             // Create a token with past expiration
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration[SystemConstants.JWT_CONFIGURATION_KEY]!));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var claims = new List<Claim>
             {
@@ -193,8 +193,8 @@ namespace QuizVerse.UnitTests.Services
                 new Claim(ClaimTypes.Role, user.Role.Name)
             };
             var token = new JwtSecurityToken(
-                issuer: _configuration[SystemConstants.JWT_CONFIGURATION_ISSUER],
-                audience: _configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE],
+                issuer: _configuration["JwtSettings:Issuer"],
+                audience: _configuration["JwtSettings:Audience"],
                 claims: claims,
                 expires: DateTime.UtcNow.AddSeconds(-1), // already expired
                 signingCredentials: creds

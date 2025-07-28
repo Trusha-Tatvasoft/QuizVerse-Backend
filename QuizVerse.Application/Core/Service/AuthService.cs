@@ -11,7 +11,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService(ITokenService tokenService, ICustomService _customService, IGenericRepository<User> _genericUserRepository) : IAuthService
+    public class AuthService(ITokenService tokenService, ICommonService _customService, IGenericRepository<User> _genericUserRepository) : IAuthService
     {
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
         {
@@ -23,30 +23,24 @@ namespace QuizVerse.Application.Core.Service
             User? user = await _genericUserRepository.GetAsync(u => u.Email.ToLower() == userLoginDto.Email.ToLower() && !u.IsDeleted,
     query => query.Include(u => u.Role)) ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
 
-            if (user.Status != (int)UserStatus.Active)
+
+            if (user.Status == (int)UserStatus.Inactive)
             {
-                if (user.Status == (int)UserStatus.Inactive)
+                throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
+            }
+            else if (user.Status == (int)UserStatus.Suspended)
+            {
+                TimeSpan remaining = CalculateSuspensionRemainingTime(user);
+
+                if (remaining > TimeSpan.Zero)
                 {
-                    throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
+                    int remainingDays = remaining.Days;
+                    int remainingHours = remaining.Hours;
+                    throw new ArgumentException(string.Format(Constants.USER_SUSPENDED_MESSAGE, remainingDays, remainingHours));
                 }
                 else
                 {
-                    DateTime? ModifiedDate = user.ModifiedDate;
-                    DateTime currentTime = DateTime.UtcNow;
-                    TimeSpan elapsed = currentTime - (ModifiedDate ?? throw new ArgumentException(Constants.NULL_MODIFIED_DATE_MESSAGE));
-
-                    TimeSpan totalDuration = TimeSpan.FromDays(30);
-                    TimeSpan remaining = totalDuration - elapsed;
-                    if (remaining > TimeSpan.Zero)
-                    {
-                        int remainingDays = remaining.Days;
-                        int remainingHours = remaining.Hours;
-                        throw new ArgumentException($"You have been suspended. Remaining suspension time: {remainingDays} days and {remainingHours} hours.");
-                    }
-                    else
-                    {
-                        user.Status = (int)UserStatus.Active;
-                    }
+                    user.Status = (int)UserStatus.Active;
                 }
             }
 
@@ -92,7 +86,7 @@ namespace QuizVerse.Application.Core.Service
             {
                 throw new ArgumentException(Constants.INVALID_DATA_MESSAGE);
             }
-
+            
             var userIdStr = tokenService.GetUserIdFromToken(principal);
             if (!int.TryParse(userIdStr, out int userId))
             {
@@ -103,24 +97,24 @@ namespace QuizVerse.Application.Core.Service
                 query => query.Include(u => u.Role))
                 ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
 
-            if (user.Status != (int)UserStatus.Active)
+            if (user.Status == (int)UserStatus.Inactive)
             {
-                if (user.Status == (int)UserStatus.Inactive)
-                {
-                    throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
-                }
-                else
-                {
-                    DateTime? ModifiedDate = user.ModifiedDate;
-                    DateTime currentTime = DateTime.UtcNow;
-                    TimeSpan elapsed = currentTime - (ModifiedDate ?? throw new ArgumentException(Constants.NULL_MODIFIED_DATE_MESSAGE));
+                throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
+            }
+            else if (user.Status == (int)UserStatus.Suspended)
+            {
 
-                    TimeSpan totalDuration = TimeSpan.FromDays(30);
-                    TimeSpan remaining = totalDuration - elapsed;
+                TimeSpan remaining = CalculateSuspensionRemainingTime(user);
 
+                if (remaining > TimeSpan.Zero)
+                {
                     int remainingDays = remaining.Days;
                     int remainingHours = remaining.Hours;
                     throw new ArgumentException(string.Format(Constants.USER_SUSPENDED_MESSAGE, remainingDays, remainingHours));
+                }
+                else
+                {
+                    user.Status = (int)UserStatus.Active;
                 }
             }
 
@@ -145,6 +139,17 @@ namespace QuizVerse.Application.Core.Service
             await _genericUserRepository.UpdateAsync(user);
 
             return (newAccessToken, newRefreshToken);
+        }
+
+
+        private static TimeSpan CalculateSuspensionRemainingTime(User user)
+        {
+            DateTime? modifiedDate = user.ModifiedDate ?? throw new ArgumentException(Constants.NULL_MODIFIED_DATE_MESSAGE);
+            DateTime currentTime = DateTime.UtcNow;
+            TimeSpan elapsed = currentTime - modifiedDate.Value;
+
+            TimeSpan totalDuration = TimeSpan.FromDays(30);
+            return totalDuration - elapsed;
         }
 
     }

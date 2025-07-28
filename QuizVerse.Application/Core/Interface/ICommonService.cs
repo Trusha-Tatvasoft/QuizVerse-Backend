@@ -1,6 +1,6 @@
 namespace QuizVerse.Application.Core.Interface
 {
-    public interface ICustomService
+    public interface ICommonService
     {
         bool VerifyPassword(string password, string hashedPassword);
     }

@@ -9,7 +9,6 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Infrastructure.Common;
 
-
 namespace QuizVerse.Application.Core.Service
 {
     public class TokenService(IConfiguration _configuration) : ITokenService
@@ -25,11 +24,11 @@ namespace QuizVerse.Application.Core.Service
             {
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.UserData, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Role.Name.ToString())
+                new Claim(ClaimTypes.Role, user.Role.Name)
             };
 
-            // ⬇️ Use helper
-            return CreateToken(claims, DateTime.UtcNow.AddMinutes(30));
+            var expiryMinutesString = _configuration["AccessTokenExpiryMinutes"] ?? throw new InvalidOperationException("AccessTokenExpiryMinutes is not configured.");
+            return CreateToken(claims, DateTime.UtcNow.AddMinutes(double.Parse(expiryMinutesString)));
         }
 
         public string GenerateRefreshToken(User user, bool rememberMe)
@@ -39,21 +38,19 @@ namespace QuizVerse.Application.Core.Service
                 new Claim(ClaimTypes.UserData, user.Id.ToString()),
                 new Claim(SystemConstants.REMEMBER_ME_CLAIM_NAME, rememberMe.ToString())
             };
-
-            // ⬇️ Use helper
-            return CreateToken(claims, DateTime.UtcNow.AddDays(7));
+            var expiryDaysString = _configuration["RefreshTokenExpiryDays"] ?? throw new InvalidOperationException("RefreshTokenExpiryDays is not configured.");
+            return CreateToken(claims, DateTime.UtcNow.AddDays(double.Parse(expiryDaysString)));
         }
 
-        // ✅ Private reusable method
         private string CreateToken(IEnumerable<Claim> claims, DateTime expires)
         {
-            var keyString = _configuration[SystemConstants.JWT_CONFIGURATION_KEY] ?? throw new InvalidOperationException("JWT Key is not configured.");
+            var keyString = _configuration["JwtSettings:Key"] ?? throw new InvalidOperationException("JWT Key is not configured.");
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _configuration[SystemConstants.JWT_CONFIGURATION_ISSUER],
-                audience: _configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE],
+                issuer: _configuration["JwtSettings:Issuer"],
+                audience: _configuration["JwtSettings:Audience"],
                 claims: claims,
                 expires: expires,
                 signingCredentials: creds
@@ -61,7 +58,6 @@ namespace QuizVerse.Application.Core.Service
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
 
         public ClaimsPrincipal ValidateToken(string token, bool validateLifetime = true)
         {
@@ -73,7 +69,7 @@ namespace QuizVerse.Application.Core.Service
             var tokenHandler = new JwtSecurityTokenHandler();
 
             var key = Encoding.UTF8.GetBytes(
-                _configuration[SystemConstants.JWT_CONFIGURATION_KEY] ?? throw new InvalidOperationException(Constants.JWT_KEY_ERROR_MESSAGE)
+                _configuration["JwtSettings:Key"] ?? throw new InvalidOperationException(Constants.JWT_KEY_ERROR_MESSAGE)
             );
 
             var validationParameters = new TokenValidationParameters
@@ -81,9 +77,9 @@ namespace QuizVerse.Application.Core.Service
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ValidateIssuer = true,
-                ValidIssuer = _configuration[SystemConstants.JWT_CONFIGURATION_ISSUER],
+                ValidIssuer = _configuration["JwtSettings:Issuer"],
                 ValidateAudience = true,
-                ValidAudience = _configuration[SystemConstants.JWT_CONFIGURATION_AUDIENCE],
+                ValidAudience = _configuration["JwtSettings:Audience"],
                 ValidateLifetime = validateLifetime,
                 ClockSkew = TimeSpan.Zero
             };
@@ -95,7 +91,7 @@ namespace QuizVerse.Application.Core.Service
                 if (validatedToken is not JwtSecurityToken jwtToken ||
                     !jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    throw new AppException(Constants.INVALID_TOKEN_MESSAGE);
+                    throw new AppException(Constants.INVALID_TOKEN_FORMAT_MESSAGE);
                 }
 
                 return principal;
@@ -104,18 +100,15 @@ namespace QuizVerse.Application.Core.Service
             {
                 throw new AppException(Constants.EXPIRED_TOKEN_MESSAGE, StatusCodes.Status401Unauthorized);
             }
-            catch (SecurityTokenException)
-            {
-                throw new AppException(Constants.INVALID_TOKEN_MESSAGE, StatusCodes.Status401Unauthorized);
-            }
-            catch (ArgumentException)
-            {
-                throw new AppException(Constants.INVALID_TOKEN_FORMAT_MESSAGE, StatusCodes.Status401Unauthorized);
-            }
-            catch (FormatException)
+            catch (Exception ex) when (
+                ex is SecurityTokenException ||
+                ex is ArgumentException ||
+                ex is FormatException
+            )
             {
                 throw new AppException(Constants.INVALID_TOKEN_FORMAT_MESSAGE, StatusCodes.Status401Unauthorized);
             }
+
             catch (Exception ex)
             {
                 throw new AppException(ex.Message, StatusCodes.Status500InternalServerError);

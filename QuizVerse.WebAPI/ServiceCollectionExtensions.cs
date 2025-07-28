@@ -11,7 +11,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<ILandingPageService, LandingPageService>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<ICustomService, CustomService>();
+        services.AddScoped<ICommonService, CommonService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
     }

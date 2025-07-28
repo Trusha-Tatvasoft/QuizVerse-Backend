@@ -13,7 +13,7 @@ namespace QuizVerse.WebAPI.Controllers
     {
         public readonly IAuthService _authService = authService;
 
-        [HttpPost("login", Name = "Login")]
+        [HttpPost("login")]
         public async Task<IActionResult> Login(UserLoginDTO userLoginDTO)
         {
             (string accessToken, string refreshToken) = await _authService.AuthenticateUser(userLoginDTO);
@@ -33,7 +33,7 @@ namespace QuizVerse.WebAPI.Controllers
         }
 
 
-        [HttpPost("refersh-token", Name = "ValidateAndRegenerateRefreshToken")]
+        [HttpPost("refersh-token")]
         public async Task<IActionResult> ValidateAndRegenerateRefreshToken(string refereshToken)
         {
             (string accessToken, string refreshToken) = await _authService.ValidateRefreshTokens(refereshToken);

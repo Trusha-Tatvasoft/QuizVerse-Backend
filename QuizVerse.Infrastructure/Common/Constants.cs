@@ -37,7 +37,6 @@ namespace QuizVerse.Infrastructure.Common
 
         public const string NULL_MODIFIED_DATE_MESSAGE = "Modified Date is null.";
 
-        public const string INVALID_TOKEN_MESSAGE = "Invalid Token.";
 
         public const string INVALID_TOKEN_FORMAT_MESSAGE = "Invalid Token Format.";
 
