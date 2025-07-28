@@ -1,4 +1,4 @@
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.Application.Core.Interface;
 

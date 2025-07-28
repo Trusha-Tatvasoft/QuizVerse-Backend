@@ -2,7 +2,7 @@ using System.Text.Json;
 using Moq;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 using Xunit;
 using System.Linq.Expressions;
@@ -27,7 +27,6 @@ public class LandingPageServiceTests
     [Fact]
     public async Task GetLandingPageDataAsync_ReturnsCorrectData_WithQuoteFromConfig()
     {
-        // Arrange
         _userRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<User, bool>>>()))
                      .ReturnsAsync(100);
         _quizRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<Quiz, bool>>>()))
@@ -36,15 +35,14 @@ public class LandingPageServiceTests
                          .ReturnsAsync(300);
 
         var configJson = JsonSerializer.Serialize(new { PlatformQuote = "Test Quote from Config" });
-        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>()))
-                               .ReturnsAsync(new PlatformConfiguration { Values = configJson });
+        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>(), null))
+                                .ReturnsAsync(new PlatformConfiguration { Values = configJson });
+
 
         var service = CreateService();
 
-        // Act
         LandingPageData result = await service.GetLandingPageData();
 
-        // Assert
         Assert.Equal("Test Quote from Config", result.Quote);
         Assert.Equal(100, result.ActivePlayer);
         Assert.Equal(200, result.QuizCreated);
@@ -54,7 +52,6 @@ public class LandingPageServiceTests
     [Fact]
     public async Task GetLandingPageDataAsync_UsesDefaultQuote_WhenConfigIsMissing()
     {
-        // Arrange
         _userRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<User, bool>>>()))
                      .ReturnsAsync(1);
         _quizRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<Quiz, bool>>>()))
@@ -62,15 +59,13 @@ public class LandingPageServiceTests
         _questionRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<BaseQuestion, bool>>>()))
                          .ReturnsAsync(3);
 
-        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>()))
+        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>(), null))
                                .ReturnsAsync((PlatformConfiguration?)null);
 
         var service = CreateService();
 
-        // Act
         var result = await service.GetLandingPageData();
 
-        // Assert
         Assert.Equal("Welcome to QuizVerse!", result.Quote);
         Assert.Equal(1, result.ActivePlayer);
         Assert.Equal(2, result.QuizCreated);
@@ -80,7 +75,6 @@ public class LandingPageServiceTests
     [Fact]
     public async Task GetLandingPageDataAsync_UsesDefaultQuote_WhenConfigValueIsInvalidJson()
     {
-        // Arrange
         _userRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<User, bool>>>()))
                      .ReturnsAsync(10);
         _quizRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<Quiz, bool>>>()))
@@ -88,15 +82,13 @@ public class LandingPageServiceTests
         _questionRepoMock.Setup(r => r.CountAsync(It.IsAny<Expression<Func<BaseQuestion, bool>>>()))
                          .ReturnsAsync(30);
 
-        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>()))
+        _platformConfigRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PlatformConfiguration, bool>>>(), null))
                                .ReturnsAsync(new PlatformConfiguration { Values = "invalid json" });
 
         var service = CreateService();
 
-        // Act
         var result = await service.GetLandingPageData();
 
-        // Assert
         Assert.Equal("Welcome to QuizVerse!", result.Quote);
         Assert.Equal(10, result.ActivePlayer);
         Assert.Equal(20, result.QuizCreated);
