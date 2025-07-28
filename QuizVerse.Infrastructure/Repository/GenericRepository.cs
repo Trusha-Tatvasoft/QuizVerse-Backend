@@ -13,11 +13,17 @@ public class GenericRepository<T>(QuizVerseDbContext _context) : IGenericReposit
         return await _context.Set<T>().AsNoTracking().Where(expression).AnyAsync();
     }
 
-    public async Task<T?> GetAsync(Expression<Func<T, bool>> expression)
+    public async Task<T?> GetAsync(Expression<Func<T, bool>> expression, Func<IQueryable<T>, IQueryable<T>>? includes = null)
     {
-        return await _context.Set<T>().AsNoTracking().Where(expression).FirstOrDefaultAsync().ConfigureAwait(false);
-    }
+        var query = _context.Set<T>().AsNoTracking().Where(expression);
 
+        if (includes != null)
+        {
+            query = includes(query);
+        }
+
+        return await query.FirstOrDefaultAsync().ConfigureAwait(false);
+    }
     public async Task<List<T>> GetAllAsync()
     {
         return await _context.Set<T>().AsNoTracking().ToListAsync();
