@@ -11,6 +11,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<ILandingPageService, LandingPageService>();
         services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+        services.AddScoped(typeof(ISqlQueryRepository), typeof(SqlQueryRepository));
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
     }
 }

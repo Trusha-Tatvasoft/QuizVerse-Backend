@@ -23,8 +23,4 @@ public interface IGenericRepository<T> where T : class
     Task DeleteRangeAsync(List<T> entity);
 
     Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
-
-    Task<TResult> SqlQuerySingleAsync<TResult>(string sql, params object[] parameters) where TResult : class;
-
-    Task<List<TResult>> SqlQueryListAsync<TResult>(string sql, params object[] parameters) where TResult : class;
 }

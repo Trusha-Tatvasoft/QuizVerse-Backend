@@ -2,20 +2,19 @@ using System.Globalization;
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class AdminDashboardService(IGenericRepository<Admin> adminRepository) : IAdminDashboardService
+public class AdminDashboardService(ISqlQueryRepository _sqlQueryRepository) : IAdminDashboardService
 {
-    private readonly IGenericRepository<Admin> _adminRepository = adminRepository;
-
     public async Task<AdminDashboardResponse> GetDashboardSummaryAsync()
     {
-        const string sql = "SELECT * FROM get_admin_dashboard_metrics()";
+        const string sql = SqlConstants.GET_DASHBOARD_METRICS;
 
-        RawAdminDashboardMetricsDTO raw = await _adminRepository.SqlQuerySingleAsync<RawAdminDashboardMetricsDTO>(sql);
+        RawAdminDashboardMetricsDTO raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawAdminDashboardMetricsDTO>(sql);
 
         return new AdminDashboardResponse
         {
@@ -55,23 +54,23 @@ public class AdminDashboardService(IGenericRepository<Admin> adminRepository) : 
         NpgsqlParameter param1 = new("start", NpgsqlDbType.Date) { Value = start };
         NpgsqlParameter param2 = new("end", NpgsqlDbType.Date) { Value = end };
 
-        string query = $"SELECT * FROM {functionName}({{0}}, {{1}})";
+        string query = string.Format(SqlConstants.CHART_FUNCTION_CALL_TEMPLATE, functionName);
 
-        return await _adminRepository.SqlQueryListAsync<ChartDataDTO>(query, param1, param2);
+        return await _sqlQueryRepository.SqlQueryListAsync<ChartDataDTO>(query, param1, param2);
     }
 
     public async Task<List<ChartDataDTO>> GetUserEngagementChartData(string startDate, string endDate)
     {
-        return await GetChartDataAsync("get_user_engagement_chart_data", startDate, endDate);
+        return await GetChartDataAsync(SqlConstants.GET_USER_ENGAGEMENT_CHART_DATA, startDate, endDate);
     }
 
     public async Task<List<ChartDataDTO>> GetRevenueTrendChartData(string startDate, string endDate)
     {
-        return await GetChartDataAsync("get_revenue_trend_chart_data", startDate, endDate);
+        return await GetChartDataAsync(SqlConstants.GET_REVENUE_TREND_CHART_DATA, startDate, endDate);
     }
 
     public async Task<List<ChartDataDTO>> GetPerformanceScoreChartData(string startDate, string endDate)
     {
-        return await GetChartDataAsync("get_performance_score_chart_data", startDate, endDate);
+        return await GetChartDataAsync(SqlConstants.GET_PERFORMANCE_SCORE_CHART_DATA, startDate, endDate);
     }
 }

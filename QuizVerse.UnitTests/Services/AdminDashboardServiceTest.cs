@@ -1,6 +1,7 @@
 using Moq;
 using Npgsql;
 using QuizVerse.Application.Core.Service;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 using Xunit;
@@ -9,10 +10,10 @@ namespace QuizVerse.UnitTests.Services;
 
 public class AdminDashboardServiceTest
 {
-    private readonly Mock<IGenericRepository<Admin>> _adminRepoMock = new();
+    private readonly Mock<ISqlQueryRepository> _sqlQueryRepoMock = new();
 
     private AdminDashboardService CreateService() =>
-        new(_adminRepoMock.Object);
+        new(_sqlQueryRepoMock.Object);
 
     [Fact]
     public async Task GetDashboardSummaryAsync_ReturnsMappedData()
@@ -30,8 +31,8 @@ public class AdminDashboardServiceTest
             ReportGrowthPercent = -3.1m
         };
 
-        _adminRepoMock
-            .Setup(r => r.SqlQuerySingleAsync<RawAdminDashboardMetricsDTO>("SELECT * FROM get_admin_dashboard_metrics()"))
+        _sqlQueryRepoMock
+            .Setup(r => r.SqlQuerySingleAsync<RawAdminDashboardMetricsDTO>(SqlConstants.GET_DASHBOARD_METRICS))
             .ReturnsAsync(rawData);
 
         AdminDashboardService service = CreateService();
@@ -58,8 +59,10 @@ public class AdminDashboardServiceTest
             new() { Label = "2025-07-25", Value = 10 }
         ];
 
-        _adminRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
-            It.Is<string>(q => q.Contains("get_user_engagement_chart_data")),
+        string expectedQuery = string.Format(SqlConstants.CHART_FUNCTION_CALL_TEMPLATE, SqlConstants.GET_USER_ENGAGEMENT_CHART_DATA);
+
+        _sqlQueryRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
+            expectedQuery,
             It.IsAny<NpgsqlParameter>(),
             It.IsAny<NpgsqlParameter>()))
             .ReturnsAsync(chartData);
@@ -83,8 +86,10 @@ public class AdminDashboardServiceTest
             new() { Label = "2025-07-25", Value = 200 }
         ];
 
-       _adminRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
-            It.Is<string>(q => q.Contains("get_revenue_trend_chart_data")),
+        string expectedQuery = string.Format(SqlConstants.CHART_FUNCTION_CALL_TEMPLATE, SqlConstants.GET_REVENUE_TREND_CHART_DATA);
+
+       _sqlQueryRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
+            expectedQuery,
             It.IsAny<NpgsqlParameter>(),
             It.IsAny<NpgsqlParameter>()))
             .ReturnsAsync(chartData);
@@ -108,8 +113,10 @@ public class AdminDashboardServiceTest
             new() { Label = "2025-07-25", Value = 75 }
         ];
 
-        _adminRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
-            It.Is<string>(q => q.Contains("get_performance_score_chart_data")),
+        string expectedQuery = string.Format(SqlConstants.CHART_FUNCTION_CALL_TEMPLATE, SqlConstants.GET_PERFORMANCE_SCORE_CHART_DATA);
+
+        _sqlQueryRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
+            expectedQuery,
             It.IsAny<NpgsqlParameter>(),
             It.IsAny<NpgsqlParameter>()))
             .ReturnsAsync(chartData);
