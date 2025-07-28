@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
-public class Admin { }
-
 public class AdminDashboardResponse
 {
     public MetricSummaryDTO TotalUsers { get; set; } = new();
