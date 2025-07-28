@@ -71,4 +71,20 @@ public class GenericRepository<T>(QuizVerseDbContext _context) : IGenericReposit
             return await dbSet.CountAsync(predicate);
         }
     }
+
+    public async Task<TResult> SqlQuerySingleAsync<TResult>(string sql, params object[] parameters) where TResult : class
+    {
+        return await _context.Database
+                             .SqlQueryRaw<TResult>(sql, parameters)
+                             .AsNoTracking()
+                             .SingleAsync();
+    }
+
+    public async Task<List<TResult>> SqlQueryListAsync<TResult>(string sql, params object[] parameters) where TResult : class
+    {
+        return await _context.Database
+                             .SqlQueryRaw<TResult>(sql, parameters)
+                             .AsNoTracking()
+                             .ToListAsync();
+    }
 }

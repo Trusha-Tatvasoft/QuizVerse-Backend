@@ -10,6 +10,7 @@ public static class DependencyInjection
     public static IServiceCollection AddCustomServices(this IServiceCollection services)
     {
         services.AddScoped<ILandingPageService, LandingPageService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         
         return services;    

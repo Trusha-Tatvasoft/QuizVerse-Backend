@@ -10,6 +10,7 @@ public static class ServiceCollectionExtensions
     public static void RegisterDependency(this IServiceCollection services)
     {
         services.AddScoped<ILandingPageService, LandingPageService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
     }
 }
