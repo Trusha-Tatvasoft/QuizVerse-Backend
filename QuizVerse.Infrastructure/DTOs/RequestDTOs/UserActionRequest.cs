@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using QuizVerse.Infrastructure.Enums;
 
-namespace QuizVerse.Infrastructure.DTOs;
+namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 
 public class UserActionRequest
 {

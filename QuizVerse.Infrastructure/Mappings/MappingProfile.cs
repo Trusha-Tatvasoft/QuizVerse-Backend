@@ -1,6 +1,7 @@
 using AutoMapper;
 using QuizVerse.Domain.Entities;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.Infrastructure.Mappings;
 public class MappingProfile : Profile

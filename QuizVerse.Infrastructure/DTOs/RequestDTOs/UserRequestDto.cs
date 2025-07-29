@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace QuizVerse.Infrastructure.DTOs;
+namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 public class UserRequestDto
 {
     public int? Id { get; set; }

@@ -6,7 +6,8 @@ using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.Common.Helper;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 

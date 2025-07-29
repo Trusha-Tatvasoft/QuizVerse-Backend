@@ -1,4 +1,4 @@
-namespace QuizVerse.Infrastructure.DTOs;
+namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 
 public class EmailRequestDto
 {

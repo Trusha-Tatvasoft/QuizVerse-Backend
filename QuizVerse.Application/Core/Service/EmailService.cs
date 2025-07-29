@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 
 namespace QuizVerse.Application.Core.Service;
 
