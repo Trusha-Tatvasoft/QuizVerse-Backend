@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.ApiResponse;
@@ -8,13 +9,14 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
 public class UsersController(IUserService userService) : ControllerBase
 {
     #region Get by Id
-    // GET: api/users/details/{id}
-    [HttpGet("details/{id}")]
-    public async Task<IActionResult> GetById(int id)
+    // GET: api/users/get-user-by-id/{id}
+    [HttpGet("get-user-by-id/{id}")]
+    public async Task<IActionResult> GetUserById(int id)
     {
         return Ok(new ApiResponse<UserDto>
         {
@@ -27,9 +29,9 @@ public class UsersController(IUserService userService) : ControllerBase
     #endregion
 
     #region Create or Update
-    // POST: api/users/save
-    [HttpPost("save")]
-    public async Task<IActionResult> CreateOrUpdate([FromBody] UserRequestDto dto)
+    // POST: api/users/create-or-update-user
+    [HttpPost("create-or-update-user")]
+    public async Task<IActionResult> CreateOrUpdateUser([FromBody] UserRequestDto dto)
     {
         var (success, message) = await userService.CreateOrUpdateUser(dto);
 
@@ -47,9 +49,9 @@ public class UsersController(IUserService userService) : ControllerBase
 
 
     #region Update by Action
-    // PUT: api/users/action
-    [HttpPut("action")]
-    public async Task<IActionResult> UserAction([FromBody] UserActionRequest userActionRequest)
+    // PUT: api/users/update-user-status-by-action
+    [HttpPut("update-user-status-by-action")]
+    public async Task<IActionResult> UpdateUserByAction([FromBody] UserActionRequest userActionRequest)
     {
         return Ok(new ApiResponse<string>
         {

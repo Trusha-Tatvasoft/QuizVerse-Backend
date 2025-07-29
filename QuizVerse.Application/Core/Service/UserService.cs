@@ -139,9 +139,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         {
             To = email,
             Subject = Constants.QUIZVERSE_DEFAULT_QUOTE,
-            Body = emailBody,
-            Cc = ["cc1@mail.com", "cc2@mail.com"],
-            Bcc = ["bcc1@mail.com", "bcc2@mail.com"]
+            Body = emailBody
         });
 
         if (isEmailSent)
