@@ -11,8 +11,6 @@ namespace QuizVerse.WebAPI.Controllers;
 [Route("api/[controller]")]
 public class UsersController(IUserService userService) : ControllerBase
 {
-    private readonly IUserService _userService = userService;
-
     #region Get by Id
     // GET: api/users/details/{id}
     [HttpGet("details/{id}")]
@@ -23,7 +21,7 @@ public class UsersController(IUserService userService) : ControllerBase
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
-            Data = await _userService.GetUserById(id)
+            Data = await userService.GetUserById(id)
         });
     }
     #endregion
@@ -33,7 +31,7 @@ public class UsersController(IUserService userService) : ControllerBase
     [HttpPost("save")]
     public async Task<IActionResult> CreateOrUpdate([FromBody] UserRequestDto dto)
     {
-        var (success, message) = await _userService.CreateOrUpdateUser(dto);
+        var (success, message) = await userService.CreateOrUpdateUser(dto);
 
         bool isUpdate = dto.Id.HasValue && dto.Id > 0;
 
@@ -56,7 +54,7 @@ public class UsersController(IUserService userService) : ControllerBase
         return Ok(new ApiResponse<string>
         {
             Result = true,
-            Message = await _userService.UpdateUserByAction(userActionRequest),
+            Message = await userService.UpdateUserByAction(userActionRequest),
             StatusCode = 200,
             Data = null
         });
