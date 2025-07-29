@@ -10,11 +10,9 @@ namespace QuizVerse.Application.Core.Service;
 
 public class AdminDashboardService(ISqlQueryRepository _sqlQueryRepository) : IAdminDashboardService
 {
-    public async Task<AdminDashboardResponse> GetDashboardSummaryAsync()
+    public async Task<AdminDashboardResponse> GetStatisticsData()
     {
-        const string sql = SqlConstants.GET_DASHBOARD_METRICS;
-
-        RawAdminDashboardMetricsDTO raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawAdminDashboardMetricsDTO>(sql);
+        RawAdminDashboardMetricsDTO raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawAdminDashboardMetricsDTO>(SqlConstants.GET_DASHBOARD_METRICS);
 
         return new AdminDashboardResponse
         {
@@ -59,17 +57,17 @@ public class AdminDashboardService(ISqlQueryRepository _sqlQueryRepository) : IA
         return await _sqlQueryRepository.SqlQueryListAsync<ChartDataDTO>(query, param1, param2);
     }
 
-    public async Task<List<ChartDataDTO>> GetUserEngagementChartData(string startDate, string endDate)
+    public async Task<List<ChartDataDTO>> GetUserEngagementData(string startDate, string endDate)
     {
         return await GetChartDataAsync(SqlConstants.GET_USER_ENGAGEMENT_CHART_DATA, startDate, endDate);
     }
 
-    public async Task<List<ChartDataDTO>> GetRevenueTrendChartData(string startDate, string endDate)
+    public async Task<List<ChartDataDTO>> GetRevenueTrendData(string startDate, string endDate)
     {
         return await GetChartDataAsync(SqlConstants.GET_REVENUE_TREND_CHART_DATA, startDate, endDate);
     }
 
-    public async Task<List<ChartDataDTO>> GetPerformanceScoreChartData(string startDate, string endDate)
+    public async Task<List<ChartDataDTO>> GetPerformanceScoreData(string startDate, string endDate)
     {
         return await GetChartDataAsync(SqlConstants.GET_PERFORMANCE_SCORE_CHART_DATA, startDate, endDate);
     }

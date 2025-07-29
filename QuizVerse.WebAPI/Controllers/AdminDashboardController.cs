@@ -12,21 +12,21 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
 {
     private readonly IAdminDashboardService _adminDashboardService = _adminDashboardService;
 
-    [HttpGet("admin-dashboard-statistics")]
-    public async Task<IActionResult> GetAdminDashboardStatisticsData()
+    [HttpGet("get-statistics-data")]
+    public async Task<IActionResult> GetStatisticsData()
     {
         ApiResponse<AdminDashboardResponse> response = new()
         {
             Result = true,
             StatusCode = StatusCodes.Status200OK,
             Message = Constants.DASHBOARD_SUMMARY_FETCH,
-            Data = await _adminDashboardService.GetDashboardSummaryAsync()
+            Data = await _adminDashboardService.GetStatisticsData()
         };
 
         return Ok(response);
     }
 
-    [HttpGet("user-engagement-data")]
+    [HttpGet("get-user-engagement-data")]
     public async Task<IActionResult> GetUserEngagementData(string start_date, string end_date)
     {
         BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date, out DateTime startDate, out DateTime endDate);
@@ -37,13 +37,13 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
             Result = true,
             StatusCode = StatusCodes.Status200OK,
             Message = Constants.USER_ENGAGEMENT_DATA_FETCH,
-            Data = await _adminDashboardService.GetUserEngagementChartData(start_date, end_date)
+            Data = await _adminDashboardService.GetUserEngagementData(start_date, end_date)
         };
 
         return Ok(response);
     }
 
-    [HttpGet("revenue-trend-data")]
+    [HttpGet("get-revenue-trend-data")]
     public async Task<IActionResult> GetRevenueTrendData(string start_date, string end_date)
     {
         BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date, out DateTime startDate, out DateTime endDate);
@@ -54,13 +54,13 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
             Result = true,
             StatusCode = StatusCodes.Status200OK,
             Message = Constants.REVENUE_TREND_DATA_FETCH,
-            Data = await _adminDashboardService.GetRevenueTrendChartData(start_date, end_date)
+            Data = await _adminDashboardService.GetRevenueTrendData(start_date, end_date)
         };
 
         return Ok(response);
     }
 
-    [HttpGet("performance-score-data")]
+    [HttpGet("get-performance-score-data")]
     public async Task<IActionResult> GetPerformanceScoreData(string start_date, string end_date)
     {
         BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date, out DateTime startDate, out DateTime endDate);
@@ -71,7 +71,7 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
             Result = true,
             StatusCode = StatusCodes.Status200OK,
             Message = Constants.PERFORMANCE_SCORE_DATA_FETCH,
-            Data = await _adminDashboardService.GetPerformanceScoreChartData(start_date, end_date)
+            Data = await _adminDashboardService.GetPerformanceScoreData(start_date, end_date)
         };
 
         return Ok(response);

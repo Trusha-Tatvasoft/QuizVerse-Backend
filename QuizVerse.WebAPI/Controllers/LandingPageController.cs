@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common;
-using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.WebAPI.Controllers;
 
@@ -17,7 +17,7 @@ public class LandingPageController(ILandingPageService landingPageService) : Con
         {
             Result = true,
             StatusCode = StatusCodes.Status200OK,
-            Message = Constants.FETCH_DATA_MESSAGE,
+            Message = Constants.FETCH_SUCCESS,
             Data = await landingPageService.GetLandingPageData()
         };
 

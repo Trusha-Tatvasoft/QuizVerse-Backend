@@ -4,11 +4,11 @@ namespace QuizVerse.Application.Core.Interface;
 
 public interface IAdminDashboardService
 {
-    Task<AdminDashboardResponse> GetDashboardSummaryAsync();
+    Task<AdminDashboardResponse> GetStatisticsData();
 
-    Task<List<ChartDataDTO>> GetUserEngagementChartData(string startDate, string endDate);
+    Task<List<ChartDataDTO>> GetUserEngagementData(string startDate, string endDate);
 
-    Task<List<ChartDataDTO>> GetRevenueTrendChartData(string startDate, string endDate);
+    Task<List<ChartDataDTO>> GetRevenueTrendData(string startDate, string endDate);
 
-    Task<List<ChartDataDTO>> GetPerformanceScoreChartData(string startDate, string endDate);
+    Task<List<ChartDataDTO>> GetPerformanceScoreData(string startDate, string endDate);
 }

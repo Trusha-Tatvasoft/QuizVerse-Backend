@@ -18,7 +18,6 @@ public class AdminDashboardServiceTest
     [Fact]
     public async Task GetDashboardSummaryAsync_ReturnsMappedData()
     {
-        // Arrange
         RawAdminDashboardMetricsDTO rawData = new()
         {
             TotalUsers = 100,
@@ -37,10 +36,8 @@ public class AdminDashboardServiceTest
 
         AdminDashboardService service = CreateService();
 
-        // Act
-        AdminDashboardResponse result = await service.GetDashboardSummaryAsync();
+        AdminDashboardResponse result = await service.GetStatisticsData();
 
-        // Assert
         Assert.Equal(100, result.TotalUsers.Value);
         Assert.Equal(10.5, result.TotalUsers.TrendPercentage);
         Assert.Equal(50, result.ActiveQuizzes.Value);
@@ -54,7 +51,6 @@ public class AdminDashboardServiceTest
     [Fact]
     public async Task GetUserEngagementChartData_CallsCorrectFunction()
     {
-        // Arrange
         List<ChartDataDTO> chartData = [
             new() { Label = "2025-07-25", Value = 10 }
         ];
@@ -69,10 +65,8 @@ public class AdminDashboardServiceTest
 
         AdminDashboardService service = CreateService();
 
-        // Act
-        List<ChartDataDTO> result = await service.GetUserEngagementChartData("2025-07-01", "2025-07-31");
+        List<ChartDataDTO> result = await service.GetUserEngagementData("2025-07-01", "2025-07-31");
 
-        // Assert
         Assert.Single(result);
         Assert.Equal("2025-07-25", result[0].Label);
         Assert.Equal(10, result[0].Value);
@@ -81,7 +75,6 @@ public class AdminDashboardServiceTest
     [Fact]
     public async Task GetRevenueTrendChartData_CallsCorrectFunction()
     {
-        // Arrange
         List<ChartDataDTO> chartData = [
             new() { Label = "2025-07-25", Value = 200 }
         ];
@@ -96,10 +89,8 @@ public class AdminDashboardServiceTest
 
         AdminDashboardService service = CreateService();
 
-        // Act
-        List<ChartDataDTO> result = await service.GetRevenueTrendChartData("2025-07-01", "2025-07-31");
+        List<ChartDataDTO> result = await service.GetRevenueTrendData("2025-07-01", "2025-07-31");
 
-        // Assert
         Assert.Single(result);
         Assert.Equal("2025-07-25", result[0].Label);
         Assert.Equal(200, result[0].Value);
@@ -108,7 +99,6 @@ public class AdminDashboardServiceTest
     [Fact]
     public async Task GetPerformanceScoreChartData_CallsCorrectFunction()
     {
-        // Arrange
         List<ChartDataDTO> chartData = [
             new() { Label = "2025-07-25", Value = 75 }
         ];
@@ -123,10 +113,8 @@ public class AdminDashboardServiceTest
 
         AdminDashboardService service = CreateService();
 
-        // Act
-        List<ChartDataDTO> result = await service.GetPerformanceScoreChartData("2025-07-01", "2025-07-31");
+        List<ChartDataDTO> result = await service.GetPerformanceScoreData("2025-07-01", "2025-07-31");
 
-        // Assert
         Assert.Single(result);
         Assert.Equal("2025-07-25", result[0].Label);
         Assert.Equal(75, result[0].Value);
