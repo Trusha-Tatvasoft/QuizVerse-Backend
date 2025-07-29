@@ -19,4 +19,9 @@ namespace QuizVerse.Infrastructure.Enums
         Player = 2
     }
 
+    public enum UserActionType
+    {
+        Delete = 1,
+        ChangeStatus = 2
+    }
 }

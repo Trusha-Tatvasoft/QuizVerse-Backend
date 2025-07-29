@@ -8,8 +8,7 @@ public class UserDto
     public string UserName { get; set; } = null!;
     public int RoleId { get; set; }
     public int Status { get; set; }
-    public DateTime JoinedDate { get; set; }
+    public DateTime CreatedDate { get; set; }
     public string? Bio { get; set; }
     public string? ProfilePic { get; set; }
-    public string? EmailStatus { get; set; }
 }

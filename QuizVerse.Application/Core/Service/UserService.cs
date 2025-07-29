@@ -1,171 +1,153 @@
+using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class UserService(IUserRepository userRepository, ICustomService customService, IConfiguration config) : IUserService
+public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IConfiguration config, IEmailService emailService, IMapper mapper, IHttpContextAccessor httpContextAccessor) : IUserService
 {
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly ICustomService _customService = customService;
-    private readonly IConfiguration _config = config;
+    public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
 
     #region GetUserById
     public async Task<UserDto> GetUserById(int id)
     {
-        var user = await _userRepository.GetAsync(u => u.Id == id && !u.IsDeleted)
-            ?? throw new AppException(string.Format(Constants.Messages.User.NOT_FOUND, id));
+        var user = await userRepository.GetAsync(u => u.Id == id && !u.IsDeleted)
+            ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, id));
 
-        return new UserDto
-        {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            UserName = user.UserName,
-            RoleId = user.RoleId,
-            Status = user.Status,
-            JoinedDate = user.CreatedDate,
-            Bio = user.Bio,
-            ProfilePic = user.ProfilePic
-        };
+        return mapper.Map<UserDto>(user);
     }
     #endregion
 
-    #region CreateUser
-    public async Task<UserDto> CreateUser(CreateUserDto dto)
+    #region Create Or Update
+    public async Task<(bool Success, string Message)> CreateOrUpdateUser(UserRequestDto dto)
     {
-        var existingUser = await _userRepository.GetAsync(u => u.Email == dto.Email || u.UserName == dto.UserName);
-
-        if (existingUser != null)
+        if (dto.Id.HasValue && dto.Id.Value > 0)
         {
-            if (existingUser.Email == dto.Email)
-                throw new AppException(string.Format(Constants.Messages.User.DUPLICATE_EMAIL));
+            // UPDATE
+            var user = await userRepository.GetAsync(u => u.Id == dto.Id && !u.IsDeleted)
+                ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, dto.Id));
 
-            if (existingUser.UserName == dto.UserName)
-                throw new AppException(string.Format(Constants.Messages.User.DUPLICATE_USERNAME));
+            if (await userRepository.Exists(u => u.Email == dto.Email && u.Id != dto.Id))
+                throw new AppException(Constants.DUPLICATE_EMAIL);
+
+            if (await userRepository.Exists(u => u.UserName == dto.UserName && u.Id != dto.Id))
+                throw new AppException(Constants.DUPLICATE_USERNAME);
+
+            mapper.Map(dto, user);
+            user.ModifiedBy = UserId;
+            user.ModifiedDate = DateTime.UtcNow;
+
+            await userRepository.UpdateAsync(user);
+            return (true, Constants.UPDATE_SUCCESS);
+        }
+        else
+        {
+            // CREATE
+            if (string.IsNullOrWhiteSpace(dto.Password))
+                throw new AppException(Constants.PASSWORD_REQUIRED_FOR_NEW_USER);
+
+            if (await userRepository.Exists(u => u.Email == dto.Email))
+                throw new AppException(Constants.DUPLICATE_EMAIL);
+
+            if (await userRepository.Exists(u => u.UserName == dto.UserName))
+                throw new AppException(Constants.DUPLICATE_USERNAME);
+
+            var user = mapper.Map<User>(dto);
+            user.Password = commonService.Hash(dto.Password);
+            user.RoleId = (int)UserRoles.Player;
+            user.Status = (int)UserStatus.Active;
+            user.CreatedDate = DateTime.UtcNow;
+            user.CreatedBy = UserId;
+            user.FirstTimeLogin = true;
+            user.LastLogin = DateTime.UtcNow;
+
+            await userRepository.AddAsync(user);
+
+            string emailStatus = await SendMailToNewUser(user.Email, dto.Password);
+
+            return (true, string.Format(Constants.CREATE_SUCCESS + ". " + emailStatus));
+        }
+    }
+    #endregion
+
+    #region Update by Action
+    public async Task<string> UpdateUserByAction(UserActionRequest userActionRequest)
+    {
+        var user = await userRepository.GetAsync(u => u.Id == userActionRequest.Id && !u.IsDeleted)
+            ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, userActionRequest.Id));
+
+        string resultMessage;
+
+        switch (userActionRequest.Action)
+        {
+            case UserActionType.Delete:
+                if (user.IsDeleted)
+                    throw new AppException(string.Format(Constants.USER_ALREADY_DELETED, userActionRequest.Id));
+
+                user.IsDeleted = true;
+                user.ModifiedBy = UserId;
+                user.ModifiedDate = DateTime.UtcNow;
+                resultMessage = Constants.DELETE_SUCCESS;
+                break;
+
+            case UserActionType.ChangeStatus:
+                if (userActionRequest.NewStatus is null)
+                    throw new AppException(Constants.STATUS_REQUIRED);
+
+                if (user.Status == (int)userActionRequest.NewStatus)
+                    throw new AppException(string.Format(Constants.STATUS_ALREADY_SET, userActionRequest.NewStatus));
+
+                user.Status = (int)userActionRequest.NewStatus;
+                user.ModifiedBy = UserId;
+                user.ModifiedDate = DateTime.UtcNow;
+                resultMessage = string.Format(Constants.USER_STATUS_CHANGED_SUCCESS, user.Id, userActionRequest.NewStatus);
+                break;
+
+            default:
+                throw new AppException(Constants.INVALID_DATA_MESSAGE);
         }
 
-        var hashedPassword = _customService.Hash(dto.Password);
+        await userRepository.UpdateAsync(user);
 
-        var user = new User
-        {
-            FullName = dto.FullName,
-            UserName = dto.UserName,
-            Email = dto.Email,
-            Password = hashedPassword,
-            RoleId = (int)UserRoles.Player,
-            Status = (int)UserStatus.Active,
-            CreatedDate = DateTime.UtcNow,
-            FirstTimeLogin = true,
-            LastLogin = DateTime.UtcNow,
-            Bio = dto.Bio,
-            ProfilePic = dto.ProfilePic
-        };
+        return resultMessage;
+    }
+    #endregion
 
-        await _userRepository.AddAsync(user);
+    #region Send mail
+    private async Task<string> SendMailToNewUser(string email, string plainPassword)
+    {
+        string? templatePath = config["EmailSettings:NewUserTemplatePath"];
+        if (string.IsNullOrWhiteSpace(templatePath))
+            throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
 
-        string templatePath = _config["EmailSettings:NewUserTemplatePath"]!;
         string fullPath = Path.Combine(Directory.GetCurrentDirectory(), templatePath);
         string emailBody = await File.ReadAllTextAsync(fullPath);
 
-        emailBody = emailBody.Replace("{username}", user.Email);
-        emailBody = emailBody.Replace("{password}", dto.Password);
+        emailBody = emailBody.Replace("{username}", email);
+        emailBody = emailBody.Replace("{password}", plainPassword);
 
-        bool emailSent = await _customService.SendEmail(user.Email, "Welcome to QuizVerse!", emailBody);
-        string emailStatusMessage = emailSent ? "Email sent successfully." : "Email not sent (sending failed).";
-
-        return new UserDto
+        bool isEmailSent = await emailService.SendEmailAsync(new EmailRequestDto
         {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            UserName = user.UserName,
-            RoleId = user.RoleId,
-            Status = user.Status,
-            JoinedDate = user.CreatedDate,
-            Bio = user.Bio,
-            ProfilePic = user.ProfilePic,
-            EmailStatus = emailStatusMessage
-        };
-    }
-    #endregion
+            To = email,
+            Subject = Constants.QUIZVERSE_DEFAULT_QUOTE,
+            Body = emailBody,
+            Cc = ["cc1@mail.com", "cc2@mail.com"],
+            Bcc = ["bcc1@mail.com", "bcc2@mail.com"]
+        });
 
-    #region UpdateUser
-    public async Task<UserDto> UpdateUser(int id, UpdateUserDto dto)
-    {
-        var user = await _userRepository.GetAsync(u => u.Id == id && !u.IsDeleted)
-            ?? throw new AppException(string.Format(Constants.Messages.User.NOT_FOUND, id));
+        if (isEmailSent)
+            return string.Format(Constants.EMAIL_SENT_SUCCESS, email);
+        else
+            return Constants.EMAIL_NOT_SENT;
 
-        var existingUser = await _userRepository.GetAsync(u => (u.Email == dto.Email || u.UserName == dto.UserName) && u.Id != id);
-
-        if (existingUser != null)
-        {
-            if (existingUser.Email == dto.Email)
-                throw new AppException(string.Format(Constants.Messages.User.DUPLICATE_EMAIL));
-
-            if (existingUser.UserName == dto.UserName)
-                throw new AppException(string.Format(Constants.Messages.User.DUPLICATE_USERNAME));
-        }
-
-        user.FullName = dto.FullName;
-        user.Email = dto.Email;
-        user.UserName = dto.UserName;
-
-        if (!string.IsNullOrWhiteSpace(dto.Bio))
-            user.Bio = dto.Bio;
-
-        if (!string.IsNullOrWhiteSpace(dto.ProfilePicture))
-            user.ProfilePic = dto.ProfilePicture;
-
-        user.ModifiedDate = DateTime.UtcNow;
-
-        await _userRepository.UpdateAsync(user);
-
-        return new UserDto
-        {
-            Id = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            UserName = user.UserName,
-            RoleId = user.RoleId,
-            JoinedDate = user.CreatedDate,
-            Bio = user.Bio,
-            ProfilePic = user.ProfilePic
-        };
-    }
-    #endregion
-
-    #region DeleteUser
-    public async Task DeleteUser(int id)
-    {
-        var user = await _userRepository.GetAsync(u => u.Id == id && !u.IsDeleted)
-            ?? throw new AppException(string.Format(Constants.Messages.User.NOT_FOUND, id));
-
-        user.IsDeleted = true;
-        user.ModifiedDate = DateTime.UtcNow;
-
-        await _userRepository.UpdateAsync(user);
-    }
-    #endregion
-
-    #region ChangeUserStatus
-    public async Task ChangeUserStatus(int id, UserStatus newStatus)
-    {
-        var user = await _userRepository.GetAsync(u => u.Id == id && !u.IsDeleted)
-            ?? throw new AppException(string.Format(Constants.Messages.User.NOT_FOUND, id));
-
-        if (user.Status == (int)newStatus)
-            throw new AppException(string.Format(Constants.Messages.User.STATUS_ALREADY_SET, newStatus));
-
-        user.Status = (int)newStatus;
-        user.ModifiedDate = DateTime.UtcNow;
-
-        await _userRepository.UpdateAsync(user);
     }
     #endregion
 }
