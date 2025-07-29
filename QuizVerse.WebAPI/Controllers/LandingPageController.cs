@@ -17,7 +17,7 @@ public class LandingPageController(ILandingPageService landingPageService) : Con
         {
             Result = true,
             StatusCode = StatusCodes.Status200OK,
-            Message = Constants.FETCH_DATA_MESSAGE,
+            Message = Constants.FETCH_SUCCESS,
             Data = await landingPageService.GetLandingPageData()
         };
 
