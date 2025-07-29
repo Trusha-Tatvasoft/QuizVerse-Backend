@@ -7,6 +7,34 @@ namespace QuizVerse.UnitTests.Services
     {
         private readonly CommonService _service = new();
 
+
+        [Fact]
+        public void Hash_ReturnsHashedPassword_WhenValidPasswordProvided()
+        {
+            var password = "MySecret123!";
+            var hashed = _service.Hash(password);
+            Assert.False(string.IsNullOrWhiteSpace(hashed));
+            Assert.StartsWith("$2", hashed);
+        }
+
+        [Fact]
+        public void Hash_ReturnsDifferentHashes_ForSamePassword()
+        {
+            var password = "RepeatablePassword";
+            var hash1 = _service.Hash(password);
+            var hash2 = _service.Hash(password);
+            Assert.NotEqual(hash1, hash2);
+        }
+
+        [Fact]
+        public void Hash_CanBeVerifiedWithVerifyPassword()
+        {
+            var password = "VerifyMe!";
+            var hashed = _service.Hash(password);
+            var result = _service.VerifyPassword(password, hashed);
+            Assert.True(result);
+        }
+
         [Fact]
         public void VerifyPassword_ReturnsTrue_WhenPasswordMatchesHash()
         {

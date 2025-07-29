@@ -25,6 +25,7 @@ builder.Services.AddCors(options =>
 builder.Services.RegisterDependency();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
 
 // for returning validation error in ApiResponse Formate
 builder.Services.Configure<ApiBehaviorOptions>(options =>
