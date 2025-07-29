@@ -1,17 +1,19 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService(ITokenService tokenService, ICommonService _customService, IGenericRepository<User> _genericUserRepository) : IAuthService
+    public class AuthService(ITokenService tokenService, ICommonService _customService, IGenericRepository<User> _genericUserRepository, IEmailService _emailService, IConfiguration _configuration) : IAuthService
     {
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
         {
@@ -150,5 +152,79 @@ namespace QuizVerse.Application.Core.Service
             return totalDuration - elapsed;
         }
 
+        public async Task<UserDto> RegisterUser(UserRegisterDto userRegisterDto)
+        {
+
+            if (await _genericUserRepository.Exists(u => u.Email == userRegisterDto.Email && !u.IsDeleted))
+                throw new AppException(Constants.DUPLICATE_EMAIL);
+
+            if (await _genericUserRepository.Exists(u => u.UserName == userRegisterDto.UserName && !u.IsDeleted))
+                throw new AppException(Constants.DUPLICATE_USERNAME);
+
+            User newUser = new()
+            {
+                FullName = userRegisterDto.FullName,
+                Email = userRegisterDto.Email,
+                UserName = userRegisterDto.UserName,
+                Password = _customService.Hash(userRegisterDto.Password),
+                Bio = userRegisterDto.Bio,
+                FirstTimeLogin = false,
+                Status = 1,
+                RoleId = 2,
+                IsDeleted = false,
+                CreatedDate = DateTime.UtcNow,
+            };
+            await _genericUserRepository.AddAsync(newUser);
+            await SendWelcomeEmailAsync(newUser);
+
+            return new UserDto
+            {
+                Id = newUser.Id,
+                FullName = newUser.FullName,
+                Email = newUser.Email,
+                UserName = newUser.UserName,
+                RoleId = newUser.RoleId,
+                Status = newUser.Status,
+                CreatedDate = newUser.CreatedDate,
+                Bio = newUser.Bio
+            };
+        }
+
+        private async Task SendWelcomeEmailAsync(User user)
+        {
+            string templatePath = GetEmailTemplatePath("WelcomeEmail.html");
+
+            string emailBody = await File.ReadAllTextAsync(templatePath);
+
+            emailBody = emailBody
+                .Replace("{{userEmail}}", user.Email)
+                .Replace("{{registrationDate}}", user.CreatedDate.ToString("MMMM dd, yyyy"))
+                .Replace("{{loginUrl}}", "https://quizverse.com/login")
+                .Replace("{{helpUrl}}", "https://quizverse.com/help")
+                .Replace("{{privacyUrl}}", "https://quizverse.com/privacy")
+                .Replace("{{termsUrl}}", "https://quizverse.com/terms")
+                .Replace("{{unsubscribeUrl}}", "https://quizverse.com/unsubscribe")
+                .Replace("{{contactUrl}}", "https://quizverse.com/contact")
+                .Replace("{{companyName}}", "QuizVerse");
+
+            EmailRequestDto emailRequest = new()
+            {
+                To = user.Email,
+                Subject = "Welcome to QuizVerse",
+                Body = emailBody
+            };
+
+            await _emailService.SendEmailAsync(emailRequest);
+        }
+
+        private string GetEmailTemplatePath(string templateFileName)
+        {
+            var folderPath = _configuration["EmailSettings:TemplatePath"];
+
+            if (string.IsNullOrWhiteSpace(folderPath))
+                throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
+
+            return Path.Combine(folderPath, templateFileName);
+        }
     }
 }

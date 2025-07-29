@@ -51,5 +51,21 @@ namespace QuizVerse.WebAPI.Controllers
 
             return Ok(response);
         }
+
+        [HttpPost("register-user")]
+        public async Task<IActionResult> RegisterUser([FromBody] UserRegisterDto userRegisterDto)
+        {
+            UserDto newUser = await _authService.RegisterUser(userRegisterDto);
+
+            ApiResponse<UserDto> response = new()
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status201Created,
+                Message = "User registered successfully",
+                Data = newUser
+            };
+
+            return StatusCode(StatusCodes.Status201Created, response);
+        }
     }
 }

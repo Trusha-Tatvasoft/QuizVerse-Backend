@@ -11,6 +11,10 @@ using System.Linq.Expressions;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
+using FluentAssertions;
+using System.ComponentModel.DataAnnotations;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.UnitTests.Services
 {
@@ -19,9 +23,27 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<ITokenService> _tokenServiceMock = new();
         private readonly Mock<ICommonService> _customServiceMock = new();
         private readonly Mock<IGenericRepository<User>> _userRepoMock = new();
+        private readonly Mock<IEmailService> _emailServiceMock = new();
+        private readonly Mock<IConfiguration> _configurationMock = new();
 
         private AuthService CreateService() =>
-            new AuthService(_tokenServiceMock.Object, _customServiceMock.Object, _userRepoMock.Object);
+            new(_tokenServiceMock.Object, _customServiceMock.Object, _userRepoMock.Object, _emailServiceMock.Object, _configurationMock.Object);
+
+
+        public AuthServiceTests()
+        {
+            _userRepoMock = new Mock<IGenericRepository<User>>();
+            _emailServiceMock = new Mock<IEmailService>();
+            _configurationMock = new Mock<IConfiguration>();
+            _tokenServiceMock = new Mock<ITokenService>();
+
+            _configurationMock.Setup(c => c["EmailSettings:TemplatePath"]).Returns("TestTemplates");
+
+            // Ensure test email template file exists
+            Directory.CreateDirectory("TestTemplates");
+            File.WriteAllText(Path.Combine("TestTemplates", "WelcomeEmail.html"),
+                "<html>Welcome {{userEmail}} on {{registrationDate}}</html>");
+        }
 
         private User CreateTestUser(int status = (int)UserStatus.Active, DateTime? modifiedDate = null)
         {
@@ -44,7 +66,7 @@ namespace QuizVerse.UnitTests.Services
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim("remember_me", "true")
                 } : null,
-                isAuthenticated ? "TestAuthType" : null 
+                isAuthenticated ? "TestAuthType" : null
             );
 
             return new ClaimsPrincipal(identity);
@@ -328,6 +350,103 @@ namespace QuizVerse.UnitTests.Services
 
             Assert.Equal("new_access", result.accessToken);
             Assert.Equal("new_refresh", result.refreshToken);
+        }
+        private static UserRegisterDto CreateValidUserDto() => new()
+        {
+            FullName = "Jane Doe",
+            Email = "jane@example.com",
+            UserName = "janedoe",
+            Password = "SecurePass123",
+            Bio = "Tester at QuizVerse"
+        };
+
+        [Fact]
+        public async Task RegisterUser_Should_Throw_When_EmailAlreadyExists()
+        {
+            UserRegisterDto userRegisterDto = CreateValidUserDto();
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(true);
+
+            var service = CreateService();
+
+            var act = async () => await service.RegisterUser(userRegisterDto);
+
+            await act.Should().ThrowAsync<AppException>().WithMessage(Constants.DUPLICATE_EMAIL);
+        }
+
+        [Fact]
+        public async Task RegisterUser_Should_Throw_When_UsernameAlreadyExists()
+        {
+            UserRegisterDto userRegisterDto = CreateValidUserDto();
+
+            _userRepoMock.SetupSequence(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(false) // Email doesn't exist
+                .ReturnsAsync(true); // Username exists
+
+            var service = CreateService();
+
+            var act = async () => await service.RegisterUser(userRegisterDto);
+
+            await act.Should().ThrowAsync<AppException>().WithMessage(Constants.DUPLICATE_USERNAME);
+        }
+
+        [Fact]
+        public async Task RegisterUser_Should_Throw_When_TemplatePathMissing()
+        {
+            UserRegisterDto userRegisterDto = CreateValidUserDto();
+
+            _configurationMock.Setup(c => c["EmailSettings:TemplatePath"]).Returns((string?)null );
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(false);
+            _customServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
+
+            var service = CreateService();
+
+            var act = async () => await service.RegisterUser(userRegisterDto);
+
+            await act.Should().ThrowAsync<AppException>().WithMessage(Constants.EMAIL_PATH_NOT_CONFIGURED);
+        }
+
+        [Fact]
+        public async Task RegisterUser_Should_Throw_When_TemplateFileMissing()
+        {
+            UserRegisterDto  userRegisterDto = CreateValidUserDto();
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "TestData", "Templates");
+            Directory.CreateDirectory(path);
+            string templateFile = Path.Combine(path, "WelcomeEmail.html");
+
+            if (File.Exists(templateFile))
+                File.Delete(templateFile);
+
+            _configurationMock.Setup(c => c["EmailSettings:TemplatePath"]).Returns(path);
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(false);
+            _customServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
+
+            var service = CreateService();
+
+            var act = async () => await service.RegisterUser(userRegisterDto);
+
+            await act.Should().ThrowAsync<FileNotFoundException>();
+        }
+
+        [Fact]
+        public async Task RegisterUser_Should_SendWelcomeEmail_WhenTemplateExists()
+        {
+            UserRegisterDto userRegisterDto = CreateValidUserDto();
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "TestData", "Templates");
+            Directory.CreateDirectory(path);
+
+            string templateFile = Path.Combine(path, "WelcomeEmail.html");
+            await File.WriteAllTextAsync(templateFile, "Welcome {{userEmail}}!");
+
+            _configurationMock.Setup(c => c["EmailSettings:TemplatePath"]).Returns(path);
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(false);
+            _customServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
+
+            AuthService service = CreateService();
+
+            UserDto result = await service.RegisterUser(userRegisterDto);
+
+            result.Email.Should().Be(userRegisterDto.Email);
+            _emailServiceMock.Verify(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()), Times.Once);
         }
     }
 }
