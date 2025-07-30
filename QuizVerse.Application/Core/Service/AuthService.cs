@@ -151,18 +151,17 @@ namespace QuizVerse.Application.Core.Service
             return totalDuration - elapsed;
         }
 
-        public async Task<bool> ResetPasswordMail(string emailId)
+        public async Task<bool> ForgotPassword(string email)
         {
-            User? user = await _genericUserRepository.GetAsync(u => u.Email == emailId && u.IsDeleted == false);
-            if (user == null)
-            {
-                throw new AppException(Constants.USER_NOT_FOUND_MESSAGE);
-            }
+            //User input validation
+            User? user = await _genericUserRepository.GetAsync(u => u.Email == email && !u.IsDeleted) ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
             if (user.Status == (int)UserStatus.Inactive)
             {
                 throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
             }
-            string resetPasswordToken = _tokenService.GenerateResetPasswordToken(user);
+
+            // Generate a secure token for password reset
+            string resetPasswordToken = _tokenService.GenerateSecureToken();
             PasswordResetToken passwordResetToken = new PasswordResetToken
             {
                 UserId = user.Id,
@@ -175,55 +174,53 @@ namespace QuizVerse.Application.Core.Service
             {
                 throw new AppException(Constants.FAILED_TO_CREATE_RESET_PASSWORD_TOKEN);
             }
-            bool emailSent = await SendMailForResetPassword(resetPasswordToken, user.FullName, emailId);
-            if (!emailSent)
+
+            // Send email with reset password link
+            if (!await SendMailForResetPassword(resetPasswordToken, user.FullName, email))
             {
                 throw new AppException(Constants.EMAIL_NOT_SENT);
             }
             return true;
         }
 
-        private async Task<bool> SendMailForResetPassword(string resetPasswordToken, string userName, string emailId)
+        private async Task<bool> SendMailForResetPassword(string resetPasswordToken, string userName, string email)
         {
+            // email configuration
             string baseUrl = _config["baseUrl"]!;
             string resetLink = $"{baseUrl}/{Constants.RESET_PASSWORD_FE_PATH}?token={resetPasswordToken}";
-            string templatePath = _config["EmailSettings:ResetPasswordTemplatePath"]!;
+            string templatePath = Constants.ResetPasswordTemplatePath;
             string fullPath = Path.Combine(Directory.GetCurrentDirectory(), templatePath);
             string emailBody = await File.ReadAllTextAsync(fullPath);
 
+            //email body replacement
             emailBody = emailBody.Replace("{userName}", userName);
-            emailBody = emailBody.Replace("{userEmail}", emailId);
+            emailBody = emailBody.Replace("{userEmail}", email);
             emailBody = emailBody.Replace("{resetLink}", resetLink);
 
+            // Send email
             EmailRequestDto mail = new EmailRequestDto
             {
-                To = emailId,
+                To = email,
                 Subject = Constants.RESET_PASSWORD_EMAIL_HEADING,
                 Body = emailBody
             };
             return await _emailService.SendEmailAsync(mail);
         }
 
-        public async Task<bool> ResetPasswordTokenValidation(string token)
+        public async Task<bool> VerifyTokenResetPassword(string token)
         {
             if (string.IsNullOrEmpty(token))
             {
                 throw new ArgumentException(Constants.EMPTY_TOKEN_MESSAGE);
             }
-            ClaimsPrincipal principal = _tokenService.ValidateToken(token, validateLifetime: true);
-            if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
-            {
-                throw new ArgumentException(Constants.INVALID_RESET_PASSWORD_TOKEN);
-            }
-            string userIdStr = _tokenService.GetUserIdFromToken(principal);
-            if (!int.TryParse(userIdStr, out int userId))
-            {
-                throw new ArgumentException(Constants.INVALID_USER_ID_MESSAGE);
-            }
+
+            // Validate the token and check if it is not used and not expired
             PasswordResetToken passwordResetToken = await _genericPasswordResetTokenRepository.GetAsync(
                 t => t.Token == token && (bool)!t.IsUsed && t.ExpireAt > DateTime.UtcNow)
                 ?? throw new ArgumentException(Constants.INVALID_RESET_PASSWORD_TOKEN);
-            User? user = await _genericUserRepository.GetAsync(u => u.Id == userId && !u.IsDeleted)
+
+            // Check if the user associated with the token exists and is not deleted
+            User? user = await _genericUserRepository.GetAsync(u => u.Id == passwordResetToken.UserId && !u.IsDeleted)
                 ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
             if (user.Status == (int)UserStatus.Inactive)
             {
@@ -234,34 +231,32 @@ namespace QuizVerse.Application.Core.Service
 
         public async Task<bool> ResetPassword(ResetPasswordDTO resetPasswordDto)
         {
+            // Validate the input data
             if (resetPasswordDto == null || string.IsNullOrEmpty(resetPasswordDto.ResetPasswordToken) || string.IsNullOrEmpty(resetPasswordDto.Password))
             {
                 throw new ArgumentException(Constants.INVALID_DATA_MESSAGE);
             }
+
+            // Validate the reset password token and user exists
             PasswordResetToken passwordResetToken = await _genericPasswordResetTokenRepository.GetAsync(
                t => t.Token == resetPasswordDto.ResetPasswordToken && (bool)!t.IsUsed && t.ExpireAt > DateTime.UtcNow)
                ?? throw new ArgumentException(Constants.INVALID_RESET_PASSWORD_TOKEN);
-            ClaimsPrincipal principal = _tokenService.ValidateToken(passwordResetToken.Token, validateLifetime: true);
-            if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
-            {
-                throw new ArgumentException(Constants.INVALID_RESET_PASSWORD_TOKEN);
-            }
-            string userIdStr = _tokenService.GetUserIdFromToken(_tokenService.ValidateToken(resetPasswordDto.ResetPasswordToken, validateLifetime: true));
-            if (!int.TryParse(userIdStr, out int userId))
-            {
-                throw new ArgumentException(Constants.INVALID_USER_ID_MESSAGE);
-            }
-            User? user = await _genericUserRepository.GetAsync(u => u.Id == userId && !u.IsDeleted)
+            User? user = await _genericUserRepository.GetAsync(u => u.Id == passwordResetToken.UserId && !u.IsDeleted)
                 ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
             if (user.Status == (int)UserStatus.Inactive)
             {
                 throw new ArgumentException(Constants.INACTIVE_USER_MESSAGE);
             }
+
+            // Update the user's password
             user.Password = _commonService.Hash(resetPasswordDto.Password);
             passwordResetToken.IsUsed = true;
             await _genericUserRepository.UpdateAsync(user);
-            await _genericPasswordResetTokenRepository.UpdateAsync(passwordResetToken);
+
+            //delete the used reset password token
+            List<PasswordResetToken> tokensToDelete = await _genericPasswordResetTokenRepository.FindAsync(u => u.UserId == user.Id);
+            await _genericPasswordResetTokenRepository.DeleteRangeAsync(tokensToDelete);
             return true;
-        } 
+        }
     }
 }

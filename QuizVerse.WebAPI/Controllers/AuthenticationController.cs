@@ -53,29 +53,29 @@ namespace QuizVerse.WebAPI.Controllers
         }
 
 
-        [HttpGet("reset-password-mail")]
-        public async Task<IActionResult> ResetPasswordMail(string emailId)
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(EmailForResetPasswordDTO email)
         {
             ApiResponse<bool> response = new ApiResponse<bool>
             {
                 Result = true,
                 StatusCode = StatusCodes.Status200OK,
                 Message = Constants.SEND_MAIL_SUCCESS_MESSAGE,
-                Data = await authService.ResetPasswordMail(emailId),
+                Data = await authService.ForgotPassword(email.Email!),
             };
             return Ok(response);
         }
 
 
-        [HttpGet("reset-password-token-validation")]
-        public async Task<IActionResult> ResetPasswordTokenValidation(string resetPasswordToken)
+        [HttpPost("verify-token-reset-password")]
+        public async Task<IActionResult> VerifyTokenResetPassword(ResetPasswordTokenDTO resetPasswordToken)
         {
             ApiResponse<bool> response = new ApiResponse<bool>
             {
                 Result = true,
                 StatusCode = StatusCodes.Status200OK,
                 Message = Constants.VALID_RESET_PASSWORD_TOKEN,
-                Data = await authService.ResetPasswordTokenValidation(resetPasswordToken),
+                Data = await authService.VerifyTokenResetPassword(resetPasswordToken.ResetPasswordToken!),
             };
             return Ok(response);
         }

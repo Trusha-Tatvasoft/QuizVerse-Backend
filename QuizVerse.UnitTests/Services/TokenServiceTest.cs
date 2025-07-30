@@ -196,25 +196,19 @@ namespace QuizVerse.UnitTests.Services
         }
 
         [Fact]
-        public void GenerateResetPasswordToken_Returns_ValidToken()
+        public void GenerateSecureToken_Returns_Unique_NonEmptyToken()
         {
-            // Arrange
             var service = CreateService();
-            var user = CreateTestUser();
+            var token1 = service.GenerateSecureToken();
+            var token2 = service.GenerateSecureToken();
 
-            var token = service.GenerateResetPasswordToken(user);
-
-            Assert.False(string.IsNullOrEmpty(token));
-
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-
-            // Assert
-            Assert.Equal(_configuration["JwtSettings:Issuer"], jwtToken.Issuer);
-            Assert.Equal(_configuration["JwtSettings:Audience"], jwtToken.Audiences.First());
-
-            Assert.Contains(jwtToken.Claims, c => c.Type == ClaimTypes.Email && c.Value == user.Email);
-            Assert.Contains(jwtToken.Claims, c => c.Type == ClaimTypes.UserData && c.Value == user.Id.ToString());
+             // Act & Assert
+            Assert.False(string.IsNullOrEmpty(token1));
+            Assert.False(string.IsNullOrEmpty(token2));
+            Assert.NotEqual(token1, token2);
+            Assert.DoesNotContain("+", token1);
+            Assert.DoesNotContain("/", token1);
+            Assert.DoesNotContain("=", token1);
         }
     }
 }

@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Infrastructure.Common;
+using System.Security.Cryptography;
 
 namespace QuizVerse.Application.Core.Service
 {
@@ -133,19 +134,17 @@ namespace QuizVerse.Application.Core.Service
             return jwtToken.ValidTo;
         }
 
-        public string GenerateResetPasswordToken(User? user)
+        public string GenerateSecureToken(int byteLength = 32)
         {
-            if (user == null)
-            {
-                throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
-            }
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.UserData, user.Id.ToString()),
-            };
-            var expiryMinutesString = _configuration["ResetPasswordTokenExpiryMinutes"] ?? throw new InvalidOperationException(Constants.ACCESS_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE);
-            return CreateToken(claims, DateTime.UtcNow.AddMinutes(double.Parse(expiryMinutesString)));
+            var randomBytes = new byte[byteLength];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+
+            string base64Token = Convert.ToBase64String(randomBytes);
+            return base64Token
+                .Replace("+", "-")
+                .Replace("/", "_")
+                .Replace("=", "");
         }
     }
 }

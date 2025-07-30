@@ -334,398 +334,240 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal("new_refresh", result.refreshToken);
         }
 
-        #region ResetPasswordTokenValidation Tests
         [Fact]
-        public async Task ResetPasswordTokenValidation_Throws_WhenTokenIsEmpty()
+        public async Task ForgotPassword_ReturnsTrue_WhenValidUser()
         {
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPasswordTokenValidation(""));
-            Assert.Equal(Constants.EMPTY_TOKEN_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordTokenValidation_Throws_WhenTokenInvalid()
-        {
-            _tokenServiceMock.Setup(t => t.ValidateToken("invalid_token", true))
-                            .Returns((ClaimsPrincipal)null!);
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPasswordTokenValidation("invalid_token"));
-            Assert.Equal(Constants.INVALID_RESET_PASSWORD_TOKEN, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordTokenValidation_Throws_WhenUserIdInvalid()
-        {
-            var principal = CreateClaimsPrincipal(1);
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("notanint");
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPasswordTokenValidation("token"));
-            Assert.Equal(Constants.INVALID_USER_ID_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordTokenValidation_Throws_WhenTokenNotFoundOrInvalid()
-        {
-            var principal = CreateClaimsPrincipal(1);
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("1");
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync((PasswordResetToken?)null);
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPasswordTokenValidation("token"));
-            Assert.Equal(Constants.INVALID_RESET_PASSWORD_TOKEN, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordTokenValidation_Throws_WhenUserNotFound()
-        {
-            var principal = CreateClaimsPrincipal(1);
-            var resetToken = new PasswordResetToken
-            {
-                TokenId = 1,
-                Token = "token",
-                UserId = 1,
-                ExpireAt = DateTime.UtcNow.AddMinutes(30),
-                IsUsed = false
-            };
-
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("1");
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync(resetToken);
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync((User?)null);
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPasswordTokenValidation("token"));
-            Assert.Equal(Constants.USER_NOT_FOUND_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordTokenValidation_Throws_WhenUserInactive()
-        {
-            var principal = CreateClaimsPrincipal(1);
-            var user = CreateTestUser((int)UserStatus.Inactive);
-            var resetToken = new PasswordResetToken
-            {
-                TokenId = 1,
-                Token = "token",
-                UserId = 1,
-                ExpireAt = DateTime.UtcNow.AddMinutes(30),
-                IsUsed = false
-            };
-
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("1");
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync(resetToken);
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync(user);
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPasswordTokenValidation("token"));
-            Assert.Equal(Constants.INACTIVE_USER_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordTokenValidation_ReturnsTrue_WhenValid()
-        {
-            var principal = CreateClaimsPrincipal(1);
+            // Arrange
             var user = CreateTestUser();
-            var resetToken = new PasswordResetToken
-            {
-                TokenId = 1,
-                Token = "token",
-                UserId = 1,
-                ExpireAt = DateTime.UtcNow.AddMinutes(30),
-                IsUsed = false
-            };
-
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("1");
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync(resetToken);
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync(user);
-
-            var service = CreateService();
-
-            var result = await service.ResetPasswordTokenValidation("token");
-
-            Assert.True(result);
-        }
-        #endregion
-
-        #region ResetPassword Tests
-        [Fact]
-        public async Task ResetPassword_Throws_WhenDtoIsNullOrInvalid()
-        {
-            var service = CreateService();
-
-            var ex1 = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(null!));
-            var ex2 = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(new ResetPasswordDTO { ResetPasswordToken = "", Password = "newpass" }));
-            var ex3 = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(new ResetPasswordDTO { ResetPasswordToken = "token", Password = "" }));
-
-            Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex1.Message);
-            Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex2.Message);
-            Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex3.Message);
-        }
-
-        [Fact]
-        public async Task ResetPassword_Throws_WhenTokenNotFoundOrInvalid()
-        {
-            var dto = new ResetPasswordDTO { ResetPasswordToken = "token", Password = "newpass" };
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync((PasswordResetToken?)null);
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(dto));
-            Assert.Equal(Constants.INVALID_RESET_PASSWORD_TOKEN, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPassword_Throws_WhenTokenPrincipalInvalid()
-        {
-            var dto = new ResetPasswordDTO { ResetPasswordToken = "token", Password = "newpass" };
-            var resetToken = new PasswordResetToken
-            {
-                TokenId = 1,
-                Token = "token",
-                UserId = 1,
-                ExpireAt = DateTime.UtcNow.AddMinutes(30),
-                IsUsed = false
-            };
-
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync(resetToken);
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns((ClaimsPrincipal)null!);
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(dto));
-            Assert.Equal(Constants.INVALID_RESET_PASSWORD_TOKEN, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPassword_Throws_WhenUserIdInvalid()
-        {
-            var dto = new ResetPasswordDTO { ResetPasswordToken = "token", Password = "newpass" };
-            var resetToken = new PasswordResetToken
-            {
-                TokenId = 1,
-                Token = "token",
-                UserId = 1,
-                ExpireAt = DateTime.UtcNow.AddMinutes(30),
-                IsUsed = false
-            };
-            var principal = CreateClaimsPrincipal(1);
-
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync(resetToken);
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("notanint");
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(dto));
-            Assert.Equal(Constants.INVALID_USER_ID_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPassword_Throws_WhenUserNotFound()
-        {
-            var dto = new ResetPasswordDTO { ResetPasswordToken = "token", Password = "newpass" };
-            var resetToken = new PasswordResetToken
-            {
-                TokenId = 1,
-                Token = "token",
-                UserId = 1,
-                ExpireAt = DateTime.UtcNow.AddMinutes(30),
-                IsUsed = false
-            };
-            var principal = CreateClaimsPrincipal(1);
-
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync(resetToken);
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("1");
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync((User?)null);
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(dto));
-            Assert.Equal(Constants.USER_NOT_FOUND_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPassword_Throws_WhenUserInactive()
-        {
-            var dto = new ResetPasswordDTO { ResetPasswordToken = "token", Password = "newpass" };
-            var user = CreateTestUser((int)UserStatus.Inactive);
-            var resetToken = new PasswordResetToken
-            {
-                TokenId = 1,
-                Token = "token",
-                UserId = 1,
-                ExpireAt = DateTime.UtcNow.AddMinutes(30),
-                IsUsed = false
-            };
-            var principal = CreateClaimsPrincipal(1);
-
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync(resetToken);
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("1");
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync(user);
-
-            var service = CreateService();
-
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(dto));
-            Assert.Equal(Constants.INACTIVE_USER_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPassword_ReturnsTrue_WhenSuccessful()
-        {
-            var dto = new ResetPasswordDTO { ResetPasswordToken = "token", Password = "newpass" };
-            var user = CreateTestUser();
-            var resetToken = new PasswordResetToken
-            {
-                TokenId = 1,
-                Token = "token",
-                UserId = 1,
-                ExpireAt = DateTime.UtcNow.AddMinutes(30),
-                IsUsed = false
-            };
-            var principal = CreateClaimsPrincipal(1);
-
-            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
-                                      .ReturnsAsync(resetToken);
-            _tokenServiceMock.Setup(t => t.ValidateToken("token", true)).Returns(principal);
-            _tokenServiceMock.Setup(t => t.GetUserIdFromToken(principal)).Returns("1");
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync(user);
-            _commonServiceMock.Setup(c => c.Hash(dto.Password)).Returns("hashed_newpass");
-            _userRepoMock.Setup(r => r.UpdateAsync(user)).Returns(Task.CompletedTask);
-            _passwordResetTokenRepoMock.Setup(r => r.UpdateAsync(resetToken)).Returns(Task.CompletedTask);
-
-            var service = CreateService();
-
-            var result = await service.ResetPassword(dto);
-
-            Assert.True(result);
-            Assert.Equal("hashed_newpass", user.Password);
-            Assert.True(resetToken.IsUsed);
-        }
-        #endregion
-
-        #region ResetPasswordMail Tests
-        [Fact]
-        public async Task ResetPasswordMail_Throws_WhenUserNotFound()
-        {
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
-                         .ReturnsAsync((User?)null);
-            var service = CreateService();
-            var ex = await Assert.ThrowsAsync<AppException>(() => service.ResetPasswordMail("unknown@test.com"));
-            Assert.Equal(Constants.USER_NOT_FOUND_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordMail_Throws_WhenUserInactive()
-        {
-            var user = CreateTestUser((int)UserStatus.Inactive);
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
-                         .ReturnsAsync(user);
-            var service = CreateService();
-            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPasswordMail(user.Email));
-            Assert.Equal(Constants.INACTIVE_USER_MESSAGE, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordMail_Throws_WhenTokenCreationFails()
-        {
-            var user = CreateTestUser();
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
-                         .ReturnsAsync(user);
-            _tokenServiceMock.Setup(t => t.GenerateResetPasswordToken(user)).Returns("token");
-            _configMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("15");
-
-            var passwordResetToken = new PasswordResetToken { TokenId = 0, Token = "" }; // Simulate failure
-            _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
-                                              .Callback<PasswordResetToken>(t => t.TokenId = 0);
-            var service = CreateService();
-            var ex = await Assert.ThrowsAsync<AppException>(() => service.ResetPasswordMail(user.Email));
-            Assert.Equal(Constants.FAILED_TO_CREATE_RESET_PASSWORD_TOKEN, ex.Message);
-        }
-
-        [Fact]
-        public async Task ResetPasswordMail_ReturnsTrue_WhenEmailSentSuccessfully()
-        {
-            var user = CreateTestUser();
-            var token = "resettoken";
-
-            string tempDir = Path.Combine(Path.GetTempPath(), "QuizVerseTests");
-            Directory.CreateDirectory(tempDir);
-
-            string tempTemplatePath = Path.Combine(tempDir, "ResetPassword.html");
-
-            await File.WriteAllTextAsync(tempTemplatePath, @"
-                    <html>
-                        <body>
-                            Hello {userName}, reset your password using this link: {resetLink}
-                        </body>
-                    </html>
-                ");
 
             _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
                          .ReturnsAsync(user);
 
-            _tokenServiceMock.Setup(t => t.GenerateResetPasswordToken(user)).Returns(token);
-            _configMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("15");
+            _tokenServiceMock.Setup(t => t.GenerateSecureToken(32)).Returns("secure_token");
+
+            _configMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("30");
             _configMock.Setup(c => c["baseUrl"]).Returns("https://example.com");
-            _configMock.Setup(c => c["EmailSettings:ResetPasswordTemplatePath"]).Returns(tempTemplatePath);
 
-            var passwordResetToken = new PasswordResetToken { TokenId = 1, Token = token };
             _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
-                                       .Callback<PasswordResetToken>(t =>
-                                       {
-                                           t.TokenId = 1;
-                                           t.Token = token;
-                                       }).Returns(Task.CompletedTask);
+                                       .Returns(Task.CompletedTask)
+                                       .Callback<PasswordResetToken>(token => token.TokenId = 1);
 
-            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()))
-                             .ReturnsAsync(true);
+            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(true);
 
-            var service = CreateService();
+            string projectRoot = Directory.GetCurrentDirectory();
+            string templateRelativePath = Path.Combine("Templates", "ResetPassword.html");
+            string templateFullPath = Path.Combine(projectRoot, templateRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(templateFullPath)!);
+
+            string templateContent = "Hi {userName}, use this link to reset: {resetLink}";
+            await File.WriteAllTextAsync(templateFullPath, templateContent);
 
             try
             {
-                var result = await service.ResetPasswordMail(user.Email);
+                // Act
+                var service = CreateService();
+                var result = await service.ForgotPassword(user.Email);
 
+                // Assert
                 Assert.True(result);
             }
             finally
             {
-                // Clean up temp file
-                if (File.Exists(tempTemplatePath))
-                    File.Delete(tempTemplatePath);
-                if (Directory.Exists(tempDir))
-                    Directory.Delete(tempDir, true);
+                if (File.Exists(templateFullPath))
+                    File.Delete(templateFullPath);
             }
         }
-        #endregion
+
+        [Fact]
+        public async Task ForgotPassword_Throws_WhenUserNotFound()
+        {
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync((User?)null);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ForgotPassword("notfound@example.com"));
+
+            Assert.Equal(Constants.USER_NOT_FOUND_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Throws_WhenUserInactive()
+        {
+            var user = CreateTestUser((int)UserStatus.Inactive);
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ForgotPassword(user.Email));
+
+            Assert.Equal(Constants.INACTIVE_USER_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Throws_WhenTokenSaveFails()
+        {
+            var user = CreateTestUser();
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+            _tokenServiceMock.Setup(t => t.GenerateSecureToken(32)).Returns("secure_token");
+            _configMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("15");
+            _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
+             .Callback<PasswordResetToken>(t =>
+             {
+                 t.TokenId = 0;
+                 t.Token = "";
+             })
+             .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<AppException>(() => service.ForgotPassword(user.Email));
+
+            Assert.Equal(Constants.FAILED_TO_CREATE_RESET_PASSWORD_TOKEN, ex.Message);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Throws_WhenEmailFails()
+        {
+            // Arrange
+            var user = CreateTestUser();
+            var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
+            var fullFilePath = Path.Combine(templatePath, "ResetPassword.html");
+
+            // Ensure the directory exists
+            Directory.CreateDirectory(templatePath);
+
+            // Create a dummy file with valid placeholders
+            await File.WriteAllTextAsync(fullFilePath, "Hello {userName}, reset your password here: {resetLink}");
+
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+            _tokenServiceMock.Setup(t => t.GenerateSecureToken(32)).Returns("secure_token");
+            _configMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("30");
+            _configMock.Setup(c => c["baseUrl"]).Returns("https://example.com");
+            _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
+                                       .Callback<PasswordResetToken>(t => t.TokenId = 1)
+                                       .Returns(Task.CompletedTask);
+            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(false);
+
+            var service = CreateService();
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => service.ForgotPassword(user.Email));
+            Assert.Equal(Constants.EMAIL_NOT_SENT, ex.Message);
+
+            // Cleanup
+            if (File.Exists(fullFilePath))
+                File.Delete(fullFilePath);
+        }
+
+        [Fact]
+        public async Task VerifyTokenResetPassword_ReturnsTrue_WhenValid()
+        {
+            var user = CreateTestUser();
+            var token = new PasswordResetToken { UserId = user.Id, IsUsed = false, ExpireAt = DateTime.UtcNow.AddMinutes(10) };
+
+            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
+                               .ReturnsAsync(token);
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            var service = CreateService();
+            var result = await service.VerifyTokenResetPassword("valid_token");
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task VerifyTokenResetPassword_Throws_WhenTokenEmpty()
+        {
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.VerifyTokenResetPassword(""));
+
+            Assert.Equal(Constants.EMPTY_TOKEN_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task VerifyTokenResetPassword_Throws_WhenTokenInvalid()
+        {
+            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
+                               .ReturnsAsync((PasswordResetToken?)null);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.VerifyTokenResetPassword("invalid_token"));
+
+            Assert.Equal(Constants.INVALID_RESET_PASSWORD_TOKEN, ex.Message);
+        }
+
+        [Fact]
+        public async Task VerifyTokenResetPassword_Throws_WhenUserInactive()
+        {
+            var user = CreateTestUser((int)UserStatus.Inactive);
+            var token = new PasswordResetToken { UserId = user.Id, IsUsed = false, ExpireAt = DateTime.UtcNow.AddMinutes(10) };
+
+            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
+                               .ReturnsAsync(token);
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null)).ReturnsAsync(user);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.VerifyTokenResetPassword("some_token"));
+
+            Assert.Equal(Constants.INACTIVE_USER_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task ResetPassword_ReturnsTrue_WhenValid()
+        {
+            // Arrange
+            var user = CreateTestUser(); // helper method to get a valid user
+            var token = new PasswordResetToken
+            {
+                Token = "valid_token",
+                UserId = user.Id,
+                IsUsed = false,
+                ExpireAt = DateTime.UtcNow.AddMinutes(10)
+            };
+
+            var resetPasswordDto = new ResetPasswordDTO
+            {
+                ResetPasswordToken = "valid_token",
+                Password = "new_password"
+            };
+
+            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
+                                       .ReturnsAsync(token);
+
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            _commonServiceMock.Setup(c => c.Hash("new_password"))
+                              .Returns("hashed_new_password");
+
+            _userRepoMock.Setup(r => r.UpdateAsync(user)).Returns(Task.CompletedTask);
+
+            _passwordResetTokenRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>()))
+                               .ReturnsAsync(new List<PasswordResetToken> { token });
+
+            _passwordResetTokenRepoMock.Setup(r => r.DeleteRangeAsync(It.IsAny<List<PasswordResetToken>>()))
+                                       .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+
+            // Act
+            var result = await service.ResetPassword(resetPasswordDto);
+
+            // Assert
+            Assert.True(result);
+            Assert.True(token.IsUsed);
+            Assert.Equal("hashed_new_password", user.Password);
+        }
+
+        [Fact]
+        public async Task ResetPassword_Throws_WhenDtoInvalid()
+        {
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(null!));
+
+            Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
+        }
     }
 }

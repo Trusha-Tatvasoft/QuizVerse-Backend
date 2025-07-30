@@ -81,5 +81,6 @@ public static class Constants
     public const string PASSWORD_UPDATE_SUCCESS_MESSAGE = "Password updated successfully.";
     public const string FAILED_TO_CREATE_RESET_PASSWORD_TOKEN = "Failed to create Reset Password Token.";
     public const string RESET_PASSWORD_EMAIL_HEADING = "QuizVerse : Reset Password Link!";
+    public const string ResetPasswordTemplatePath = "Templates/ResetPassword.html";
     #endregion
 }

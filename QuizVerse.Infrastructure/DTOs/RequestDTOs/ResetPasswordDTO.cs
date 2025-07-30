@@ -9,11 +9,20 @@ namespace QuizVerse.Infrastructure.DTOs.RequestDTOs
 
         [Required(ErrorMessage = "Password is required.")]
         [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$",
-        ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.Password must not content space.")]
+        ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character. It must be at least 8 characters long.")]
         public string? Password { get; set; }
+    }
 
-        [Required(ErrorMessage = "Confirm Password is required.")]
-        [Compare("Password", ErrorMessage = "Passwords not match with Confirm New Password.")]
-        public string? ConfirmPassword { get; set; }
+    public class EmailForResetPasswordDTO
+    {
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "Invalid email address format.")]
+        public string? Email { get; set; }
+    }
+
+    public class ResetPasswordTokenDTO
+    {
+        [Required(ErrorMessage = "Reset Password Token is required.")]
+        public string? ResetPasswordToken { get; set; }
     }
 }
