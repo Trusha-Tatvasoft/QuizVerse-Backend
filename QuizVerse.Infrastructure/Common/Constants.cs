@@ -27,6 +27,21 @@ public static class Constants
     public const string USER_SUSPENDED_MESSAGE = "You have been suspended. Remaining suspension time: {0} days and {1} hours.";
     #endregion
 
+    #region AdminDashboard
+    public const string DASHBOARD_SUMMARY_FETCH = "Admin dashboard summary fetched successfully.";
+    public const string USER_ENGAGEMENT_DATA_FETCH = "User engagement data retrieved successfully.";
+    public const string REVENUE_TREND_DATA_FETCH = "Revenue trend data retrieved successfully.";
+    public const string PERFORMANCE_SCORE_DATA_FETCH = "Performance score data retrieved successfully.";
+    #endregion
+
+    #region DateValidation
+    public const string START_DATE_REQUIRED = "start_date is required.";
+    public const string END_DATE_REQUIRED = "end_date is required.";
+    public const string INVALID_START_DATE_FORMAT = "Invalid start_date format. Use yyyy-MM-dd.";
+    public const string INVALID_END_DATE_FORMAT = "Invalid end_date format. Use yyyy-MM-dd.";
+    public const string START_DATE_AFTER_END_DATE = "start_date cannot be after end_date.";
+    #endregion
+
     #region Token Messages
     public const string INVALID_TOKEN_FORMAT_MESSAGE = "Invalid Token Format.";
     public const string EXPIRED_TOKEN_MESSAGE = "Token has expired.";
