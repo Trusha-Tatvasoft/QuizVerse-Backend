@@ -1,4 +1,5 @@
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -11,17 +12,18 @@ using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
+using System.Linq.Dynamic.Core;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IConfiguration config, IEmailService emailService, IMapper mapper, IHttpContextAccessor httpContextAccessor) : IUserService
+public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IEmailService emailService, IMapper mapper, IHttpContextAccessor httpContextAccessor) : IUserService
 {
     public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
 
     #region User Queries
-    private IQueryable<User> GetUserData(PagedQueryDto query)
+    private IQueryable<User> GetUserData(PageListRequest query)
     {
-        IQueryable<User> userQuery = userRepository.GetQueryableInclude(u => u.QuizAttempteds, u => u.Role).Where(u => !u.IsDeleted);
+        IQueryable<User> userQuery = userRepository.GetQueryableInclude(u => u.Role).Where(u => !u.IsDeleted);
 
         // Search
         if (!string.IsNullOrWhiteSpace(query.SearchTerm))
@@ -34,13 +36,14 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         }
 
         // Filters
-        if (query.Filters != null)
+        var filters = query.Filters;
+        if (filters != null)
         {
-            if (query.Filters.TryGetValue("status", out var statusStr))
+            if (filters.Status.HasValue)
             {
-                if (int.TryParse(statusStr, out int statusVal) && Enum.IsDefined(typeof(UserStatus), statusVal))
+                if (Enum.IsDefined(typeof(UserStatus), filters.Status.Value))
                 {
-                    userQuery = userQuery.Where(u => u.Status == statusVal);
+                    userQuery = userQuery.Where(u => u.Status == (int)filters.Status.Value);
                 }
                 else
                 {
@@ -48,11 +51,11 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
                 }
             }
 
-            if (query.Filters.TryGetValue("role", out var roleStr))
+            if (filters.Role.HasValue)
             {
-                if (int.TryParse(roleStr, out int roleVal) && Enum.IsDefined(typeof(UserRoles), roleVal))
+                if (Enum.IsDefined(typeof(UserRoles), filters.Role.Value))
                 {
-                    userQuery = userQuery.Where(u => u.RoleId == roleVal);
+                    userQuery = userQuery.Where(u => u.RoleId == (int)filters.Role.Value);
                 }
                 else
                 {
@@ -64,50 +67,41 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         // Sorting
         if (!string.IsNullOrEmpty(query.SortColumn))
         {
-            userQuery = query.SortColumn.ToLower() switch
-            {
-                "fullname" => query.SortDescending ? userQuery.OrderByDescending(u => u.FullName) : userQuery.OrderBy(u => u.FullName),
-                "role" => query.SortDescending ? userQuery.OrderByDescending(u => u.Role.Name) : userQuery.OrderBy(u => u.Role.Name),
-                "status" => query.SortDescending ? userQuery.OrderByDescending(u => u.Status) : userQuery.OrderBy(u => u.Status),
-                "lastactive" => query.SortDescending ? userQuery.OrderByDescending(u => u.LastLogin) : userQuery.OrderBy(u => u.LastLogin),
-                "joindate" => query.SortDescending ? userQuery.OrderByDescending(u => u.CreatedDate) : userQuery.OrderBy(u => u.CreatedDate),
-                "quizattempt" => query.SortDescending ? userQuery.OrderByDescending(u => u.QuizAttempteds.Count) : userQuery.OrderBy(u => u.QuizAttempteds.Count),
-                _ => userQuery.OrderBy(u => u.Id)
-            };
+            if (query.SortColumn == "quizattempt")
+                query.SortColumn = "QuizAttempteds.Count()";
+            userQuery = userQuery.OrderBy($"{query.SortColumn} {(query.SortDescending ? "desc" : "asc")}");
         }
         else
         {
-            userQuery = userQuery.OrderBy(u => u.Id);
+            userQuery = userQuery.OrderBy("Id asc");
         }
-
         return userQuery;
     }
     #endregion
 
-
     #region GetAllUsers
-    public async Task<PagedResultDto<UserDto>> GetUsersList(PagedQueryDto query)
+    public async Task<PageListResponse<UserDto>> GetUsersByPagination(PageListRequest query)
     {
         IQueryable<User>? userQuery = GetUserData(query);
         int totalCount = await userQuery.CountAsync();
 
         if (totalCount == 0)
         {
-            return new PagedResultDto<UserDto>
+            return new PageListResponse<UserDto>
             {
                 TotalRecords = 0,
                 Records = []
             };
         }
 
-        List<User> items = await userQuery
-            .Skip((query.PageNumber - 1) * query.PageSize)
-            .Take(query.PageSize)
-            .ToListAsync();
+        List<UserDto> userDtos = await userQuery
+                        .Skip((query.PageNumber - 1) * query.PageSize)
+                        .Take(query.PageSize)
+                        .ProjectTo<UserDto>(mapper.ConfigurationProvider)
+                        .ToListAsync();
 
-        List<UserDto> userDtos = mapper.Map<List<UserDto>>(items);
 
-        return new PagedResultDto<UserDto>
+        return new PageListResponse<UserDto>
         {
             TotalRecords = totalCount,
             Records = userDtos
@@ -222,7 +216,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #region Send mail
     private async Task<string> SendMailToNewUser(string email, string plainPassword)
     {
-        string? templatePath = config["EmailSettings:NewUserTemplatePath"];
+        string? templatePath = Constants.NEW_USER_TEMPLATE_PATH;
         if (string.IsNullOrWhiteSpace(templatePath))
             throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
 

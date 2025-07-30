@@ -1,7 +1,7 @@
 namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
-public class PagedResultDto<T>
+public class PageListResponse<T>
 {
     public int TotalRecords { get; set; }
-    public IEnumerable<T> Records { get; set; } = [];
+    public List<T> Records { get; set; } = [];
 }

@@ -15,15 +15,15 @@ namespace QuizVerse.WebAPI.Controllers;
 public class UsersController(IUserService userService) : ControllerBase
 {
     #region List Users 
-    [HttpPost("get-user-list")]
-    public async Task<IActionResult> GetUsersList([FromBody] PagedQueryDto query)
+    [HttpPost(" get-users-by-pagination")]
+    public async Task<IActionResult> GetUsersByPagination([FromBody] PageListRequest query)
     {
-        return Ok(new ApiResponse<PagedResultDto<UserDto>>
+        return Ok(new ApiResponse<PageListResponse<UserDto>>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
-            Data = await userService.GetUsersList(query)
+            Data = await userService.GetUsersByPagination(query)
         });
     }
     #endregion

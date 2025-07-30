@@ -68,6 +68,10 @@ public static class Constants
     public const string SMTP_CONFIG_MISSING = "SMTP configuration is missing required fields.";
     #endregion
 
+    #region EmailTemplateConstants
+    public const string NEW_USER_TEMPLATE_PATH = "Templates/NewUser.html";
+    #endregion
+
     #region CRUD Messages
     public const string FETCH_SUCCESS = "Data fetched successfully";
     public const string CREATE_SUCCESS = "Created successfully";

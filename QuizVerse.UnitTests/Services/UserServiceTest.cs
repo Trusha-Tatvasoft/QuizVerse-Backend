@@ -54,13 +54,10 @@ public class UserServiceTests
         _commonServiceMock = new Mock<ICommonService>();
         _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
 
-        _configMock = new Mock<IConfiguration>();
-        _configMock.Setup(c => c["EmailSettings:NewUserTemplatePath"]).Returns("email-template.txt");
-
         File.WriteAllText("email-template.txt", "Hello {username}, your password is {password}");
 
         var userRepository = new GenericRepository<User>(_context);
-        _userService = new UserService(userRepository, _commonServiceMock.Object, _configMock.Object,
+        _userService = new UserService(userRepository, _commonServiceMock.Object,
             _emailServiceMock.Object, _mapper, httpContextAccessor.Object);
     }
 
@@ -105,7 +102,7 @@ public class UserServiceTests
     [Fact]
     public async Task GetUsersList_WithSearchFilterSort_ReturnsCorrectData()
     {
-        var query = new PagedQueryDto
+        var query = new PageListRequest
         {
             PageNumber = 1,
             PageSize = 10,
@@ -114,7 +111,7 @@ public class UserServiceTests
             SortDescending = false
         };
 
-        var result = await _userService.GetUsersList(query);
+        var result = await _userService.GetUsersByPagination(query);
 
         Assert.Single(result.Records);
         Assert.Equal("Alice Johnson", result.Records.First().FullName);
@@ -123,7 +120,7 @@ public class UserServiceTests
     [Fact]
     public async Task GetUsersList_SortDescendingByEmail_WorksCorrectly()
     {
-        var query = new PagedQueryDto
+        var query = new PageListRequest
         {
             PageNumber = 1,
             PageSize = 10,
@@ -131,7 +128,7 @@ public class UserServiceTests
             SortDescending = true
         };
 
-        var result = await _userService.GetUsersList(query);
+        var result = await _userService.GetUsersByPagination(query);
 
         Assert.Equal(2, result.Records.Count());
         Assert.Equal("bob@example.com", result.Records.First().Email);
@@ -140,14 +137,14 @@ public class UserServiceTests
     [Fact]
     public async Task GetUsersList_NoMatchingSearch_ReturnsZeroRecords()
     {
-        var query = new PagedQueryDto
+        var query = new PageListRequest
         {
             PageNumber = 1,
             PageSize = 10,
             SearchTerm = "nonexistentuser"
         };
 
-        var result = await _userService.GetUsersList(query);
+        var result = await _userService.GetUsersByPagination(query);
 
         Assert.Empty(result.Records);
         Assert.Equal(0, result.TotalRecords);
@@ -156,91 +153,101 @@ public class UserServiceTests
     [Fact]
     public async Task GetUsersList_WithInvalidStatusFilter_ThrowsAppException()
     {
-        var query = new PagedQueryDto
+        var query = new PageListRequest
         {
             PageNumber = 1,
             PageSize = 10,
-            Filters = new Dictionary<string, string> { { "status", "invalid" } }
+            Filters = new FilterDto
+            {
+                Status = (UserStatus)999 
+            }
         };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersList(query));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersByPagination(query));
         Assert.Equal(Constants.INVALID_STATUS_MESSAGE, ex.Message);
     }
 
     [Fact]
     public async Task GetUsersList_WithInvalidRoleFilter_ThrowsAppException()
     {
-        var query = new PagedQueryDto
+        var query = new PageListRequest
         {
             PageNumber = 1,
             PageSize = 10,
-            Filters = new Dictionary<string, string> { { "role", "999" } }
+            Filters = new FilterDto
+            {
+                Role = (UserRoles)999 
+            }
         };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersList(query));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersByPagination(query));
         Assert.Equal(Constants.INVALID_ROLE_MESSAGE, ex.Message);
     }
 
     [Fact]
     public async Task GetUsersList_ValidStatusFilter_AppliesFilter()
     {
-        var query = new PagedQueryDto
+        var query = new PageListRequest
         {
-            Filters = new Dictionary<string, string>
-        {
-            { "status", ((int)UserStatus.Active).ToString() }
-        }
+            PageNumber = 1,
+            PageSize = 10,
+            Filters = new FilterDto
+            {
+                Status = UserStatus.Active
+            }
         };
 
-        var result = await _userService.GetUsersList(query);
+        var result = await _userService.GetUsersByPagination(query);
 
         Assert.All(result.Records, u => Assert.Equal((int)UserStatus.Active, u.Status));
     }
 
     [Fact]
-    public async Task GetUsersList_InvalidStatus_ThrowsAppException()
-    {
-        var query = new PagedQueryDto
-        {
-            Filters = new Dictionary<string, string>
-        {
-            { "status", "999" }
-        }
-        };
-
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersList(query));
-        Assert.Equal(Constants.INVALID_STATUS_MESSAGE, ex.Message);
-    }
-
-    [Fact]
     public async Task GetUsersList_ValidRoleFilter_AppliesFilter()
     {
-        var query = new PagedQueryDto
+        var query = new PageListRequest
         {
-            Filters = new Dictionary<string, string>
-        {
-            { "role", ((int)UserRoles.Player).ToString() }
-        }
+            PageNumber = 1,
+            PageSize = 10,
+            Filters = new FilterDto
+            {
+                Role = UserRoles.Player
+            }
         };
 
-        var result = await _userService.GetUsersList(query);
+        var result = await _userService.GetUsersByPagination(query);
 
         Assert.All(result.Records, u => Assert.Equal((int)UserRoles.Player, u.RoleId));
     }
 
     [Fact]
-    public async Task GetUsersList_InvalidRole_ThrowsAppException()
+    public async Task GetUsersList_WithInvalidRoleEnum_ThrowsAppException()
     {
-        var query = new PagedQueryDto
+        var query = new PageListRequest
         {
-            Filters = new Dictionary<string, string>
-        {
-            { "role", "777" } // Not defined in UserRoles
-        }
+            Filters = new FilterDto
+            {
+                Role = (UserRoles)777 
+            }
         };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersList(query));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersByPagination(query));
         Assert.Equal(Constants.INVALID_ROLE_MESSAGE, ex.Message);
+    }
+
+    [Fact]
+    public async Task GetUsersList_WithInvalidStatusEnum_ThrowsAppException()
+    {
+        var query = new PageListRequest
+        {
+            Filters = new FilterDto
+            {
+                Status = (UserStatus)777 
+            }
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersByPagination(query));
+        Assert.Equal(Constants.INVALID_STATUS_MESSAGE, ex.Message);
     }
     #endregion
 
@@ -263,8 +270,14 @@ public class UserServiceTests
 
     #region CreateUser
     [Fact]
-    public async Task CreateUser_ValidData_Success()
+    public async Task CreateUser_WithTemplateFile_SendsEmailSuccessfully()
     {
+        var templateDir = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
+        Directory.CreateDirectory(templateDir);
+
+        var templatePath = Path.Combine(templateDir, "NewUser.html");
+        File.WriteAllText(templatePath, "Hello {username}, your password is {password}");
+
         var newUser = new UserRequestDto
         {
             FullName = "Charlie Test",
@@ -276,10 +289,13 @@ public class UserServiceTests
         _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(true);
 
         var (success, message) = await _userService.CreateOrUpdateUser(newUser);
-
         Assert.True(success);
         Assert.Contains("created", message.ToLower());
+
+        File.Delete(templatePath);
+        Directory.Delete(templateDir);
     }
+
 
     [Fact]
     public async Task CreateUser_DuplicateEmail_ThrowsAppException()
@@ -322,22 +338,6 @@ public class UserServiceTests
         Assert.Equal(Constants.PASSWORD_REQUIRED_FOR_NEW_USER, ex.Message);
     }
 
-    [Fact]
-    public async Task CreateUser_MissingEmailTemplatePath_ThrowsAppException()
-    {
-        _configMock.Setup(c => c["EmailSettings:NewUserTemplatePath"]).Returns(string.Empty);
-
-        var newUser = new UserRequestDto
-        {
-            FullName = "Template Fail",
-            Email = "template@example.com",
-            UserName = "templateUser",
-            Password = "password"
-        };
-
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(newUser));
-        Assert.Equal(Constants.EMAIL_PATH_NOT_CONFIGURED, ex.Message);
-    }
     #endregion
 
     #region UpdateUser
