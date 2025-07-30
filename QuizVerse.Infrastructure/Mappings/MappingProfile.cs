@@ -28,6 +28,9 @@ public class MappingProfile : Profile
             });
 
         CreateMap<User, UserRequestDto>();
-        CreateMap<User, UserDto>();
+        
+        CreateMap<User, UserDto>()
+            .ForMember(dest => dest.AttemptedQuizzes,
+               opt => opt.MapFrom(u => u.QuizAttempteds.Count));
     }
 }

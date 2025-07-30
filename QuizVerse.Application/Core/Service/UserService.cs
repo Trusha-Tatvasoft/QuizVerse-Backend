@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
@@ -16,6 +17,103 @@ namespace QuizVerse.Application.Core.Service;
 public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IConfiguration config, IEmailService emailService, IMapper mapper, IHttpContextAccessor httpContextAccessor) : IUserService
 {
     public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
+
+    #region User Queries
+    private IQueryable<User> GetUserData(PagedQueryDto query)
+    {
+        IQueryable<User> userQuery = userRepository.GetQueryableInclude(u => u.QuizAttempteds, u => u.Role).Where(u => !u.IsDeleted);
+
+        // Search
+        if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+        {
+            var term = query.SearchTerm.ToLower();
+            userQuery = userQuery.Where(u =>
+                u.FullName.ToLower().Contains(term) ||
+                u.UserName.ToLower().Contains(term) ||
+                u.Email.ToLower().Contains(term));
+        }
+
+        // Filters
+        if (query.Filters != null)
+        {
+            if (query.Filters.TryGetValue("status", out var statusStr))
+            {
+                if (int.TryParse(statusStr, out int statusVal) && Enum.IsDefined(typeof(UserStatus), statusVal))
+                {
+                    userQuery = userQuery.Where(u => u.Status == statusVal);
+                }
+                else
+                {
+                    throw new AppException(Constants.INVALID_STATUS_MESSAGE);
+                }
+            }
+
+            if (query.Filters.TryGetValue("role", out var roleStr))
+            {
+                if (int.TryParse(roleStr, out int roleVal) && Enum.IsDefined(typeof(UserRoles), roleVal))
+                {
+                    userQuery = userQuery.Where(u => u.RoleId == roleVal);
+                }
+                else
+                {
+                    throw new AppException(Constants.INVALID_ROLE_MESSAGE);
+                }
+            }
+        }
+
+        // Sorting
+        if (!string.IsNullOrEmpty(query.SortColumn))
+        {
+            userQuery = query.SortColumn.ToLower() switch
+            {
+                "fullname" => query.SortDescending ? userQuery.OrderByDescending(u => u.FullName) : userQuery.OrderBy(u => u.FullName),
+                "role" => query.SortDescending ? userQuery.OrderByDescending(u => u.Role.Name) : userQuery.OrderBy(u => u.Role.Name),
+                "status" => query.SortDescending ? userQuery.OrderByDescending(u => u.Status) : userQuery.OrderBy(u => u.Status),
+                "lastactive" => query.SortDescending ? userQuery.OrderByDescending(u => u.LastLogin) : userQuery.OrderBy(u => u.LastLogin),
+                "joindate" => query.SortDescending ? userQuery.OrderByDescending(u => u.CreatedDate) : userQuery.OrderBy(u => u.CreatedDate),
+                "quizattempt" => query.SortDescending ? userQuery.OrderByDescending(u => u.QuizAttempteds.Count) : userQuery.OrderBy(u => u.QuizAttempteds.Count),
+                _ => userQuery.OrderBy(u => u.Id)
+            };
+        }
+        else
+        {
+            userQuery = userQuery.OrderBy(u => u.Id);
+        }
+
+        return userQuery;
+    }
+    #endregion
+
+
+    #region GetAllUsers
+    public async Task<PagedResultDto<UserDto>> GetUsersList(PagedQueryDto query)
+    {
+        IQueryable<User>? userQuery = GetUserData(query);
+        int totalCount = await userQuery.CountAsync();
+
+        if (totalCount == 0)
+        {
+            return new PagedResultDto<UserDto>
+            {
+                TotalRecords = 0,
+                Records = []
+            };
+        }
+
+        List<User> items = await userQuery
+            .Skip(Math.Max(0, (query.PageNumber - 1) * query.PageSize))
+            .Take(query.PageSize)
+            .ToListAsync();
+
+        List<UserDto> userDtos = mapper.Map<List<UserDto>>(items);
+
+        return new PagedResultDto<UserDto>
+        {
+            TotalRecords = totalCount,
+            Records = userDtos
+        };
+    }
+    #endregion
 
     #region GetUserById
     public async Task<UserDto> GetUserById(int id)
@@ -68,7 +166,6 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
             user.CreatedDate = DateTime.UtcNow;
             user.CreatedBy = UserId;
             user.FirstTimeLogin = true;
-            user.LastLogin = DateTime.UtcNow;
 
             await userRepository.AddAsync(user);
 

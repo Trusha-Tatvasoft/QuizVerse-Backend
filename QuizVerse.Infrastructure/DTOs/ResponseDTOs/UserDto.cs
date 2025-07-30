@@ -11,4 +11,5 @@ public class UserDto
     public DateTime CreatedDate { get; set; }
     public string? Bio { get; set; }
     public string? ProfilePic { get; set; }
+    public long AttemptedQuizzes { get; set; }
 }

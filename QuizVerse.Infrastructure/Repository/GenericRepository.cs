@@ -29,6 +29,18 @@ public class GenericRepository<T>(QuizVerseDbContext _context) : IGenericReposit
         return await _context.Set<T>().AsNoTracking().ToListAsync();
     }
 
+    public IQueryable<T> GetQueryableInclude(params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = _context.Set<T>().AsNoTracking();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return query;
+    }
+
     public async Task<List<T>> FindAsync(Expression<Func<T, bool>> expression)
     {
         return await _context.Set<T>().AsNoTracking().Where(expression).ToListAsync();

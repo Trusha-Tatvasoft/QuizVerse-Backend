@@ -10,6 +10,8 @@ public interface IGenericRepository<T> where T : class
 
     Task<List<T>> GetAllAsync();
 
+    IQueryable<T> GetQueryableInclude(params Expression<Func<T, object>>[] includes);
+
     Task<List<T>> FindAsync(Expression<Func<T, bool>> expression);
 
     Task AddAsync(T entity);
