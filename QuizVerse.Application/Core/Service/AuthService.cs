@@ -13,7 +13,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService(ITokenService tokenService, ICommonService _customService, IGenericRepository<User> _genericUserRepository, IEmailService _emailService, IConfiguration _configuration, IMapper _mapper) : IAuthService
+    public class AuthService(ITokenService tokenService, ICommonService _customService, IGenericRepository<User> _genericUserRepository, IEmailService _emailService, IMapper _mapper) : IAuthService
     {
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
         {
@@ -180,7 +180,7 @@ namespace QuizVerse.Application.Core.Service
 
         private async Task<bool> SendWelcomeEmailAsync(User user)
         {
-            string? templatePath = _configuration["EmailSettings:RegisterUserTemplatePath"];
+            string? templatePath = Constants.REGISTER_USER_TEMPLATE_PATH;
             if (string.IsNullOrWhiteSpace(templatePath))
                 throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
 
