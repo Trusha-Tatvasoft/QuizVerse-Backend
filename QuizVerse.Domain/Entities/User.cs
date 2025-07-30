@@ -21,7 +21,7 @@ public partial class User
 
     public string? ProfilePic { get; set; }
 
-    public DateTime LastLogin { get; set; }
+    public DateTime? LastLogin { get; set; }
 
     public bool FirstTimeLogin { get; set; }
 
@@ -84,6 +84,8 @@ public partial class User
     public virtual ICollection<Notification> NotificationCreatedByNavigations { get; set; } = new List<Notification>();
 
     public virtual ICollection<Notification> NotificationModifiedByNavigations { get; set; } = new List<Notification>();
+
+    public virtual ICollection<PasswordResetToken> PasswordResetTokens { get; set; } = new List<PasswordResetToken>();
 
     public virtual ICollection<PaymentPlatform> PaymentPlatformCreatedByNavigations { get; set; } = new List<PaymentPlatform>();
 
