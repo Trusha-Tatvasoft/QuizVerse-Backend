@@ -38,6 +38,8 @@ public partial class QuizVerseDbContext : DbContext
 
     public virtual DbSet<Notification> Notifications { get; set; }
 
+    public virtual DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
     public virtual DbSet<PaymentPlatform> PaymentPlatforms { get; set; }
 
     public virtual DbSet<PaymentType> PaymentTypes { get; set; }
@@ -534,6 +536,26 @@ public partial class QuizVerseDbContext : DbContext
             entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.NotificationModifiedByNavigations)
                 .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("Notifications_modified_by_fkey");
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.HasKey(e => e.TokenId).HasName("passwordresettokens_pkey");
+
+            entity.Property(e => e.TokenId)
+                .HasDefaultValueSql("nextval('passwordresettokens_tokenid_seq'::regclass)")
+                .HasColumnName("token_id");
+            entity.Property(e => e.ExpireAt).HasColumnName("expire_at");
+            entity.Property(e => e.IsUsed)
+                .HasDefaultValue(false)
+                .HasColumnName("is_used");
+            entity.Property(e => e.Token).HasColumnName("token");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(p => p.PasswordResetTokens)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("passwordresettokens_userid_fkey");
         });
 
         modelBuilder.Entity<PaymentPlatform>(entity =>
@@ -1101,9 +1123,7 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValue(false)
                 .HasColumnName("is_deleted");
-            entity.Property(e => e.LastLogin)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("last_login");
+            entity.Property(e => e.LastLogin).HasColumnName("last_login");
             entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
             entity.Property(e => e.ModifiedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
