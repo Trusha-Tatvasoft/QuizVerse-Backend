@@ -101,7 +101,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         }
 
         List<User> items = await userQuery
-            .Skip(Math.Max(0, (query.PageNumber - 1) * query.PageSize))
+            .Skip((query.PageNumber - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToListAsync();
 
