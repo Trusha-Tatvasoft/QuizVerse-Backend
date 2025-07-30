@@ -1,3 +1,4 @@
+using System.Globalization;
 using QuizVerse.Application.Core.Interface;
 
 namespace QuizVerse.Application.Core.Service
@@ -15,6 +16,13 @@ namespace QuizVerse.Application.Core.Service
             return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
         #endregion PasswordHash
+
+        #region DateParsing
+        public DateTime ToDate(string dateString)
+        {
+            return DateTime.ParseExact(dateString, "yyyy-MM-dd", CultureInfo.InvariantCulture).Date;
+        }
+        #endregion DateParsing
 
     }
 }
