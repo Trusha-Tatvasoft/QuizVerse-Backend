@@ -29,5 +29,12 @@ public class MappingProfile : Profile
 
         CreateMap<User, UserRequestDto>();
         CreateMap<User, UserDto>();
+
+         CreateMap<UserRegisterDto, User>()
+            .ForMember(dest => dest.FirstTimeLogin, opt => opt.MapFrom(src => false))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => 1))
+            .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => 2))
+            .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => false))
+            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow));
     }
 }

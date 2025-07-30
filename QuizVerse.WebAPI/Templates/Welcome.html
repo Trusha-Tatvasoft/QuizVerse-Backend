@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Welcome to {{companyName}}</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; background: #f1f5f9; font-family: Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;">
+
+    <div
+        style="margin: 40px auto; max-width: 600px; box-shadow: 0 0 10px rgba(0,0,0,0.08); border-radius: 8px; overflow: hidden; background: white;">
+        <div style="background: linear-gradient(135deg, #755ccf, #18016d); padding: 30px; text-align: center; color: white;">
+            <table align="center" cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                    <td style="padding-right: 12px;">
+                        <div
+                            style="background: linear-gradient(135deg, #9333ea, #2563eb); width: 52px; height: 52px; border-radius: 12px; font-weight: bold; color: white; font-size: 24px; line-height: 52px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                            Q
+                        </div>
+                    </td>
+                    <td style="text-align: left;">
+                        <h1 style="margin: 0; font-size: 24px; font-weight: 600;">{{companyName}}</h1>
+                        <p style="margin: 2px 0 0; font-size: 14px; opacity: 0.85;">AI-Powered Quiz Platform</p>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 25px; color: #334155;">
+            <h2 style="margin-top: 0;">Welcome to {{companyName}}!</h2>
+            <p>Your email <strong>{{userEmail}}</strong> was successfully registered on
+                <strong>{{registrationDate}}</strong>.</p>
+
+            <p>We're thrilled to have you onboard! Dive right in and start exploring our platform. If you ever get stuck
+                or need help, we're always here.</p>
+
+            <!-- Call to Action -->
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{loginUrl}}"
+                    style="display: inline-block; background: linear-gradient(90deg, #9333ea, #2563eb); color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 14px;">
+                    Login Now
+                </a>
+            </div>
+
+            <hr style="margin: 32px 0; border: none; border-top: 1px solid #e2e8f0;" />
+
+            <p style="font-size: 14px; color: #64748b;">
+                Need help? Visit our <a href="{{helpUrl}}" style="color: #3b82f6;">Help Center</a>.<br />
+                Review our <a href="{{privacyUrl}}" style="color: #3b82f6;">Privacy Policy</a> and <a
+                    href="{{termsUrl}}" style="color: #3b82f6;">Terms of Service</a>.
+            </p>
+
+            <p style="font-size: 14px; color: #64748b;">
+                Questions? <a href="{{contactUrl}}" style="color: #3b82f6;">Contact us</a> or <a
+                    href="{{unsubscribeUrl}}" style="color: #ef4444;">Unsubscribe</a> from these emails.
+            </p>
+
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: center;">
+                &copy; {{companyName}}. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

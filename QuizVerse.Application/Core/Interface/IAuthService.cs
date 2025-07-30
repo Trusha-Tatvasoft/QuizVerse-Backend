@@ -1,5 +1,4 @@
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
-using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.Application.Core.Interface
 {
@@ -9,6 +8,6 @@ namespace QuizVerse.Application.Core.Interface
 
         Task<(string accessToken, string refreshToken)> ValidateRefreshTokens(string refreshToken);
 
-        Task<UserDto> RegisterUser(UserRegisterDto userRegisterDto);
+        public Task<(bool success, string message)> RegisterUser(UserRegisterDto userRegisterDto);
     }
 }
