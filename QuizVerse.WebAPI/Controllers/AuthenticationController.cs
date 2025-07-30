@@ -51,5 +51,47 @@ namespace QuizVerse.WebAPI.Controllers
 
             return Ok(response);
         }
+
+
+        [HttpGet("reset-password-mail")]
+        public async Task<IActionResult> ResetPasswordMail(string emailId)
+        {
+            ApiResponse<bool> response = new ApiResponse<bool>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.SEND_MAIL_SUCCESS_MESSAGE,
+                Data = await authService.ResetPasswordMail(emailId),
+            };
+            return Ok(response);
+        }
+
+
+        [HttpGet("reset-password-token-validation")]
+        public async Task<IActionResult> ResetPasswordTokenValidation(string resetPasswordToken)
+        {
+            ApiResponse<bool> response = new ApiResponse<bool>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.VALID_RESET_PASSWORD_TOKEN,
+                Data = await authService.ResetPasswordTokenValidation(resetPasswordToken),
+            };
+            return Ok(response);
+        }
+        
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDTO resetPasswordDto)
+        {
+            ApiResponse<bool> response = new ApiResponse<bool>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.PASSWORD_UPDATE_SUCCESS_MESSAGE,
+                Data = await authService.ResetPassword(resetPasswordDto),
+            };
+            return Ok(response);
+        }
     }
 }

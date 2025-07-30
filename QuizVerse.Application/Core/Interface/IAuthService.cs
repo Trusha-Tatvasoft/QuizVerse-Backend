@@ -7,5 +7,11 @@ namespace QuizVerse.Application.Core.Interface
         Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto);
 
         Task<(string accessToken, string refreshToken)> ValidateRefreshTokens(string refreshToken);
+
+        Task<bool> ResetPasswordMail(string mail);
+
+        Task<bool> ResetPasswordTokenValidation(string token);
+
+        Task<bool> ResetPassword(ResetPasswordDTO resetPasswordDto);
     }
 }

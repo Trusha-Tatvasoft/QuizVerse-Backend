@@ -16,5 +16,7 @@ namespace QuizVerse.Application.Core.Interface
         string GetUserIdFromToken(ClaimsPrincipal principal);
 
         DateTime GetTokenExpiration(string token);
+        
+        string GenerateResetPasswordToken(User? user);
     }
 }

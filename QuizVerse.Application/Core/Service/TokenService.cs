@@ -132,5 +132,20 @@ namespace QuizVerse.Application.Core.Service
             var jwtToken = tokenHandler.ReadJwtToken(token);
             return jwtToken.ValidTo;
         }
+
+        public string GenerateResetPasswordToken(User? user)
+        {
+            if (user == null)
+            {
+                throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);
+            }
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.UserData, user.Id.ToString()),
+            };
+            var expiryMinutesString = _configuration["ResetPasswordTokenExpiryMinutes"] ?? throw new InvalidOperationException(Constants.ACCESS_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE);
+            return CreateToken(claims, DateTime.UtcNow.AddMinutes(double.Parse(expiryMinutesString)));
+        }
     }
 }

@@ -21,8 +21,9 @@ namespace QuizVerse.UnitTests.Services
         { "JwtSettings:Key", "super_secret_jwt_key_for_testing_1234567890" },
         { "JwtSettings:Issuer", "QuizVerseIssuer" },
         { "JwtSettings:Audience", "QuizVerseAudience" },
-        { "AccessTokenExpiryMinutes", "30" },     
-        { "RefreshTokenExpiryDays", "7" }         
+        { "AccessTokenExpiryMinutes", "30" },
+        { "RefreshTokenExpiryDays", "7" },
+        { "ResetPasswordTokenExpiryMinutes", "15" }
     };
 
             _configuration = new ConfigurationBuilder()
@@ -192,6 +193,28 @@ namespace QuizVerse.UnitTests.Services
             // Act & Assert
             var ex = Assert.Throws<AppException>(() => service.ValidateToken(expiredToken));
             Assert.Equal(Constants.EXPIRED_TOKEN_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public void GenerateResetPasswordToken_Returns_ValidToken()
+        {
+            // Arrange
+            var service = CreateService();
+            var user = CreateTestUser();
+
+            var token = service.GenerateResetPasswordToken(user);
+
+            Assert.False(string.IsNullOrEmpty(token));
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+
+            // Assert
+            Assert.Equal(_configuration["JwtSettings:Issuer"], jwtToken.Issuer);
+            Assert.Equal(_configuration["JwtSettings:Audience"], jwtToken.Audiences.First());
+
+            Assert.Contains(jwtToken.Claims, c => c.Type == ClaimTypes.Email && c.Value == user.Email);
+            Assert.Contains(jwtToken.Claims, c => c.Type == ClaimTypes.UserData && c.Value == user.Id.ToString());
         }
     }
 }

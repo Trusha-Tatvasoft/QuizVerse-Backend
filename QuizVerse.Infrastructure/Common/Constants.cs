@@ -57,4 +57,14 @@ public static class Constants
     public const string UPDATE_SUCCESS = "Updated successfully";
     public const string DELETE_SUCCESS = "Deleted successfully";
     #endregion
+
+    #region Reset Password Messages
+    public const string SEND_MAIL_SUCCESS_MESSAGE = "Email sent successfully.";
+    public const string RESET_PASSWORD_FE_PATH = "reset-password";
+    public const string VALID_RESET_PASSWORD_TOKEN = "Reset Password Token is valid.";
+    public const string INVALID_RESET_PASSWORD_TOKEN = "Reset Password Token is not valid.";
+    public const string PASSWORD_UPDATE_SUCCESS_MESSAGE = "Password updated successfully.";
+    public const string FAILED_TO_CREATE_RESET_PASSWORD_TOKEN = "Failed to create Reset Password Token.";
+    public const string RESET_PASSWORD_EMAIL_HEADING = "QuizVerse : Reset Password Link!";
+    #endregion
 }
