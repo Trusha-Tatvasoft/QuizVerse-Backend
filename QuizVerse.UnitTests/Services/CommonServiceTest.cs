@@ -79,5 +79,31 @@ namespace QuizVerse.UnitTests.Services
 
             Assert.False(result);
         }
+
+        [Fact]
+        public void ToDate_ParsesValidDateString_Correctly()
+        {
+            string input = "2025-07-30";
+
+            DateTime result = _service.ToDate(input);
+
+            Assert.Equal(new DateTime(2025, 7, 30), result);
+        }
+
+        [Fact]
+        public void ToDate_NullInput_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => _service.ToDate(null!));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("07-30-2025")]
+        [InlineData("2025/07/30")]
+        [InlineData("July 30, 2025")]
+        public void ToDate_InvalidDateFormat_ThrowsFormatException(string? invalidInput)
+        {
+            Assert.Throws<FormatException>(() => _service.ToDate(invalidInput!));
+        }
     }
 }

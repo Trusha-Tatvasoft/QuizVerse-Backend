@@ -1,4 +1,3 @@
-using System.Globalization;
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
@@ -8,7 +7,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class AdminDashboardService(ISqlQueryRepository _sqlQueryRepository) : IAdminDashboardService
+public class AdminDashboardService(ISqlQueryRepository _sqlQueryRepository, ICommonService _commonService) : IAdminDashboardService
 {
     public async Task<AdminDashboardResponse> GetStatisticsData()
     {
@@ -39,15 +38,10 @@ public class AdminDashboardService(ISqlQueryRepository _sqlQueryRepository) : IA
         };
     }
 
-    private static DateTime ToDate(string dateString)
-    {
-        return DateTime.ParseExact(dateString, "yyyy-MM-dd", CultureInfo.InvariantCulture).Date;
-    }
-
     private async Task<List<ChartDataDTO>> GetChartDataAsync(string functionName, string startDate, string endDate)
     {
-        DateTime start = ToDate(startDate);
-        DateTime end = ToDate(endDate);
+        DateTime start = _commonService.ToDate(startDate);
+        DateTime end = _commonService.ToDate(endDate);
 
         NpgsqlParameter param1 = new("start", NpgsqlDbType.Date) { Value = start };
         NpgsqlParameter param2 = new("end", NpgsqlDbType.Date) { Value = end };

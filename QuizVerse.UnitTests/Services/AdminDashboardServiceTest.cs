@@ -1,5 +1,6 @@
 using Moq;
 using Npgsql;
+using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
@@ -11,9 +12,10 @@ namespace QuizVerse.UnitTests.Services;
 public class AdminDashboardServiceTest
 {
     private readonly Mock<ISqlQueryRepository> _sqlQueryRepoMock = new();
+    private readonly Mock<ICommonService> _commonServiceMock = new();
 
     private AdminDashboardService CreateService() =>
-        new(_sqlQueryRepoMock.Object);
+        new(_sqlQueryRepoMock.Object, _commonServiceMock.Object);
 
     [Fact]
     public async Task GetDashboardSummaryAsync_ReturnsMappedData()
@@ -57,6 +59,9 @@ public class AdminDashboardServiceTest
 
         string expectedQuery = string.Format(SqlConstants.CHART_FUNCTION_CALL_TEMPLATE, SqlConstants.GET_USER_ENGAGEMENT_CHART_DATA);
 
+        _commonServiceMock.Setup(s => s.ToDate("2025-07-01")).Returns(new DateTime(2025, 7, 1));
+        _commonServiceMock.Setup(s => s.ToDate("2025-07-31")).Returns(new DateTime(2025, 7, 31));
+
         _sqlQueryRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
             expectedQuery,
             It.IsAny<NpgsqlParameter>(),
@@ -81,6 +86,9 @@ public class AdminDashboardServiceTest
 
         string expectedQuery = string.Format(SqlConstants.CHART_FUNCTION_CALL_TEMPLATE, SqlConstants.GET_REVENUE_TREND_CHART_DATA);
 
+        _commonServiceMock.Setup(s => s.ToDate("2025-07-01")).Returns(new DateTime(2025, 7, 1));
+        _commonServiceMock.Setup(s => s.ToDate("2025-07-31")).Returns(new DateTime(2025, 7, 31));
+
        _sqlQueryRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
             expectedQuery,
             It.IsAny<NpgsqlParameter>(),
@@ -104,6 +112,9 @@ public class AdminDashboardServiceTest
         ];
 
         string expectedQuery = string.Format(SqlConstants.CHART_FUNCTION_CALL_TEMPLATE, SqlConstants.GET_PERFORMANCE_SCORE_CHART_DATA);
+
+        _commonServiceMock.Setup(s => s.ToDate("2025-07-01")).Returns(new DateTime(2025, 7, 1));
+        _commonServiceMock.Setup(s => s.ToDate("2025-07-31")).Returns(new DateTime(2025, 7, 31));
 
         _sqlQueryRepoMock.Setup(r => r.SqlQueryListAsync<ChartDataDTO>(
             expectedQuery,

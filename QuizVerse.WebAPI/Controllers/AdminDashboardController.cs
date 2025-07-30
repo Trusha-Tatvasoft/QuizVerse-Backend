@@ -10,8 +10,6 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 public class AdminDashboardController(IAdminDashboardService _adminDashboardService) : ControllerBase
 {
-    private readonly IAdminDashboardService _adminDashboardService = _adminDashboardService;
-
     [HttpGet("get-statistics-data")]
     public async Task<IActionResult> GetStatisticsData()
     {
@@ -29,7 +27,7 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
     [HttpGet("get-user-engagement-data")]
     public async Task<IActionResult> GetUserEngagementData(string start_date, string end_date)
     {
-        BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date, out DateTime startDate, out DateTime endDate);
+        BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date);
         if (validationResult != null) return validationResult;
 
         ApiResponse<List<ChartDataDTO>> response = new()
@@ -46,7 +44,7 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
     [HttpGet("get-revenue-trend-data")]
     public async Task<IActionResult> GetRevenueTrendData(string start_date, string end_date)
     {
-        BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date, out DateTime startDate, out DateTime endDate);
+        BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date);
         if (validationResult != null) return validationResult;
 
         ApiResponse<List<ChartDataDTO>> response = new()
@@ -63,7 +61,7 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
     [HttpGet("get-performance-score-data")]
     public async Task<IActionResult> GetPerformanceScoreData(string start_date, string end_date)
     {
-        BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date, out DateTime startDate, out DateTime endDate);
+        BadRequestObjectResult? validationResult = ValidateDateRange(start_date, end_date);
         if (validationResult != null) return validationResult;
 
         ApiResponse<List<ChartDataDTO>> response = new()
@@ -77,10 +75,8 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
         return Ok(response);
     }
 
-    private BadRequestObjectResult? ValidateDateRange(string start_date, string end_date, out DateTime startDate, out DateTime endDate)
+    private BadRequestObjectResult? ValidateDateRange(string start_date, string end_date)
     {
-        startDate = endDate = default;
-
         if (string.IsNullOrWhiteSpace(start_date))
         {
             return BadRequest(new ApiResponse<string>
@@ -103,7 +99,7 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
             });
         }
 
-        if (!DateTime.TryParse(start_date, out startDate))
+        if (!DateTime.TryParse(start_date, out DateTime startDate))
         {
             return BadRequest(new ApiResponse<string>
             {
@@ -114,7 +110,7 @@ public class AdminDashboardController(IAdminDashboardService _adminDashboardServ
             });
         }
 
-        if (!DateTime.TryParse(end_date, out endDate))
+        if (!DateTime.TryParse(end_date, out DateTime endDate))
         {
             return BadRequest(new ApiResponse<string>
             {
