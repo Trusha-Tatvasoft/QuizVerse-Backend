@@ -224,125 +224,104 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     public async Task<MemoryStream> UserExportData(PageListRequest query)
     {
         IQueryable<User> userQuery = GetUserData(query);
+        List<UserExportDto> users = await userQuery.ProjectTo<UserExportDto>(mapper.ConfigurationProvider).ToListAsync();
+        if (users.Count == 0) throw new AppException(Constants.USER_DATA_NULL);
 
-        List<UserExportDto> users = await userQuery
-                                        .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)
-                                        .ToListAsync();
-
-        if (users.Count == 0)
-        {
-            throw new AppException(Constants.USER_DATA_NULL);
-        }
-
-        XLWorkbook workbook = new();
-        IXLWorksheet worksheet = workbook.Worksheets.Add("Users");
-
-        // === Logo Insert ===
-
+        XLWorkbook workbook = new(); IXLWorksheet ws = workbook.Worksheets.Add("Users");
         string logoPath = "wwwroot/images/logo.png";
-        if (System.IO.File.Exists(logoPath))
-        {
-            IXLCell startCell = worksheet.Cell("G2");
-            worksheet.AddPicture(logoPath)
-                     .MoveTo(startCell)
-                     .WithSize(320, 70);
-        }
+        if (File.Exists(logoPath)) ws.AddPicture(logoPath).MoveTo(ws.Cell("C2")).WithSize(300, 70);
 
-        // === Header Info ===
-        worksheet.Range("A7:B8").Merge().Value = "Search Text:";
-        worksheet.Range("C7:E8").Merge().Value = string.IsNullOrWhiteSpace(query.SearchTerm) ? "-" : query.SearchTerm;
-
-        worksheet.Range("G7:H8").Merge().Value = "Total Records:";
-        worksheet.Range("I7:K8").Merge().Value = users.Count;
-
-        worksheet.Range("M7:N8").Merge().Value = "Filter:";
-        string filterText = $"Role: {query.Filters?.Role?.ToString() ?? "All"}, Status: {query.Filters?.Status?.ToString() ?? "All"}";
-        worksheet.Range("O7:Q8").Merge().Value = filterText;
-
-        // === Header Styling ===
-        IXLRange[] labels = {
-            worksheet.Range("A7:B8"),
-            worksheet.Range("G7:H8"),
-            worksheet.Range("M7:N8")
+        (string, string)[] meta = {
+            ("Search Text:", string.IsNullOrWhiteSpace(query.SearchTerm) ? "-" : query.SearchTerm),
+            ("Total Records:", users.Count.ToString()),
+            ("Filter:", $"Role: {(query.Filters?.Role?.ToString() ?? "All")}, Status: {(query.Filters?.Status?.ToString() ?? "All")}")
         };
 
-        IXLRange[] values = {
-            worksheet.Range("C7:E8"),
-            worksheet.Range("I7:K8"),
-            worksheet.Range("O7:Q8")
-        };
-
-        foreach (IXLRange label in labels)
+        int labelCol = 1, valueCol = 2;
+        for (int i = 0; i < meta.Length; i++)
         {
-            label.Style.Font.Bold = true;
-            label.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563eb");
-            label.Style.Font.FontColor = XLColor.White;
-            label.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            label.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-            label.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            string label = meta[i].Item1; string value = meta[i].Item2;
+            ws.Cell(7, labelCol).Value = label; ApplyLabelStyle(ws.Cell(7, labelCol));
+            if (i == 2)
+            {
+                IXLRange merged = ws.Range(7, valueCol, 7, valueCol + 1);
+                merged.Merge(); merged.Value = value; ApplyValueStyle(merged.FirstCell());
+                labelCol += 4; valueCol += 4;
+            }
+            else
+            {
+                ws.Cell(7, valueCol).Value = value; ApplyValueStyle(ws.Cell(7, valueCol));
+                labelCol += 3; valueCol += 3;
+            }
         }
 
-        foreach (IXLRange value in values)
+        string[] headers = { "No.", "Full Name", "Email", "Username", "Total Quiz", "Role", "Status", "Join Date", "Last Active" };
+        for (int col = 1; col <= headers.Length; col++) ApplyTableHeaderStyle(ws.Cell(9, col).SetValue(headers[col - 1]));
+
+        int row = 10;
+        foreach (KeyValuePair<UserExportDto, int> entry in users.Select((x, i) => new KeyValuePair<UserExportDto, int>(x, i + 1)))
         {
-            value.Style.Font.Bold = true;
-            value.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            value.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-            value.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-        }
+            UserExportDto u = entry.Key;
+            int i = entry.Value;
 
-        // === Table Header ===
-        int headerRow = 10;
-        worksheet.Cell(headerRow, 1).Value = "No.";
-        worksheet.Range(headerRow, 2, headerRow, 3).Merge().Value = "Full Name";
-        worksheet.Range(headerRow, 4, headerRow, 6).Merge().Value = "Email";
-        worksheet.Range(headerRow, 7, headerRow, 8).Merge().Value = "Username";
-        worksheet.Range(headerRow, 9, headerRow, 10).Merge().Value = "Total Quiz";
-        worksheet.Range(headerRow, 11, headerRow, 12).Merge().Value = "Role";
-        worksheet.Cell(headerRow, 13).Value = "Status";
-        worksheet.Range(headerRow, 14, headerRow, 15).Merge().Value = "Join Date";
-        worksheet.Range(headerRow, 16, headerRow, 17).Merge().Value = "Last Active";
+            for (int col = 1; col <= 9; col++)
+                ws.Cell(row, col).Style.Fill.BackgroundColor = row % 2 == 0 ? XLColor.FromHtml("#FAF6FE") : XLColor.FromHtml("#BDD2FF");
 
-        IXLRange tableHeader = worksheet.Range(headerRow, 1, headerRow, 17);
-        tableHeader.Style.Font.Bold = true;
-        tableHeader.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563eb");
-        tableHeader.Style.Font.FontColor = XLColor.White;
-        tableHeader.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        tableHeader.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-        tableHeader.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-        tableHeader.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-
-        // === Insert Rows ===
-        int row = headerRow + 1;
-        for (int i = 0; i < users.Count; i++)
-        {
-            UserExportDto u = users[i];
-
-            worksheet.Cell(row, 1).Value = i + 1;
-            worksheet.Range(row, 2, row, 3).Merge().Value = u.FullName;
-            worksheet.Range(row, 4, row, 6).Merge().Value = u.Email;
-            worksheet.Range(row, 7, row, 8).Merge().Value = u.UserName;
-            worksheet.Range(row, 9, row, 10).Merge().Value = u.TotalQuizAttemptedCount;
-            worksheet.Range(row, 11, row, 12).Merge().Value = u.RoleName;
-            worksheet.Cell(row, 13).Value = u.StatusName;
-            worksheet.Range(row, 14, row, 15).Merge().Value = u.JoinDate.ToString("dd-MM-yyyy");
-            worksheet.Range(row, 16, row, 17).Merge().Value = u.LastActive.HasValue
-                ? u.LastActive.Value.ToString("dd-MM-yyyy")
-                : "-";
-
-            IXLRange dataRow = worksheet.Range(row, 1, row, 17);
-            dataRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            dataRow.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-            dataRow.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-            dataRow.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-
+            ApplyDataCell(ws.Cell(row, 1), i);
+            ApplyDataCell(ws.Cell(row, 2), u.FullName ?? "-");
+            ApplyDataCell(ws.Cell(row, 3), u.Email ?? "-");
+            ApplyDataCell(ws.Cell(row, 4), u.UserName ?? "-");
+            ApplyDataCell(ws.Cell(row, 5), u.TotalQuizAttemptedCount);
+            ApplyDataCell(ws.Cell(row, 6), u.RoleName ?? "-");
+            ApplyDataCell(ws.Cell(row, 7), u.StatusName ?? "-");
+            ApplyDataCell(ws.Cell(row, 8), u.JoinDate.ToString("dd-MM-yyyy"));
+            ApplyDataCell(ws.Cell(row, 9), u.LastActive?.ToString("dd-MM-yyyy") ?? "-");
             row++;
         }
 
-        // === Return MemoryStream ===
-        MemoryStream memoryStream = new();
-        workbook.SaveAs(memoryStream);
-        memoryStream.Position = 0;
-        return memoryStream;
+        MemoryStream stream = new();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+        return stream;
+    }
+
+    private void ApplyLabelStyle(IXLCell cell)
+    {
+        cell.Style.Font.Bold = true;
+        cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563eb");
+        cell.Style.Font.FontColor = XLColor.White;
+        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+    }
+
+    private void ApplyValueStyle(IXLCell cell)
+    {
+        cell.Style.Font.Bold = true;
+        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+    }
+
+    private void ApplyTableHeaderStyle(IXLCell cell)
+    {
+        cell.Style.Font.Bold = true;
+        cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563eb");
+        cell.Style.Font.FontColor = XLColor.White;
+        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        cell.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+    }
+
+    private void ApplyDataCell(IXLCell cell, object value)
+    {
+        cell.Value = value?.ToString() ?? "-";
+        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
     }
     #endregion
+
+
 }
