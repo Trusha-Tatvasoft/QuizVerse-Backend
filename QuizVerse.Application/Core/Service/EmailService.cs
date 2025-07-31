@@ -20,8 +20,10 @@ public class EmailService(IConfiguration config) : IEmailService
             var username = config["EmailSettings:SmtpUsername"];
             var password = config["EmailSettings:SmtpPassword"];
             var enableSsl = bool.Parse(config["EmailSettings:EnableSsl"] ?? "true");
+
             if (string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
                 throw new AppException(Constants.SMTP_CONFIG_MISSING);
+
             using var smtpClient = new SmtpClient(host, port)
             {
                 Credentials = new NetworkCredential(username, password),

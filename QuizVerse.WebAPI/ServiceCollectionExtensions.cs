@@ -25,10 +25,6 @@ public static class ServiceCollectionExtensions
         //repository
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped(typeof(ISqlQueryRepository), typeof(SqlQueryRepository));
-
-
-        //repository
-        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
     }
-}
 
+}
