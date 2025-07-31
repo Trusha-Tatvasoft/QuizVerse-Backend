@@ -3,7 +3,7 @@ using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
-using UserRole = QuizVerse.Infrastructure.Enums.UserRole;
+using UserRole = QuizVerse.Infrastructure.Enums.UserRoles;
 
 namespace QuizVerse.Infrastructure.Mappings;
 public class MappingProfile : Profile

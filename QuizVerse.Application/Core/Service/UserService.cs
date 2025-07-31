@@ -80,32 +80,10 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #endregion
 
     #region GetAllUsers
-    public async Task<PageListResponse<UserDto>> GetUsersByPagination(PageListRequest query)
+    public async Task<PageListResponse<UserDto>> GetUsersByPagination(PageListRequest pageListRequest)
     {
-        IQueryable<User>? userQuery = GetUserData(query);
-        int totalCount = await userQuery.CountAsync();
-
-        if (totalCount == 0)
-        {
-            return new PageListResponse<UserDto>
-            {
-                TotalRecords = 0,
-                Records = []
-            };
-        }
-
-        List<UserDto> userDtos = await userQuery
-                        .Skip((query.PageNumber - 1) * query.PageSize)
-                        .Take(query.PageSize)
-                        .ProjectTo<UserDto>(mapper.ConfigurationProvider)
-                        .ToListAsync();
-
-
-        return new PageListResponse<UserDto>
-        {
-            TotalRecords = totalCount,
-            Records = userDtos
-        };
+        IQueryable<User>? userQuery = GetUserData(pageListRequest);
+        return await userRepository.PaginatedList<UserDto>(userQuery, pageListRequest, q => q.ProjectTo<UserDto>(mapper.ConfigurationProvider));
     }
     #endregion
 

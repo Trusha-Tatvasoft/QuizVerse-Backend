@@ -1,4 +1,6 @@
 using System.Linq.Expressions;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.Infrastructure.Interface;
 
@@ -25,4 +27,6 @@ public interface IGenericRepository<T> where T : class
     Task DeleteRangeAsync(List<T> entity);
 
     Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
+    Task<PageListResponse<TResult>> PaginatedList<TResult>(
+            IQueryable<T> query, PageListRequest request, Func<IQueryable<T>, IQueryable<TResult>>? mapperFn = null);
 }
