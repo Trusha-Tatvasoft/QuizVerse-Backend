@@ -12,6 +12,7 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
+using QuizVerse.Infrastructure.Mappings;
 using QuizVerse.Infrastructure.Repository;
 using Xunit;
 
@@ -38,8 +39,7 @@ public class UserServiceTests
 
         var mapperConfig = new MapperConfiguration(cfg =>
         {
-            cfg.CreateMap<User, UserDto>().ReverseMap();
-            cfg.CreateMap<UserRequestDto, User>().ReverseMap();
+            cfg.AddProfile<MappingProfile>();
         });
         _mapper = mapperConfig.CreateMapper();
 
@@ -64,38 +64,42 @@ public class UserServiceTests
     #region SeedData
     private void SeedTestData()
     {
-        var role = new UserRole { Id = 1, Name = "Player" };
+        var role = new UserRole { Id = (int)UserRoles.Player, Name = "Player" };
         _context.UserRoles.Add(role);
+        _context.SaveChanges();
 
         _context.Users.AddRange(
             new User
             {
-                Id = 1,
                 FullName = "Alice Johnson",
                 Email = "alice@example.com",
                 Password = "samplePass1",
                 UserName = "alice",
                 Status = (int)UserStatus.Active,
-                RoleId = 1,
+                RoleId = (int)UserRoles.Player,
+                Role = role,
                 IsDeleted = false,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateTime.UtcNow,
+                QuizAttempteds = new List<QuizAttempted>()
             },
             new User
             {
-                Id = 2,
                 FullName = "Bob Smith",
                 Email = "bob@example.com",
                 Password = "samplePass2",
                 UserName = "bob",
                 Status = (int)UserStatus.Suspended,
-                RoleId = 1,
+                RoleId = (int)UserRoles.Player,
+                Role = role,
                 IsDeleted = false,
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = DateTime.UtcNow,
+                QuizAttempteds = new List<QuizAttempted>()
             }
         );
-
         _context.SaveChanges();
+
     }
+
     #endregion
 
     #region GetAllUserData 
@@ -159,7 +163,7 @@ public class UserServiceTests
             PageSize = 10,
             Filters = new FilterDto
             {
-                Status = (UserStatus)999 
+                Status = (UserStatus)999
             }
         };
 
@@ -176,7 +180,7 @@ public class UserServiceTests
             PageSize = 10,
             Filters = new FilterDto
             {
-                Role = (UserRoles)999 
+                Role = (UserRoles)999
             }
         };
 
@@ -227,7 +231,7 @@ public class UserServiceTests
         {
             Filters = new FilterDto
             {
-                Role = (UserRoles)777 
+                Role = (UserRoles)777
             }
         };
 
@@ -242,7 +246,7 @@ public class UserServiceTests
         {
             Filters = new FilterDto
             {
-                Status = (UserStatus)777 
+                Status = (UserStatus)777
             }
         };
 
@@ -295,7 +299,6 @@ public class UserServiceTests
         File.Delete(templatePath);
         Directory.Delete(templateDir);
     }
-
 
     [Fact]
     public async Task CreateUser_DuplicateEmail_ThrowsAppException()
@@ -473,4 +476,230 @@ public class UserServiceTests
         Assert.Equal(Constants.STATUS_REQUIRED, ex.Message);
     }
     #endregion
+
+    #region ExportUserData
+
+    [Fact]
+    public async Task UserExportData_WithValidData_ReturnsMemoryStreamWithContent()
+    {
+        // Arrange
+        var query = new PageListRequest
+        {
+            PageNumber = 1,
+            PageSize = 10
+        };
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public async Task UserExportData_WithNoMatchingUsers_ThrowsAppException()
+    {
+        // Arrange
+        var query = new PageListRequest
+        {
+            SearchTerm = "nonexistent"
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.UserExportData(query));
+        Assert.Equal(Constants.USER_DATA_NULL, ex.Message);
+    }
+
+    [Fact]
+    public async Task UserExportData_WithValidFilters_ReturnsFilteredDataInExcel()
+    {
+        // Arrange
+        var query = new PageListRequest
+        {
+            PageNumber = 1,
+            PageSize = 10,
+            Filters = new FilterDto
+            {
+                Role = UserRoles.Player,
+                Status = UserStatus.Active
+            }
+        };
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public async Task UserExportData_WithRoleFilterOnly_ReturnsMatchingUsers()
+    {
+        // Arrange
+        var query = new PageListRequest
+        {
+            Filters = new FilterDto
+            {
+                Role = UserRoles.Player
+            }
+        };
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public async Task UserExportData_WithStatusFilterOnly_ReturnsMatchingUsers()
+    {
+        // Arrange
+        var query = new PageListRequest
+        {
+            Filters = new FilterDto
+            {
+                Status = UserStatus.Suspended
+            }
+        };
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public async Task UserExportData_LogoFileExists_AddsLogoToExcel()
+    {
+        // Arrange
+        var logoDir = "wwwroot/images";
+        Directory.CreateDirectory(logoDir);
+        var logoPath = Path.Combine(logoDir, "logo.png");
+        byte[] transparentPng = Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII="
+        );
+        File.WriteAllBytes(logoPath, transparentPng);
+
+        var query = new PageListRequest();
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Cleanup
+        File.Delete(logoPath);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public async Task UserExportData_LogoFileMissing_StillGeneratesFile()
+    {
+        // Arrange
+        var logoPath = "wwwroot/images/logo.png";
+        if (File.Exists(logoPath))
+            File.Delete(logoPath); 
+
+        var query = new PageListRequest();
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public async Task UserExportData_UserWithLastActiveDate_SetsDateInExcel()
+    {
+        // Arrange
+        var userWithLastActive = _context.Users.First(u => u.Status == (int)UserStatus.Active);
+        userWithLastActive.LastLogin = DateTime.UtcNow.AddDays(-5); 
+        _context.SaveChanges();
+
+        var query = new PageListRequest
+        {
+            Filters = new FilterDto
+            {
+                Role = UserRoles.Player,
+                Status = UserStatus.Active
+            }
+        };
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public async Task UserExportData_UserWithoutLastActiveDate_SetsDashInExcel()
+    {
+        // Arrange
+        var user = _context.Users.First(u => u.Status == (int)UserStatus.Active);
+        user.LastLogin = null; 
+        _context.SaveChanges();
+
+        var query = new PageListRequest
+        {
+            Filters = new FilterDto
+            {
+                Role = UserRoles.Player,
+                Status = UserStatus.Active
+            }
+        };
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    [Fact]
+    public async Task UserExportData_WithSearchTerm_IncludesSearchTermInExcel()
+    {
+        // Arrange
+        var user = _context.Users.First();
+        var query = new PageListRequest
+        {
+            SearchTerm = user.FullName.Split(' ').First()
+        };
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0); 
+    }
+    [Fact]
+    public async Task UserExportData_WithEmptySearchTerm_SetsDashInExcel()
+    {
+        // Arrange
+        var query = new PageListRequest
+        {
+            SearchTerm = ""
+        };
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+    #endregion
+
 }

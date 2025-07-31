@@ -60,6 +60,7 @@ public static class Constants
     public const string PASSWORD_REQUIRED_FOR_NEW_USER = "Password is required for new users.";
     public const string USER_DELETED_SUCCESS = "User {0} deleted successfully.";
     public const string USER_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
+    public const string USER_DATA_NULL = "No data available to export.";
     #endregion
 
     #region Email Messages

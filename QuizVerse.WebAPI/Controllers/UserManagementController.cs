@@ -15,7 +15,7 @@ namespace QuizVerse.WebAPI.Controllers;
 public class UsersController(IUserService userService) : ControllerBase
 {
     #region List Users 
-    [HttpPost(" get-users-by-pagination")]
+    [HttpPost("get-users-by-pagination")]
     public async Task<IActionResult> GetUsersByPagination([FromBody] PageListRequest query)
     {
         return Ok(new ApiResponse<PageListResponse<UserDto>>
@@ -75,6 +75,22 @@ public class UsersController(IUserService userService) : ControllerBase
             StatusCode = 200,
             Data = null
         });
+    }
+    #endregion
+
+    #region Export Data
+    // POST: api/users/user-export-data
+    [HttpPost("user-export-data")]
+    public async Task<IActionResult> UserExportData([FromBody] PageListRequest query)
+    {
+        MemoryStream fileStream = await userService.UserExportData(query);
+        string fileName = $"Users_{DateTime.UtcNow:dd-MM-yyyy}.xlsx";
+
+        return File(
+            fileStream,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName
+        );
     }
     #endregion
 }

@@ -13,6 +13,7 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 using System.Linq.Dynamic.Core;
+using ClosedXML.Excel;
 
 namespace QuizVerse.Application.Core.Service;
 
@@ -216,6 +217,132 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         else
             return Constants.EMAIL_NOT_SENT;
 
+    }
+    #endregion
+
+    #region User export
+    public async Task<MemoryStream> UserExportData(PageListRequest query)
+    {
+        IQueryable<User> userQuery = GetUserData(query);
+
+        List<UserExportDto> users = await userQuery
+                                        .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)
+                                        .ToListAsync();
+
+        if (users.Count == 0)
+        {
+            throw new AppException(Constants.USER_DATA_NULL);
+        }
+
+        XLWorkbook workbook = new();
+        IXLWorksheet worksheet = workbook.Worksheets.Add("Users");
+
+        // === Logo Insert ===
+
+        string logoPath = "wwwroot/images/logo.png";
+        if (System.IO.File.Exists(logoPath))
+        {
+            IXLCell startCell = worksheet.Cell("G2");
+            worksheet.AddPicture(logoPath)
+                     .MoveTo(startCell)
+                     .WithSize(320, 70);
+        }
+
+        // === Header Info ===
+        worksheet.Range("A7:B8").Merge().Value = "Search Text:";
+        worksheet.Range("C7:E8").Merge().Value = string.IsNullOrWhiteSpace(query.SearchTerm) ? "-" : query.SearchTerm;
+
+        worksheet.Range("G7:H8").Merge().Value = "Total Records:";
+        worksheet.Range("I7:K8").Merge().Value = users.Count;
+
+        worksheet.Range("M7:N8").Merge().Value = "Filter:";
+        string filterText = $"Role: {query.Filters?.Role?.ToString() ?? "All"}, Status: {query.Filters?.Status?.ToString() ?? "All"}";
+        worksheet.Range("O7:Q8").Merge().Value = filterText;
+
+        // === Header Styling ===
+        IXLRange[] labels = {
+            worksheet.Range("A7:B8"),
+            worksheet.Range("G7:H8"),
+            worksheet.Range("M7:N8")
+        };
+
+        IXLRange[] values = {
+            worksheet.Range("C7:E8"),
+            worksheet.Range("I7:K8"),
+            worksheet.Range("O7:Q8")
+        };
+
+        foreach (IXLRange label in labels)
+        {
+            label.Style.Font.Bold = true;
+            label.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563eb");
+            label.Style.Font.FontColor = XLColor.White;
+            label.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            label.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            label.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        }
+
+        foreach (IXLRange value in values)
+        {
+            value.Style.Font.Bold = true;
+            value.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            value.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            value.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        }
+
+        // === Table Header ===
+        int headerRow = 10;
+        worksheet.Cell(headerRow, 1).Value = "No.";
+        worksheet.Range(headerRow, 2, headerRow, 3).Merge().Value = "Full Name";
+        worksheet.Range(headerRow, 4, headerRow, 6).Merge().Value = "Email";
+        worksheet.Range(headerRow, 7, headerRow, 8).Merge().Value = "Username";
+        worksheet.Range(headerRow, 9, headerRow, 10).Merge().Value = "Total Quiz";
+        worksheet.Range(headerRow, 11, headerRow, 12).Merge().Value = "Role";
+        worksheet.Cell(headerRow, 13).Value = "Status";
+        worksheet.Range(headerRow, 14, headerRow, 15).Merge().Value = "Join Date";
+        worksheet.Range(headerRow, 16, headerRow, 17).Merge().Value = "Last Active";
+
+        IXLRange tableHeader = worksheet.Range(headerRow, 1, headerRow, 17);
+        tableHeader.Style.Font.Bold = true;
+        tableHeader.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563eb");
+        tableHeader.Style.Font.FontColor = XLColor.White;
+        tableHeader.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        tableHeader.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        tableHeader.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        tableHeader.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+        // === Insert Rows ===
+        int row = headerRow + 1;
+        for (int i = 0; i < users.Count; i++)
+        {
+            UserExportDto u = users[i];
+
+            worksheet.Cell(row, 1).Value = i + 1;
+            worksheet.Range(row, 2, row, 3).Merge().Value = u.FullName;
+            worksheet.Range(row, 4, row, 6).Merge().Value = u.Email;
+            worksheet.Range(row, 7, row, 8).Merge().Value = u.UserName;
+            worksheet.Range(row, 9, row, 10).Merge().Value = u.TotalQuizAttemptedCount;
+            worksheet.Range(row, 11, row, 12).Merge().Value = u.RoleName;
+            worksheet.Cell(row, 13).Value = u.StatusName;
+            worksheet.Range(row, 14, row, 15).Merge().Value = u.JoinDate.ToString("dd-MM-yyyy");
+            worksheet.Range(row, 16, row, 17).Merge().Value = u.LastActive.HasValue
+                ? u.LastActive.Value.ToString("dd-MM-yyyy")
+                : "-";
+
+            IXLRange dataRow = worksheet.Range(row, 1, row, 17);
+            dataRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            dataRow.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            dataRow.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            dataRow.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+            row++;
+        }
+
+        // === Return MemoryStream ===
+        MemoryStream memoryStream = new();
+        workbook.SaveAs(memoryStream);
+        memoryStream.Position = 0;
+        return memoryStream;
     }
     #endregion
 }
