@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -12,7 +13,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService(ITokenService _tokenService, ICommonService _commonService, IGenericRepository<User> _genericUserRepository, IGenericRepository<PasswordResetToken> _genericPasswordResetTokenRepository, IConfiguration _config, IEmailService _emailService) : IAuthService
+    public class AuthService(ITokenService _tokenService, ICommonService _commonService, IGenericRepository<User> _genericUserRepository, IGenericRepository<PasswordResetToken> _genericPasswordResetTokenRepository, IEmailService _emailService, IMapper _mapper, IConfiguration _configuration) : IAuthService
     {
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
         {
@@ -166,7 +167,7 @@ namespace QuizVerse.Application.Core.Service
             {
                 UserId = user.Id,
                 Token = resetPasswordToken,
-                ExpireAt = DateTime.UtcNow.AddMinutes(double.Parse(_config["ResetPasswordTokenExpiryMinutes"]!)),
+                ExpireAt = DateTime.UtcNow.AddMinutes(double.Parse(_configuration["ResetPasswordTokenExpiryMinutes"]!)),
                 IsUsed = false
             };
             await _genericPasswordResetTokenRepository.AddAsync(passwordResetToken);
@@ -186,7 +187,7 @@ namespace QuizVerse.Application.Core.Service
         private async Task<bool> SendMailForResetPassword(string resetPasswordToken, string userName, string email)
         {
             // email configuration
-            string baseUrl = _config["baseUrl"]!;
+            string baseUrl = _configuration["baseUrl"]!;
             string resetLink = $"{baseUrl}/{Constants.RESET_PASSWORD_FE_PATH}?token={resetPasswordToken}";
             string templatePath = Constants.ResetPasswordTemplatePath;
             string fullPath = Path.Combine(Directory.GetCurrentDirectory(), templatePath);
@@ -258,5 +259,61 @@ namespace QuizVerse.Application.Core.Service
             await _genericPasswordResetTokenRepository.DeleteRangeAsync(tokensToDelete);
             return true;
         }
+
+        public async Task<(bool success, string message)> RegisterUser(UserRegisterDto userRegisterDto)
+        {
+            if (await _genericUserRepository.Exists(u => u.Email == userRegisterDto.Email && !u.IsDeleted))
+                throw new AppException(Constants.DUPLICATE_EMAIL);
+
+            if (await _genericUserRepository.Exists(u => u.UserName == userRegisterDto.UserName && !u.IsDeleted))
+                throw new AppException(Constants.DUPLICATE_USERNAME);
+
+            User newUser = _mapper.Map<User>(userRegisterDto);
+            newUser.Password = _commonService.Hash(userRegisterDto.Password);
+
+            await _genericUserRepository.AddAsync(newUser);
+
+            bool emailSent = await SendWelcomeEmailAsync(newUser);
+
+            if (emailSent)
+            {
+                return (true, Constants.USER_REGISTERED_AND_EMAIL_SENT);
+            }
+            else
+            {
+                throw new AppException(Constants.USER_REGISTERED_BUT_EMAIL_NOT_SENT);
+            }
+        }
+
+
+        private async Task<bool> SendWelcomeEmailAsync(User user)
+        {
+            string? templatePath = Constants.REGISTER_USER_TEMPLATE_PATH;
+            if (string.IsNullOrWhiteSpace(templatePath))
+                throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
+
+            string fullPath = Path.Combine(Directory.GetCurrentDirectory(), templatePath);
+            if (!File.Exists(fullPath))
+                throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
+
+            string emailBody = await File.ReadAllTextAsync(fullPath);
+
+            emailBody = emailBody
+                    .Replace("{{userEmail}}", user.Email)
+                    .Replace("{{registrationDate}}", user.CreatedDate.ToString("MMMM dd, yyyy"))
+                    .Replace("{{loginUrl}}", _configuration["AppSettings:LoginUrl"])
+                    .Replace("{{companyName}}", Constants.PLATFORM_NAME)
+                    .Replace("{{year}}", DateTime.UtcNow.Year.ToString());
+
+            EmailRequestDto emailRequest = new()
+            {
+                To = user.Email,
+                Subject = "Welcome to QuizVerse",
+                Body = emailBody
+            };
+
+            return await _emailService.SendEmailAsync(emailRequest);
+        }
+
     }
 }

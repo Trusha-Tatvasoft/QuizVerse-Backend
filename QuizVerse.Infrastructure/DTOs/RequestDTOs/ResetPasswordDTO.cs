@@ -13,7 +13,7 @@ namespace QuizVerse.Infrastructure.DTOs.RequestDTOs
         public string? Password { get; set; }
     }
 
-    public class EmailForResetPasswordDTO
+    public class ForgotPasswordDTO
     {
         [Required(ErrorMessage = "Email is required.")]
         [EmailAddress(ErrorMessage = "Invalid email address format.")]
