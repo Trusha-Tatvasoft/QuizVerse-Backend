@@ -13,7 +13,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService(ITokenService tokenService, ICommonService _customService, IGenericRepository<User> _genericUserRepository, IEmailService _emailService, IMapper _mapper) : IAuthService
+    public class AuthService(ITokenService tokenService, ICommonService _customService, IGenericRepository<User> _genericUserRepository, IEmailService _emailService, IMapper _mapper, IConfiguration _configuration) : IAuthService
     {
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
         {
@@ -191,15 +191,11 @@ namespace QuizVerse.Application.Core.Service
             string emailBody = await File.ReadAllTextAsync(fullPath);
 
             emailBody = emailBody
-                .Replace("{{userEmail}}", user.Email)
-                .Replace("{{registrationDate}}", user.CreatedDate.ToString("MMMM dd, yyyy"))
-                .Replace("{{loginUrl}}", "https://quizverse.com/login")
-                .Replace("{{helpUrl}}", "https://quizverse.com/help")
-                .Replace("{{privacyUrl}}", "https://quizverse.com/privacy")
-                .Replace("{{termsUrl}}", "https://quizverse.com/terms")
-                .Replace("{{unsubscribeUrl}}", "https://quizverse.com/unsubscribe")
-                .Replace("{{contactUrl}}", "https://quizverse.com/contact")
-                .Replace("{{companyName}}", "QuizVerse");
+                    .Replace("{{userEmail}}", user.Email)
+                    .Replace("{{registrationDate}}", user.CreatedDate.ToString("MMMM dd, yyyy"))
+                    .Replace("{{loginUrl}}", _configuration["AppSettings:LoginUrl"])
+                    .Replace("{{companyName}}", Constants.PLATFORM_NAME)
+                    .Replace("{{year}}", DateTime.UtcNow.Year.ToString());
 
             EmailRequestDto emailRequest = new()
             {

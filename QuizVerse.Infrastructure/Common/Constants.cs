@@ -3,6 +3,7 @@
 public static class Constants
 {
     #region General Messages
+    public const string PLATFORM_NAME = "QuizVerse";
     public const string QUIZVERSE_DEFAULT_QUOTE = "Welcome to QuizVerse!";
     public const string FETCH_DATA_MESSAGE = "Data Fetched Successfully.";
     public const string INVALID_DATA_MESSAGE = "Invalid Data.";
@@ -70,9 +71,9 @@ public static class Constants
 
     #region EmailTemplateConstants
     public const string NEW_USER_TEMPLATE_PATH = "Templates/NewUser.html";
-    public const string REGISTER_USER_TEMPLATE_PATH  = "Templates/Welcome.html";
+    public const string REGISTER_USER_TEMPLATE_PATH = "Templates/Welcome.html";
     #endregion
-    
+
     #region CRUD Messages
     public const string FETCH_SUCCESS = "Data fetched successfully";
     public const string CREATE_SUCCESS = "Created successfully";

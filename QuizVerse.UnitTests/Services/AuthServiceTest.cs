@@ -24,9 +24,10 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<IGenericRepository<User>> _userRepoMock = new();
         private readonly Mock<IEmailService> _emailServiceMock = new();
         private readonly Mock<IMapper> _mapperMock = new();
+        private readonly Mock<IConfiguration> _configurationMock = new();
 
         private AuthService CreateService() =>
-            new(_tokenServiceMock.Object, _customServiceMock.Object, _userRepoMock.Object, _emailServiceMock.Object, _mapperMock.Object);
+            new(_tokenServiceMock.Object, _customServiceMock.Object, _userRepoMock.Object, _emailServiceMock.Object, _mapperMock.Object,_configurationMock.Object);
 
 
         public AuthServiceTests()
@@ -470,7 +471,5 @@ namespace QuizVerse.UnitTests.Services
             message.Should().Contain(Constants.USER_REGISTERED_AND_EMAIL_SENT);
             _emailServiceMock.Verify(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()), Times.Once);
         }
-
-
     }
 }

@@ -2,67 +2,51 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Welcome to {{companyName}}</title>
+    <meta charset="UTF-8">
+    <title>Welcome to QuizVerse</title>
 </head>
 
-<body
-    style="margin: 0; padding: 0; background: #f1f5f9; font-family: Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: Arial, sans-serif;">
 
-    <div
-        style="margin: 40px auto; max-width: 600px; box-shadow: 0 0 10px rgba(0,0,0,0.08); border-radius: 8px; overflow: hidden; background: white;">
-        <div style="background: linear-gradient(135deg, #755ccf, #18016d); padding: 30px; text-align: center; color: white;">
-            <table align="center" cellpadding="0" cellspacing="0" role="presentation">
-                <tr>
-                    <td style="padding-right: 12px;">
-                        <div
-                            style="background: linear-gradient(135deg, #9333ea, #2563eb); width: 52px; height: 52px; border-radius: 12px; font-weight: bold; color: white; font-size: 24px; line-height: 52px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                            Q
-                        </div>
-                    </td>
-                    <td style="text-align: left;">
-                        <h1 style="margin: 0; font-size: 24px; font-weight: 600;">{{companyName}}</h1>
-                        <p style="margin: 2px 0 0; font-size: 14px; opacity: 0.85;">AI-Powered Quiz Platform</p>
-                    </td>
-                </tr>
-            </table>
-        </div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 0;">
+        <tr>
+            <td style="text-align: center;">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #4f46e5; padding: 20px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0;">Welcome to QuizVerse!</h1>
+                        </td>
+                    </tr>
 
-        <!-- Body -->
-        <div style="padding: 25px; color: #334155;">
-            <h2 style="margin-top: 0;">Welcome to {{companyName}}!</h2>
-            <p>Your email <strong>{{userEmail}}</strong> was successfully registered on
-                <strong>{{registrationDate}}</strong>.</p>
+                    <!-- Body Content -->
+                    <tr>
+                        <td style="padding: 30px;">
+                            <p style="font-size: 16px; color: #333333;">Hello <strong>{{userEmail}}</strong>,</p>
+                            <p style="font-size: 16px; color: #333333;">Thank you for registering on <strong>QuizVerse</strong>.</p>
 
-            <p>We're thrilled to have you onboard! Dive right in and start exploring our platform. If you ever get stuck
-                or need help, we're always here.</p>
+                            <p style="font-size: 16px; color: #333333;">Your registration date: <strong>{{registrationDate}}</strong></p>
 
-            <!-- Call to Action -->
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="{{loginUrl}}"
-                    style="display: inline-block; background: linear-gradient(90deg, #9333ea, #2563eb); color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 14px;">
-                    Login Now
-                </a>
-            </div>
+                            <p style="font-size: 16px; color: #333333;">You can log in using the link below:</p>
 
-            <hr style="margin: 32px 0; border: none; border-top: 1px solid #e2e8f0;" />
+                            <p style="text-align: center;">
+                                <a href="{{loginUrl}}" style="background-color: #4f46e5; color: #ffffff; padding: 12px 24px; text-decoration: none; font-size: 16px; border-radius: 4px; display: inline-block;">
+                                    Log In
+                                </a>
+                            </p>
+                        </td>
+                    </tr>
 
-            <p style="font-size: 14px; color: #64748b;">
-                Need help? Visit our <a href="{{helpUrl}}" style="color: #3b82f6;">Help Center</a>.<br />
-                Review our <a href="{{privacyUrl}}" style="color: #3b82f6;">Privacy Policy</a> and <a
-                    href="{{termsUrl}}" style="color: #3b82f6;">Terms of Service</a>.
-            </p>
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f1f5f9; padding: 20px; font-size: 12px; color: #94a3b8; text-align: center;">
+                            &copy; {{year}} {{companyName}}. All rights reserved.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 
-            <p style="font-size: 14px; color: #64748b;">
-                Questions? <a href="{{contactUrl}}" style="color: #3b82f6;">Contact us</a> or <a
-                    href="{{unsubscribeUrl}}" style="color: #ef4444;">Unsubscribe</a> from these emails.
-            </p>
-
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 24px; text-align: center;">
-                &copy; {{companyName}}. All rights reserved.
-            </p>
-        </div>
-    </div>
 </body>
 </html>
