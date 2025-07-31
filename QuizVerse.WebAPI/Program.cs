@@ -7,6 +7,7 @@ using QuizVerse.WebAPI.Configurations;
 using QuizVerse.WebAPI.Helper;
 using QuizVerse.WebAPI.Middlewares;
 using Microsoft.OpenApi.Models;
+using QuizVerse.Infrastructure.Mappings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,9 @@ builder.Services.RegisterDependency();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
+
+//mappers
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 // for returning validation error in ApiResponse Formate
 builder.Services.Configure<ApiBehaviorOptions>(options =>

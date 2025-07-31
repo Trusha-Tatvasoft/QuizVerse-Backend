@@ -7,5 +7,7 @@ namespace QuizVerse.Application.Core.Interface
         Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto);
 
         Task<(string accessToken, string refreshToken)> ValidateRefreshTokens(string refreshToken);
+
+        public Task<(bool success, string message)> RegisterUser(UserRegisterDto userRegisterDto);
     }
 }
