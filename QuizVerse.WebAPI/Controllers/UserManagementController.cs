@@ -5,14 +5,29 @@ using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
-[Authorize]
+// [Authorize(Roles = nameof(UserRoles.Admin))]
 [Route("api/[controller]")]
 public class UsersController(IUserService userService) : ControllerBase
 {
+    #region List Users 
+    [HttpPost(" get-users-by-pagination")]
+    public async Task<IActionResult> GetUsersByPagination([FromBody] PageListRequest query)
+    {
+        return Ok(new ApiResponse<PageListResponse<UserDto>>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = 200,
+            Data = await userService.GetUsersByPagination(query)
+        });
+    }
+    #endregion
+
     #region Get by Id
     // GET: api/users/get-user-by-id/{id}
     [HttpGet("get-user-by-id/{id}")]

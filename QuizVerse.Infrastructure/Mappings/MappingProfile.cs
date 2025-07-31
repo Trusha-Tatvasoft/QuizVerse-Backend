@@ -3,7 +3,7 @@ using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
-using UserRole = QuizVerse.Infrastructure.Enums.UserRole;
+using UserRole = QuizVerse.Infrastructure.Enums.UserRoles;
 
 namespace QuizVerse.Infrastructure.Mappings;
 public class MappingProfile : Profile
@@ -30,7 +30,11 @@ public class MappingProfile : Profile
             });
 
         CreateMap<User, UserRequestDto>();
-        CreateMap<User, UserDto>();
+
+        CreateMap<User, UserDto>()
+            .ForMember(dest => dest.AttemptedQuizzes,
+                        opt => opt.MapFrom(src => src.QuizAttempteds.Count));
+
 
         CreateMap<UserRegisterDto, User>()
            .ForMember(dest => dest.FirstTimeLogin, opt => opt.MapFrom(src => false))

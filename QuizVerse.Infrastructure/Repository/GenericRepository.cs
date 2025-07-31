@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using QuizVerse.Domain.Data;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Infrastructure.Repository;
@@ -27,6 +29,18 @@ public class GenericRepository<T>(QuizVerseDbContext _context) : IGenericReposit
     public async Task<List<T>> GetAllAsync()
     {
         return await _context.Set<T>().AsNoTracking().ToListAsync();
+    }
+
+    public IQueryable<T> GetQueryableInclude(params Expression<Func<T, object>>[] includes)
+    {
+        IQueryable<T> query = _context.Set<T>().AsNoTracking();
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+        return query;
     }
 
     public async Task<List<T>> FindAsync(Expression<Func<T, bool>> expression)
@@ -77,4 +91,34 @@ public class GenericRepository<T>(QuizVerseDbContext _context) : IGenericReposit
             return await dbSet.CountAsync(predicate);
         }
     }
+
+    public async Task<PageListResponse<TResult>> PaginatedList<TResult>(
+            IQueryable<T> query, PageListRequest request, Func<IQueryable<T>, IQueryable<TResult>>? mapperFn = null)
+    {
+        int totalRecords = await query.CountAsync();
+
+        if (totalRecords == 0)
+        {
+            return new PageListResponse<TResult>
+            {
+                TotalRecords = 0,
+                Records = []
+            };
+        }
+
+        var pagedQuery = query
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize);
+
+        IQueryable<TResult> finalQuery = mapperFn != null ? mapperFn(pagedQuery) : pagedQuery.Cast<TResult>();
+
+        var records = await finalQuery.ToListAsync();
+
+        return new PageListResponse<TResult>
+        {
+            TotalRecords = totalRecords,
+            Records = records
+        };
+    }
+
 }
