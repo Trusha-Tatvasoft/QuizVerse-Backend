@@ -17,8 +17,18 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+
+        //mappers
+        services.AddAutoMapper(typeof(MappingProfile));
+
+        //repository
+        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+        services.AddScoped(typeof(ISqlQueryRepository), typeof(SqlQueryRepository));
+
 
         //repository
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
     }
 }
+
