@@ -52,6 +52,7 @@ namespace QuizVerse.WebAPI.Controllers
             return Ok(response);
         }
 
+
         [HttpPost("register-user")]
         public async Task<IActionResult> RegisterUser([FromBody] UserRegisterDto userRegisterDto)
         {
@@ -69,5 +70,46 @@ namespace QuizVerse.WebAPI.Controllers
             return Ok(response);
         }
 
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordDTO email)
+        {
+            ApiResponse<bool> response = new ApiResponse<bool>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.SEND_MAIL_SUCCESS_MESSAGE,
+                Data = await authService.ForgotPassword(email.Email!),
+            };
+            return Ok(response);
+        }
+
+
+        [HttpPost("verify-token-reset-password")]
+        public async Task<IActionResult> VerifyTokenResetPassword(ResetPasswordTokenDTO resetPasswordToken)
+        {
+            ApiResponse<bool> response = new ApiResponse<bool>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.VALID_RESET_PASSWORD_TOKEN,
+                Data = await authService.VerifyTokenResetPassword(resetPasswordToken.ResetPasswordToken!),
+            };
+            return Ok(response);
+        }
+        
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDTO resetPasswordDto)
+        {
+            ApiResponse<bool> response = new ApiResponse<bool>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.PASSWORD_UPDATE_SUCCESS_MESSAGE,
+                Data = await authService.ResetPassword(resetPasswordDto),
+            };
+            return Ok(response);
+        }
     }
 }
