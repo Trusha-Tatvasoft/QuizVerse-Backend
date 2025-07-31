@@ -3,6 +3,7 @@
 public static class Constants
 {
     #region General Messages
+    public const string PLATFORM_NAME = "QuizVerse";
     public const string QUIZVERSE_DEFAULT_QUOTE = "Welcome to QuizVerse!";
     public const string FETCH_DATA_MESSAGE = "Data Fetched Successfully.";
     public const string INVALID_DATA_MESSAGE = "Invalid Data.";
@@ -64,12 +65,15 @@ public static class Constants
     #region Email Messages
     public const string EMAIL_PATH_NOT_CONFIGURED = "Email template path is not configured.";
     public const string EMAIL_SENT_SUCCESS = "Email successfully sent to {0}.";
+    public const string USER_REGISTERED_AND_EMAIL_SENT = "User registered successfully. A welcome email has been sent.";
+    public const string USER_REGISTERED_BUT_EMAIL_NOT_SENT = "User registered successfully, but email could not be sent.";
     public const string EMAIL_NOT_SENT = "Email not sent.";
     public const string SMTP_CONFIG_MISSING = "SMTP configuration is missing required fields.";
     #endregion
 
     #region EmailTemplateConstants
     public const string NEW_USER_TEMPLATE_PATH = "Templates/NewUser.html";
+    public const string REGISTER_USER_TEMPLATE_PATH = "Templates/Welcome.html";
     #endregion
 
     #region CRUD Messages
