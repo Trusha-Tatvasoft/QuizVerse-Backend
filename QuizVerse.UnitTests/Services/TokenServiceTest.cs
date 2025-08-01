@@ -21,8 +21,9 @@ namespace QuizVerse.UnitTests.Services
         { "JwtSettings:Key", "super_secret_jwt_key_for_testing_1234567890" },
         { "JwtSettings:Issuer", "QuizVerseIssuer" },
         { "JwtSettings:Audience", "QuizVerseAudience" },
-        { "AccessTokenExpiryMinutes", "30" },     
-        { "RefreshTokenExpiryDays", "7" }         
+        { "AccessTokenExpiryMinutes", "30" },
+        { "RefreshTokenExpiryDays", "7" },
+        { "ResetPasswordTokenExpiryMinutes", "15" }
     };
 
             _configuration = new ConfigurationBuilder()
@@ -192,6 +193,22 @@ namespace QuizVerse.UnitTests.Services
             // Act & Assert
             var ex = Assert.Throws<AppException>(() => service.ValidateToken(expiredToken));
             Assert.Equal(Constants.EXPIRED_TOKEN_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public void GenerateSecureToken_Returns_Unique_NonEmptyToken()
+        {
+            var service = CreateService();
+            var token1 = service.GenerateSecureToken();
+            var token2 = service.GenerateSecureToken();
+
+             // Act & Assert
+            Assert.False(string.IsNullOrEmpty(token1));
+            Assert.False(string.IsNullOrEmpty(token2));
+            Assert.NotEqual(token1, token2);
+            Assert.DoesNotContain("+", token1);
+            Assert.DoesNotContain("/", token1);
+            Assert.DoesNotContain("=", token1);
         }
     }
 }
