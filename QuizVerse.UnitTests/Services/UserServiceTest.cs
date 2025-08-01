@@ -1,4 +1,5 @@
 using AutoMapper;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -64,41 +65,50 @@ public class UserServiceTests
     #region SeedData
     private void SeedTestData()
     {
-        var role = new UserRole { Id = (int)UserRoles.Player, Name = "Player" };
-        _context.UserRoles.Add(role);
-        _context.SaveChanges();
+        var roleId = (int)UserRoles.Player;
 
-        _context.Users.AddRange(
-            new User
-            {
-                FullName = "Alice Johnson",
-                Email = "alice@example.com",
-                Password = "samplePass1",
-                UserName = "alice",
-                Status = (int)UserStatus.Active,
-                RoleId = (int)UserRoles.Player,
-                Role = role,
-                IsDeleted = false,
-                CreatedDate = DateTime.UtcNow,
-                QuizAttempteds = new List<QuizAttempted>()
-            },
-            new User
-            {
-                FullName = "Bob Smith",
-                Email = "bob@example.com",
-                Password = "samplePass2",
-                UserName = "bob",
-                Status = (int)UserStatus.Suspended,
-                RoleId = (int)UserRoles.Player,
-                Role = role,
-                IsDeleted = false,
-                CreatedDate = DateTime.UtcNow,
-                QuizAttempteds = new List<QuizAttempted>()
-            }
-        );
-        _context.SaveChanges();
+        var role = _context.UserRoles.FirstOrDefault(r => r.Id == roleId);
+        if (role == null)
+        {
+            role = new UserRole { Id = roleId, Name = "Player" };
+            _context.UserRoles.Add(role);
+            _context.SaveChanges();
+        }
 
+        if (!_context.Users.Any())
+        {
+            _context.Users.AddRange(
+                new User
+                {
+                    FullName = "Alice Johnson",
+                    Email = "alice@example.com",
+                    Password = "samplePass1",
+                    UserName = "alice",
+                    Status = (int)UserStatus.Active,
+                    RoleId = roleId,
+                    Role = role,
+                    IsDeleted = false,
+                    CreatedDate = DateTime.UtcNow,
+                    QuizAttempteds = new List<QuizAttempted>()
+                },
+                new User
+                {
+                    FullName = "Bob Smith",
+                    Email = "bob@example.com",
+                    Password = "samplePass2",
+                    UserName = "bob",
+                    Status = (int)UserStatus.Suspended,
+                    RoleId = roleId,
+                    Role = role,
+                    IsDeleted = false,
+                    CreatedDate = DateTime.UtcNow,
+                    QuizAttempteds = new List<QuizAttempted>()
+                }
+            );
+            _context.SaveChanges();
+        }
     }
+
 
     #endregion
 
@@ -273,32 +283,49 @@ public class UserServiceTests
     #endregion
 
     #region CreateUser
+
     [Fact]
     public async Task CreateUser_WithTemplateFile_SendsEmailSuccessfully()
     {
         var templateDir = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
-        Directory.CreateDirectory(templateDir);
-
         var templatePath = Path.Combine(templateDir, "NewUser.html");
-        File.WriteAllText(templatePath, "Hello {username}, your password is {password}");
 
-        var newUser = new UserRequestDto
+        try
         {
-            FullName = "Charlie Test",
-            Email = "charlie@example.com",
-            UserName = "charlie",
-            Password = "password123"
-        };
+            Directory.CreateDirectory(templateDir);
+            File.WriteAllText(templatePath, "Hello {username}, your password is {password}");
 
-        _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(true);
+            var newUser = new UserRequestDto
+            {
+                FullName = "Charlie Test",
+                Email = "charlie@example.com",
+                UserName = "charlie",
+                Password = "password123"
+            };
 
-        var (success, message) = await _userService.CreateOrUpdateUser(newUser);
-        Assert.True(success);
-        Assert.Contains("created", message.ToLower());
+            _emailServiceMock
+                .Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()))
+                .ReturnsAsync(true);
 
-        File.Delete(templatePath);
-        Directory.Delete(templateDir);
+            var (success, message) = await _userService.CreateOrUpdateUser(newUser);
+
+            Assert.True(success);
+            Assert.Contains("created", message.ToLower());
+        }
+        finally
+        {
+            if (File.Exists(templatePath))
+            {
+                File.Delete(templatePath);
+            }
+
+            if (Directory.Exists(templateDir) && !Directory.EnumerateFileSystemEntries(templateDir).Any())
+            {
+                Directory.Delete(templateDir);
+            }
+        }
     }
+
 
     [Fact]
     public async Task CreateUser_DuplicateEmail_ThrowsAppException()
@@ -480,7 +507,7 @@ public class UserServiceTests
     #region ExportUserData
 
     [Fact]
-    public async Task UserExportData_WithValidData_ReturnsMemoryStreamWithContent()
+    public async Task UserExportData_WithValidData_ReturnsExcelStream()
     {
         // Arrange
         var query = new PageListRequest
@@ -489,22 +516,66 @@ public class UserServiceTests
             PageSize = 10
         };
 
+        var exportData = new List<UserExportDto>
+        {
+            new() { No = 1, FullName = "Alice Johnson" },
+            new() { No = 2, FullName = "Bob Smith" }
+        };
+
+        var stream = new MemoryStream();
+        _commonServiceMock
+            .Setup(x => x.ExportToExcel(
+                It.IsAny<List<UserExportDto>>(),
+                It.IsAny<string>(),
+                It.IsAny<XLTableTheme>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<Action<IXLWorksheet>>()))
+            .Returns(stream);
+
         // Act
         var result = await _userService.UserExportData(query);
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.Length > 0);
+        Assert.Equal(stream, result);
     }
 
     [Fact]
-    public async Task UserExportData_WithNoMatchingUsers_ThrowsAppException()
+    public async Task UserExportData_ShouldAddRowNumbers()
     {
         // Arrange
-        var query = new PageListRequest
-        {
-            SearchTerm = "nonexistent"
-        };
+        var query = new PageListRequest();
+
+        var capturedList = new List<UserExportDto>();
+        _commonServiceMock
+            .Setup(x => x.ExportToExcel(
+                It.IsAny<List<UserExportDto>>(),
+                It.IsAny<string>(),
+                It.IsAny<XLTableTheme>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<Action<IXLWorksheet>>()))
+            .Callback<List<UserExportDto>, string, XLTableTheme?, int, int, Action<IXLWorksheet>>(
+                (list, _, _, _, _, _) => capturedList = list)
+            .Returns(new MemoryStream());
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.Equal(1, capturedList[0].No);
+        Assert.Equal(2, capturedList[1].No);
+    }
+
+    [Fact]
+    public async Task UserExportData_WhenNoData_ThrowsAppException()
+    {
+        // Arrange
+        _context.Users.RemoveRange(_context.Users);
+        _context.SaveChanges();
+
+        var query = new PageListRequest();
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.UserExportData(query));
@@ -512,13 +583,14 @@ public class UserServiceTests
     }
 
     [Fact]
-    public async Task UserExportData_WithValidFilters_ReturnsFilteredDataInExcel()
+    public async Task UserExportData_WithSearchAndFilters_SetsWorksheetMetadata()
     {
         // Arrange
+        SeedTestData(); 
+
         var query = new PageListRequest
         {
-            PageNumber = 1,
-            PageSize = 10,
+            SearchTerm = "alice",
             Filters = new FilterDto
             {
                 Role = UserRoles.Player,
@@ -526,180 +598,50 @@ public class UserServiceTests
             }
         };
 
-        // Act
-        var result = await _userService.UserExportData(query);
+        Action<IXLWorksheet>? capturedSetup = null;
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
-    }
-
-    [Fact]
-    public async Task UserExportData_WithRoleFilterOnly_ReturnsMatchingUsers()
-    {
-        // Arrange
-        var query = new PageListRequest
-        {
-            Filters = new FilterDto
-            {
-                Role = UserRoles.Player
-            }
-        };
-
-        // Act
-        var result = await _userService.UserExportData(query);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
-    }
-
-    [Fact]
-    public async Task UserExportData_WithStatusFilterOnly_ReturnsMatchingUsers()
-    {
-        // Arrange
-        var query = new PageListRequest
-        {
-            Filters = new FilterDto
-            {
-                Status = UserStatus.Suspended
-            }
-        };
+        _commonServiceMock
+            .Setup(x => x.ExportToExcel(
+                It.IsAny<List<UserExportDto>>(),
+                It.IsAny<string>(),
+                It.IsAny<XLTableTheme?>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<Action<IXLWorksheet>>()))
+            .Callback<List<UserExportDto>, string, XLTableTheme?, int, int, Action<IXLWorksheet>>(
+                (list, sheet, theme, row, col, setup) =>
+                {
+                    capturedSetup = setup;
+                    Assert.Single(list);
+                    Assert.Equal("Alice Johnson", list[0].FullName);
+                })
+            .Returns(new MemoryStream());
 
         // Act
         var result = await _userService.UserExportData(query);
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.Length > 0);
+        Assert.NotNull(capturedSetup);
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.AddWorksheet("TestSheet");
+
+        capturedSetup.Invoke(worksheet);
+
+        Assert.Equal("Search Text:", worksheet.Cell("A7").Value);
+        Assert.Equal("alice", worksheet.Cell("B7").Value);
+
+        Assert.Equal("Total Records:", worksheet.Cell("D7").Value);
+        Assert.Equal("1", worksheet.Cell("E7").Value.ToString());
+
+        Assert.Equal("Filter:", worksheet.Cell("G7").Value);
+        var filterText = worksheet.Cell("H7").Value.ToString();
+        Assert.Contains("Role: Player", filterText);
+        Assert.Contains("Status: Active", filterText);
     }
 
-    [Fact]
-    public async Task UserExportData_LogoFileExists_AddsLogoToExcel()
-    {
-        // Arrange
-        var logoDir = "wwwroot/images";
-        Directory.CreateDirectory(logoDir);
-        var logoPath = Path.Combine(logoDir, "logo.png");
-        byte[] transparentPng = Convert.FromBase64String(
-            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII="
-        );
-        File.WriteAllBytes(logoPath, transparentPng);
-
-        var query = new PageListRequest();
-
-        // Act
-        var result = await _userService.UserExportData(query);
-
-        // Cleanup
-        File.Delete(logoPath);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
-    }
-
-    [Fact]
-    public async Task UserExportData_LogoFileMissing_StillGeneratesFile()
-    {
-        // Arrange
-        var logoPath = "wwwroot/images/logo.png";
-        if (File.Exists(logoPath))
-            File.Delete(logoPath); 
-
-        var query = new PageListRequest();
-
-        // Act
-        var result = await _userService.UserExportData(query);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
-    }
-
-    [Fact]
-    public async Task UserExportData_UserWithLastActiveDate_SetsDateInExcel()
-    {
-        // Arrange
-        var userWithLastActive = _context.Users.First(u => u.Status == (int)UserStatus.Active);
-        userWithLastActive.LastLogin = DateTime.UtcNow.AddDays(-5); 
-        _context.SaveChanges();
-
-        var query = new PageListRequest
-        {
-            Filters = new FilterDto
-            {
-                Role = UserRoles.Player,
-                Status = UserStatus.Active
-            }
-        };
-
-        // Act
-        var result = await _userService.UserExportData(query);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
-    }
-
-    [Fact]
-    public async Task UserExportData_UserWithoutLastActiveDate_SetsDashInExcel()
-    {
-        // Arrange
-        var user = _context.Users.First(u => u.Status == (int)UserStatus.Active);
-        user.LastLogin = null; 
-        _context.SaveChanges();
-
-        var query = new PageListRequest
-        {
-            Filters = new FilterDto
-            {
-                Role = UserRoles.Player,
-                Status = UserStatus.Active
-            }
-        };
-
-        // Act
-        var result = await _userService.UserExportData(query);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
-    }
-
-    [Fact]
-    public async Task UserExportData_WithSearchTerm_IncludesSearchTermInExcel()
-    {
-        // Arrange
-        var user = _context.Users.First();
-        var query = new PageListRequest
-        {
-            SearchTerm = user.FullName.Split(' ').First()
-        };
-
-        // Act
-        var result = await _userService.UserExportData(query);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0); 
-    }
-    [Fact]
-    public async Task UserExportData_WithEmptySearchTerm_SetsDashInExcel()
-    {
-        // Arrange
-        var query = new PageListRequest
-        {
-            SearchTerm = ""
-        };
-
-        // Act
-        var result = await _userService.UserExportData(query);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
-    }
     #endregion
+
 
 }

@@ -45,15 +45,17 @@ public class MappingProfile : Profile
 
         CreateMap<User, UserExportDto>()
             .ForMember(dest => dest.TotalQuizAttemptedCount,
-                    opt => opt.MapFrom(src => src.QuizAttempteds.Count))
+                opt => opt.MapFrom(src => src.QuizAttempteds.Count))
             .ForMember(dest => dest.RoleName,
-                    opt => opt.MapFrom(src => src.Role.Name))
+                opt => opt.MapFrom(src => src.Role.Name))
             .ForMember(dest => dest.StatusName,
-                    opt => opt.MapFrom(src => ((UserStatus)src.Status).ToString()))
+                opt => opt.MapFrom(src => ((UserStatus)src.Status).ToString()))
             .ForMember(dest => dest.JoinDate,
-                    opt => opt.MapFrom(src => src.CreatedDate)) 
+                opt => opt.MapFrom(src => src.CreatedDate.ToString("dd-MM-yyyy")))
             .ForMember(dest => dest.LastActive,
-                    opt => opt.MapFrom(src => src.LastLogin));
-
+                opt => opt.MapFrom(src =>
+                    src.LastLogin.HasValue
+                        ? src.LastLogin.Value.ToString("dd-MM-yyyy")
+                        : "-"));
     }
 }

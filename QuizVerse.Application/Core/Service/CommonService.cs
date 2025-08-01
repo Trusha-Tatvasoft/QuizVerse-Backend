@@ -1,5 +1,7 @@
 using System.Globalization;
+using ClosedXML.Excel;
 using QuizVerse.Application.Core.Interface;
+using QuizVerse.Infrastructure.Common;
 
 namespace QuizVerse.Application.Core.Service
 {
@@ -24,5 +26,33 @@ namespace QuizVerse.Application.Core.Service
         }
         #endregion DateParsing
 
+        #region Excel Export
+        public MemoryStream ExportToExcel<T>(List<T> data, string sheetName, XLTableTheme? tableTheme, int startRow = 10, int startCol = 1, Action<IXLWorksheet>? setup = null)
+        {
+            using var workbook = new XLWorkbook();
+            var ws = workbook.Worksheets.Add(sheetName);
+
+            string logoPath = Constants.LOGO_PATH;
+            if (File.Exists(logoPath))
+            {
+                ws.AddPicture(logoPath).MoveTo(ws.Cell("D2")).WithSize(320, 70);
+            }
+
+            setup?.Invoke(ws);
+
+            // Insert table
+            var table = ws.Cell(startRow, startCol).InsertTable(data, sheetName + "Table", true);
+            table.Theme = tableTheme ?? XLTableTheme.TableStyleMedium2;
+            table.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            table.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+            ws.Columns().AdjustToContents();
+
+            var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Position = 0;
+            return stream;
+        }
+        #endregion Excel Export
     }
 }

@@ -94,4 +94,12 @@ public static class Constants
     public const string RESET_PASSWORD_EMAIL_HEADING = "QuizVerse : Reset Password Link!";
     public const string ResetPasswordTemplatePath = "Templates/ResetPassword.html";
     #endregion
+
+    #region Images Path
+    public const string LOGO_PATH = "wwwroot/images/logo.png";
+    #endregion
+
+    #region Excel Export
+    public const string EXCEL_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    #endregion
 }

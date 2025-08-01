@@ -221,105 +221,54 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #endregion
 
     #region User export
-    public async Task<MemoryStream> UserExportData(PageListRequest query)
+    public async Task<MemoryStream> UserExportData(PageListRequest pageListRequest)
     {
-        IQueryable<User> userQuery = GetUserData(query);
-        List<UserExportDto> users = await userQuery.ProjectTo<UserExportDto>(mapper.ConfigurationProvider).ToListAsync();
-        if (users.Count == 0) throw new AppException(Constants.USER_DATA_NULL);
+        List<UserExportDto> tableData = await GetUserData(pageListRequest)
+                                            .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)
+                                            .ToListAsync();
+        if (tableData.Count == 0)
+            throw new AppException(Constants.USER_DATA_NULL);
 
-        XLWorkbook workbook = new(); IXLWorksheet ws = workbook.Worksheets.Add("Users");
-        string logoPath = "wwwroot/images/logo.png";
-        if (File.Exists(logoPath)) ws.AddPicture(logoPath).MoveTo(ws.Cell("C2")).WithSize(300, 70);
+        for (int i = 0; i < tableData.Count; i++)
+        {
+            tableData[i].No = i + 1;
+        }
 
-        (string, string)[] meta = {
-            ("Search Text:", string.IsNullOrWhiteSpace(query.SearchTerm) ? "-" : query.SearchTerm),
-            ("Total Records:", users.Count.ToString()),
-            ("Filter:", $"Role: {(query.Filters?.Role?.ToString() ?? "All")}, Status: {(query.Filters?.Status?.ToString() ?? "All")}")
+        string role = pageListRequest.Filters?.Role?.ToString() ?? "All";
+        string status = pageListRequest.Filters?.Status?.ToString() ?? "All";
+
+        Action<IXLWorksheet> worksheetSetup = worksheet =>
+        {
+            (string LabelCell, string ValueCell, string Label, string Value)[] headerInfo =
+            [
+                ("A7", "B7", "Search Text:", string.IsNullOrWhiteSpace(pageListRequest.SearchTerm) ? "-" : pageListRequest.SearchTerm),
+                ("D7", "E7", "Total Records:", tableData.Count.ToString()),
+                ("G7", "H7", "Filter:", $"Role: {role}, Status: {status}")
+            ];
+
+            foreach ((string LabelCell, string ValueCell, string Label, string Value) in headerInfo)
+            {
+                IXLCell labelCell = worksheet.Cell(LabelCell);
+                IXLCell valueCell = worksheet.Cell(ValueCell);
+
+                labelCell.Value = Label;
+                valueCell.Value = Value;
+
+                labelCell.Style.Font.Bold = true;
+                labelCell.Style.Fill.BackgroundColor = XLColor.FromHtml("#4f81bd");
+                labelCell.Style.Font.FontColor = XLColor.White;
+                labelCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                labelCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                labelCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                valueCell.Style.Font.Bold = true;
+                valueCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                valueCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                valueCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            }
         };
 
-        int labelCol = 1, valueCol = 2;
-        for (int i = 0; i < meta.Length; i++)
-        {
-            string label = meta[i].Item1; string value = meta[i].Item2;
-            ws.Cell(7, labelCol).Value = label; ApplyLabelStyle(ws.Cell(7, labelCol));
-            if (i == 2)
-            {
-                IXLRange merged = ws.Range(7, valueCol, 7, valueCol + 1);
-                merged.Merge(); merged.Value = value; ApplyValueStyle(merged.FirstCell());
-                labelCol += 4; valueCol += 4;
-            }
-            else
-            {
-                ws.Cell(7, valueCol).Value = value; ApplyValueStyle(ws.Cell(7, valueCol));
-                labelCol += 3; valueCol += 3;
-            }
-        }
-
-        string[] headers = { "No.", "Full Name", "Email", "Username", "Total Quiz", "Role", "Status", "Join Date", "Last Active" };
-        for (int col = 1; col <= headers.Length; col++) ApplyTableHeaderStyle(ws.Cell(9, col).SetValue(headers[col - 1]));
-
-        int row = 10;
-        foreach (KeyValuePair<UserExportDto, int> entry in users.Select((x, i) => new KeyValuePair<UserExportDto, int>(x, i + 1)))
-        {
-            UserExportDto u = entry.Key;
-            int i = entry.Value;
-
-            for (int col = 1; col <= 9; col++)
-                ws.Cell(row, col).Style.Fill.BackgroundColor = row % 2 == 0 ? XLColor.FromHtml("#FAF6FE") : XLColor.FromHtml("#BDD2FF");
-
-            ApplyDataCell(ws.Cell(row, 1), i);
-            ApplyDataCell(ws.Cell(row, 2), u.FullName ?? "-");
-            ApplyDataCell(ws.Cell(row, 3), u.Email ?? "-");
-            ApplyDataCell(ws.Cell(row, 4), u.UserName ?? "-");
-            ApplyDataCell(ws.Cell(row, 5), u.TotalQuizAttemptedCount);
-            ApplyDataCell(ws.Cell(row, 6), u.RoleName ?? "-");
-            ApplyDataCell(ws.Cell(row, 7), u.StatusName ?? "-");
-            ApplyDataCell(ws.Cell(row, 8), u.JoinDate.ToString("dd-MM-yyyy"));
-            ApplyDataCell(ws.Cell(row, 9), u.LastActive?.ToString("dd-MM-yyyy") ?? "-");
-            row++;
-        }
-
-        MemoryStream stream = new();
-        workbook.SaveAs(stream);
-        stream.Position = 0;
-        return stream;
-    }
-
-    private void ApplyLabelStyle(IXLCell cell)
-    {
-        cell.Style.Font.Bold = true;
-        cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563eb");
-        cell.Style.Font.FontColor = XLColor.White;
-        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-    }
-
-    private void ApplyValueStyle(IXLCell cell)
-    {
-        cell.Style.Font.Bold = true;
-        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-    }
-
-    private void ApplyTableHeaderStyle(IXLCell cell)
-    {
-        cell.Style.Font.Bold = true;
-        cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2563eb");
-        cell.Style.Font.FontColor = XLColor.White;
-        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-        cell.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-    }
-
-    private void ApplyDataCell(IXLCell cell, object value)
-    {
-        cell.Value = value?.ToString() ?? "-";
-        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        return commonService.ExportToExcel(tableData,"Users",XLTableTheme.TableStyleMedium9,10,1,worksheetSetup);
     }
     #endregion
 

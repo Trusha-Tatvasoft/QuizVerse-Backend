@@ -84,13 +84,9 @@ public class UsersController(IUserService userService) : ControllerBase
     public async Task<IActionResult> UserExportData([FromBody] PageListRequest query)
     {
         MemoryStream fileStream = await userService.UserExportData(query);
-        string fileName = $"Users_{DateTime.UtcNow:dd-MM-yyyy}.xlsx";
 
-        return File(
-            fileStream,
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            fileName
-        );
+       return File(fileStream, Constants.EXCEL_MIME_TYPE, $"Users_{DateTime.UtcNow:dd-MM-yyyy}.xlsx");
+
     }
     #endregion
 }
