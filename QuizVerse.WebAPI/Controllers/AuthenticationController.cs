@@ -34,7 +34,7 @@ namespace QuizVerse.WebAPI.Controllers
 
 
         [HttpPost("refersh-token")]
-        public async Task<IActionResult> ValidateAndRegenerateRefreshToken(string refereshToken)
+        public async Task<IActionResult> ValidateAndRegenerateRefreshToken([FromBody] string refereshToken)
         {
             (string accessToken, string refreshToken) = await _authService.ValidateRefreshTokens(refereshToken);
             ApiResponse<LoginResponseDTO> response = new()
@@ -97,7 +97,7 @@ namespace QuizVerse.WebAPI.Controllers
             };
             return Ok(response);
         }
-        
+
 
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword(ResetPasswordDTO resetPasswordDto)
