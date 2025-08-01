@@ -1,4 +1,7 @@
+using ClosedXML.Excel;
+using FluentAssertions;
 using QuizVerse.Application.Core.Service;
+using QuizVerse.Infrastructure.Common;
 using Xunit;
 
 namespace QuizVerse.UnitTests.Services
@@ -105,5 +108,116 @@ namespace QuizVerse.UnitTests.Services
         {
             Assert.Throws<FormatException>(() => _service.ToDate(invalidInput!));
         }
+
+        #region ExportToExcel
+        
+        [Fact]
+        public void ExportToExcel_WithAnonymousType_ShouldReturnNonEmptyStream()
+        {
+            // Arrange
+            var data = new List<object>
+        {
+            new { Id = 1, Name = "Alice" },
+            new { Id = 2, Name = "Bob" }
+        };
+
+            // Act
+            var stream = _service.ExportToExcel(data, "TestSheet", XLTableTheme.TableStyleLight9);
+
+            // Assert
+            stream.Should().NotBeNull();
+            stream.Length.Should().BeGreaterThan(0);
+
+            using var workbook = new XLWorkbook(stream);
+            workbook.Worksheets.Contains("TestSheet").Should().BeTrue();
+        }
+
+        [Fact]
+        public void ExportToExcel_ShouldApplySetupActionCorrectly()
+        {
+            // Arrange
+            var data = new List<object> { new { Id = 1, Name = "Test" } };
+            bool wasCalled = false;
+
+            // Act
+            var stream = _service.ExportToExcel(data, "CustomSheet", XLTableTheme.TableStyleLight8, 10, 1, ws =>
+            {
+                ws.Cell("C3").Value = "Custom Value";
+                wasCalled = true;
+            });
+
+            // Assert
+            wasCalled.Should().BeTrue();
+            using var workbook = new XLWorkbook(stream);
+            var value = workbook.Worksheet("CustomSheet").Cell("C3").Value.ToString();
+            value.Should().Be("Custom Value");
+        }
+
+        [Fact]
+        public void ExportToExcel_WithEmptyData_ShouldStillReturnValidExcel()
+        {
+            // Arrange
+            var emptyData = new List<object>();
+
+            // Act
+            var stream = _service.ExportToExcel(emptyData, "EmptySheet", XLTableTheme.TableStyleMedium6);
+
+            // Assert
+            stream.Should().NotBeNull();
+            stream.Length.Should().BeGreaterThan(0);
+
+            using var workbook = new XLWorkbook(stream);
+            workbook.Worksheet("EmptySheet").Should().NotBeNull();
+        }
+
+        [Fact]
+        public void ExportToExcel_WithTheme_ShouldApplyCorrectStyle()
+        {
+            // Arrange
+            var data = new List<object>
+        {
+            new { Id = 1, Name = "Styled" }
+        };
+
+            var theme = XLTableTheme.TableStyleMedium2;
+
+            // Act
+            var stream = _service.ExportToExcel(data, "StyledSheet", theme);
+
+            // Assert
+            stream.Should().NotBeNull();
+
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheet("StyledSheet");
+            var table = worksheet.Tables.Table("StyledSheetTable");
+            table.Theme.Should().Be(theme);
+        }
+
+        [Fact]
+        public void ExportToExcel_WhenLogoExists_ShouldInsertLogoImage()
+        {
+            // Arrange
+            var data = new List<object> { new { Id = 1, Name = "TestUser" } };
+            var expectedPath = "wwwroot/images/logo.png";
+
+            Directory.CreateDirectory(Path.GetDirectoryName(expectedPath)!);
+
+            // Write a tiny transparent PNG
+            byte[] transparentPng = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII="
+            );
+            File.WriteAllBytes(expectedPath, transparentPng);
+
+            // Act
+            var stream = _service.ExportToExcel(data, "LogoSheet", XLTableTheme.TableStyleDark1);
+
+            // Assert
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheet("LogoSheet");
+            worksheet.Pictures.Count.Should().BeGreaterThan(0);
+
+            File.Delete(expectedPath);
+        }
+        #endregion
     }
 }

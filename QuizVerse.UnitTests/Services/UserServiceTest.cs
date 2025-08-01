@@ -1,4 +1,5 @@
 using AutoMapper;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -12,6 +13,7 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
+using QuizVerse.Infrastructure.Mappings;
 using QuizVerse.Infrastructure.Repository;
 using Xunit;
 
@@ -38,8 +40,7 @@ public class UserServiceTests
 
         var mapperConfig = new MapperConfiguration(cfg =>
         {
-            cfg.CreateMap<User, UserDto>().ReverseMap();
-            cfg.CreateMap<UserRequestDto, User>().ReverseMap();
+            cfg.AddProfile<MappingProfile>();
         });
         _mapper = mapperConfig.CreateMapper();
 
@@ -64,37 +65,48 @@ public class UserServiceTests
     #region SeedData
     private void SeedTestData()
     {
-        var role = new UserRole { Id = 1, Name = "Player" };
-        _context.UserRoles.Add(role);
+        var roleId = (int)UserRoles.Player;
 
-        _context.Users.AddRange(
-            new User
-            {
-                Id = 1,
-                FullName = "Alice Johnson",
-                Email = "alice@example.com",
-                Password = "samplePass1",
-                UserName = "alice",
-                Status = (int)UserStatus.Active,
-                RoleId = 1,
-                IsDeleted = false,
-                CreatedDate = DateTime.UtcNow
-            },
-            new User
-            {
-                Id = 2,
-                FullName = "Bob Smith",
-                Email = "bob@example.com",
-                Password = "samplePass2",
-                UserName = "bob",
-                Status = (int)UserStatus.Suspended,
-                RoleId = 1,
-                IsDeleted = false,
-                CreatedDate = DateTime.UtcNow
-            }
-        );
+        var role = _context.UserRoles.FirstOrDefault(r => r.Id == roleId);
+        if (role == null)
+        {
+            role = new UserRole { Id = roleId, Name = "Player" };
+            _context.UserRoles.Add(role);
+            _context.SaveChanges();
+        }
 
-        _context.SaveChanges();
+        if (!_context.Users.Any())
+        {
+            _context.Users.AddRange(
+                new User
+                {
+                    FullName = "Alice Johnson",
+                    Email = "alice@example.com",
+                    Password = "samplePass1",
+                    UserName = "alice",
+                    Status = (int)UserStatus.Active,
+                    RoleId = roleId,
+                    Role = role,
+                    IsDeleted = false,
+                    CreatedDate = DateTime.UtcNow,
+                    QuizAttempteds = new List<QuizAttempted>()
+                },
+                new User
+                {
+                    FullName = "Bob Smith",
+                    Email = "bob@example.com",
+                    Password = "samplePass2",
+                    UserName = "bob",
+                    Status = (int)UserStatus.Suspended,
+                    RoleId = roleId,
+                    Role = role,
+                    IsDeleted = false,
+                    CreatedDate = DateTime.UtcNow,
+                    QuizAttempteds = new List<QuizAttempted>()
+                }
+            );
+            _context.SaveChanges();
+        }
     }
     #endregion
 
@@ -159,7 +171,7 @@ public class UserServiceTests
             PageSize = 10,
             Filters = new FilterDto
             {
-                Status = (UserStatus)999 
+                Status = (UserStatus)999
             }
         };
 
@@ -176,7 +188,7 @@ public class UserServiceTests
             PageSize = 10,
             Filters = new FilterDto
             {
-                Role = (UserRoles)999 
+                Role = (UserRoles)999
             }
         };
 
@@ -227,7 +239,7 @@ public class UserServiceTests
         {
             Filters = new FilterDto
             {
-                Role = (UserRoles)777 
+                Role = (UserRoles)777
             }
         };
 
@@ -242,7 +254,7 @@ public class UserServiceTests
         {
             Filters = new FilterDto
             {
-                Status = (UserStatus)777 
+                Status = (UserStatus)777
             }
         };
 
@@ -269,31 +281,47 @@ public class UserServiceTests
     #endregion
 
     #region CreateUser
+
     [Fact]
     public async Task CreateUser_WithTemplateFile_SendsEmailSuccessfully()
     {
         var templateDir = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
-        Directory.CreateDirectory(templateDir);
-
         var templatePath = Path.Combine(templateDir, "NewUser.html");
-        File.WriteAllText(templatePath, "Hello {username}, your password is {password}");
 
-        var newUser = new UserRequestDto
+        try
         {
-            FullName = "Charlie Test",
-            Email = "charlie@example.com",
-            UserName = "charlie",
-            Password = "password123"
-        };
+            Directory.CreateDirectory(templateDir);
+            File.WriteAllText(templatePath, "Hello {username}, your password is {password}");
 
-        _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(true);
+            var newUser = new UserRequestDto
+            {
+                FullName = "Charlie Test",
+                Email = "charlie@example.com",
+                UserName = "charlie",
+                Password = "password123"
+            };
 
-        var (success, message) = await _userService.CreateOrUpdateUser(newUser);
-        Assert.True(success);
-        Assert.Contains("created", message.ToLower());
+            _emailServiceMock
+                .Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()))
+                .ReturnsAsync(true);
 
-        File.Delete(templatePath);
-        Directory.Delete(templateDir);
+            var (success, message) = await _userService.CreateOrUpdateUser(newUser);
+
+            Assert.True(success);
+            Assert.Contains("created", message.ToLower());
+        }
+        finally
+        {
+            if (File.Exists(templatePath))
+            {
+                File.Delete(templatePath);
+            }
+
+            if (Directory.Exists(templateDir) && !Directory.EnumerateFileSystemEntries(templateDir).Any())
+            {
+                Directory.Delete(templateDir);
+            }
+        }
     }
 
 
@@ -473,4 +501,145 @@ public class UserServiceTests
         Assert.Equal(Constants.STATUS_REQUIRED, ex.Message);
     }
     #endregion
+
+    #region ExportUserData
+
+    [Fact]
+    public async Task UserExportData_WithValidData_ReturnsExcelStream()
+    {
+        // Arrange
+        var query = new PageListRequest
+        {
+            PageNumber = 1,
+            PageSize = 10
+        };
+
+        var exportData = new List<UserExportDto>
+        {
+            new() { No = 1, FullName = "Alice Johnson" },
+            new() { No = 2, FullName = "Bob Smith" }
+        };
+
+        var stream = new MemoryStream();
+        _commonServiceMock
+            .Setup(x => x.ExportToExcel(
+                It.IsAny<List<UserExportDto>>(),
+                It.IsAny<string>(),
+                It.IsAny<XLTableTheme>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<Action<IXLWorksheet>>()))
+            .Returns(stream);
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(stream, result);
+    }
+
+    [Fact]
+    public async Task UserExportData_ShouldAddRowNumbers()
+    {
+        // Arrange
+        var query = new PageListRequest();
+
+        var capturedList = new List<UserExportDto>();
+        _commonServiceMock
+            .Setup(x => x.ExportToExcel(
+                It.IsAny<List<UserExportDto>>(),
+                It.IsAny<string>(),
+                It.IsAny<XLTableTheme>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<Action<IXLWorksheet>>()))
+            .Callback<List<UserExportDto>, string, XLTableTheme?, int, int, Action<IXLWorksheet>>(
+                (list, _, _, _, _, _) => capturedList = list)
+            .Returns(new MemoryStream());
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.Equal(1, capturedList[0].No);
+        Assert.Equal(2, capturedList[1].No);
+    }
+
+    [Fact]
+    public async Task UserExportData_WhenNoData_ThrowsAppException()
+    {
+        // Arrange
+        _context.Users.RemoveRange(_context.Users);
+        _context.SaveChanges();
+
+        var query = new PageListRequest();
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.UserExportData(query));
+        Assert.Equal(Constants.USER_DATA_NULL, ex.Message);
+    }
+
+    [Fact]
+    public async Task UserExportData_WithSearchAndFilters_SetsWorksheetMetadata()
+    {
+        // Arrange
+        SeedTestData(); 
+
+        var query = new PageListRequest
+        {
+            SearchTerm = "alice",
+            Filters = new FilterDto
+            {
+                Role = UserRoles.Player,
+                Status = UserStatus.Active
+            }
+        };
+
+        Action<IXLWorksheet>? capturedSetup = null;
+
+        _commonServiceMock
+            .Setup(x => x.ExportToExcel(
+                It.IsAny<List<UserExportDto>>(),
+                It.IsAny<string>(),
+                It.IsAny<XLTableTheme?>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<Action<IXLWorksheet>>()))
+            .Callback<List<UserExportDto>, string, XLTableTheme?, int, int, Action<IXLWorksheet>>(
+                (list, sheet, theme, row, col, setup) =>
+                {
+                    capturedSetup = setup;
+                    Assert.Single(list);
+                    Assert.Equal("Alice Johnson", list[0].FullName);
+                })
+            .Returns(new MemoryStream());
+
+        // Act
+        var result = await _userService.UserExportData(query);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotNull(capturedSetup);
+
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.AddWorksheet("TestSheet");
+
+        capturedSetup.Invoke(worksheet);
+
+        Assert.Equal("Search Text:", worksheet.Cell("A7").Value);
+        Assert.Equal("alice", worksheet.Cell("B7").Value);
+
+        Assert.Equal("Total Records:", worksheet.Cell("D7").Value);
+        Assert.Equal("1", worksheet.Cell("E7").Value.ToString());
+
+        Assert.Equal("Filter:", worksheet.Cell("G7").Value);
+        var filterText = worksheet.Cell("H7").Value.ToString();
+        Assert.Contains("Role: Player", filterText);
+        Assert.Contains("Status: Active", filterText);
+    }
+
+    #endregion
+
+
 }
