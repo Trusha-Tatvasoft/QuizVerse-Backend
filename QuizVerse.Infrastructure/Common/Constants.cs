@@ -60,6 +60,7 @@ public static class Constants
     public const string PASSWORD_REQUIRED_FOR_NEW_USER = "Password is required for new users.";
     public const string USER_DELETED_SUCCESS = "User {0} deleted successfully.";
     public const string USER_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
+    public const string USER_DATA_NULL = "No data available to export.";
     #endregion
 
     #region Email Messages
@@ -92,5 +93,17 @@ public static class Constants
     public const string FAILED_TO_CREATE_RESET_PASSWORD_TOKEN = "Failed to create Reset Password Token.";
     public const string RESET_PASSWORD_EMAIL_HEADING = "QuizVerse : Reset Password Link!";
     public const string ResetPasswordTemplatePath = "Templates/ResetPassword.html";
+    #endregion
+
+    #region Images Path
+    public const string LOGO_PATH = "wwwroot/images/logo.png";
+    #endregion
+
+    #region Excel Export
+    public const string EXCEL_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    #endregion
+
+    #region Colors
+    public const string LIGHT_BLUE = "#4f81bd"; 
     #endregion
 }
