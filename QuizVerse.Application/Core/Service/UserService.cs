@@ -223,16 +223,12 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #region User export
     public async Task<MemoryStream> UserExportData(PageListRequest pageListRequest)
     {
-        List<UserExportDto> tableData = await GetUserData(pageListRequest)
-                                            .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)
-                                            .ToListAsync();
+        List<UserExportDto> tableData = [.. (await GetUserData(pageListRequest)  
+                                        .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)  
+                                        .ToListAsync())  
+                                        .Select((u, i) => { u.No = i + 1; return u; })];  
         if (tableData.Count == 0)
             throw new AppException(Constants.USER_DATA_NULL);
-
-        for (int i = 0; i < tableData.Count; i++)
-        {
-            tableData[i].No = i + 1;
-        }
 
         string role = pageListRequest.Filters?.Role?.ToString() ?? "All";
         string status = pageListRequest.Filters?.Status?.ToString() ?? "All";
@@ -255,7 +251,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
                 valueCell.Value = Value;
 
                 labelCell.Style.Font.Bold = true;
-                labelCell.Style.Fill.BackgroundColor = XLColor.FromHtml("#4f81bd");
+                labelCell.Style.Fill.BackgroundColor = XLColor.FromHtml(Constants.LIGHT_BLUE);
                 labelCell.Style.Font.FontColor = XLColor.White;
                 labelCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 labelCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
@@ -268,7 +264,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
             }
         };
 
-        return commonService.ExportToExcel(tableData,"Users",XLTableTheme.TableStyleMedium9,10,1,worksheetSetup);
+        return commonService.ExportToExcel(tableData, "Users", XLTableTheme.TableStyleMedium9, 10, 1, worksheetSetup);  
     }
     #endregion
 

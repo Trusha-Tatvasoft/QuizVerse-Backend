@@ -85,8 +85,7 @@ public class UsersController(IUserService userService) : ControllerBase
     {
         MemoryStream fileStream = await userService.UserExportData(query);
 
-       return File(fileStream, Constants.EXCEL_MIME_TYPE, $"Users_{DateTime.UtcNow:dd-MM-yyyy}.xlsx");
-
+        return File(fileStream, Constants.EXCEL_MIME_TYPE, $"Users_{DateTime.UtcNow:dd-MM-yyyy}.xlsx");
     }
     #endregion
 }

@@ -108,8 +108,6 @@ public class UserServiceTests
             _context.SaveChanges();
         }
     }
-
-
     #endregion
 
     #region GetAllUserData 

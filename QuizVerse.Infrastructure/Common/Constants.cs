@@ -102,4 +102,8 @@ public static class Constants
     #region Excel Export
     public const string EXCEL_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     #endregion
+
+    #region Colors
+    public const string LIGHT_BLUE = "#4f81bd"; 
+    #endregion
 }
