@@ -9,4 +9,5 @@ public interface IUserService
     Task<UserDto> GetUserById(int id);
     Task<(bool Success, string Message)> CreateOrUpdateUser(UserRequestDto dto);
     Task<string> UpdateUserByAction(UserActionRequest request);
+    Task<MemoryStream> UserExportData(PageListRequest pageListRequest);
 }

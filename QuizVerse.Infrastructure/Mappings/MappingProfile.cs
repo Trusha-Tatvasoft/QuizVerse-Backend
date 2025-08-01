@@ -42,5 +42,20 @@ public class MappingProfile : Profile
            .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => UserRole.Player))
            .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => false))
            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+        CreateMap<User, UserExportDto>()
+            .ForMember(dest => dest.TotalQuizAttemptedCount,
+                opt => opt.MapFrom(src => src.QuizAttempteds.Count))
+            .ForMember(dest => dest.RoleName,
+                opt => opt.MapFrom(src => src.Role.Name))
+            .ForMember(dest => dest.StatusName,
+                opt => opt.MapFrom(src => ((UserStatus)src.Status).ToString()))
+            .ForMember(dest => dest.JoinDate,
+                opt => opt.MapFrom(src => src.CreatedDate.ToString("dd-MM-yyyy")))
+            .ForMember(dest => dest.LastActive,
+                opt => opt.MapFrom(src =>
+                    src.LastLogin.HasValue
+                        ? src.LastLogin.Value.ToString("dd-MM-yyyy")
+                        : "-"));
     }
 }

@@ -13,6 +13,7 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 using System.Linq.Dynamic.Core;
+using ClosedXML.Excel;
 
 namespace QuizVerse.Application.Core.Service;
 
@@ -218,4 +219,54 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
 
     }
     #endregion
+
+    #region User export
+    public async Task<MemoryStream> UserExportData(PageListRequest pageListRequest)
+    {
+        List<UserExportDto> tableData = [.. (await GetUserData(pageListRequest)  
+                                        .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)  
+                                        .ToListAsync())  
+                                        .Select((u, i) => { u.No = i + 1; return u; })];  
+        if (tableData.Count == 0)
+            throw new AppException(Constants.USER_DATA_NULL);
+
+        string role = pageListRequest.Filters?.Role?.ToString() ?? "All";
+        string status = pageListRequest.Filters?.Status?.ToString() ?? "All";
+
+        Action<IXLWorksheet> worksheetSetup = worksheet =>
+        {
+            (string LabelCell, string ValueCell, string Label, string Value)[] headerInfo =
+            [
+                ("A7", "B7", "Search Text:", string.IsNullOrWhiteSpace(pageListRequest.SearchTerm) ? "-" : pageListRequest.SearchTerm),
+                ("D7", "E7", "Total Records:", tableData.Count.ToString()),
+                ("G7", "H7", "Filter:", $"Role: {role}, Status: {status}")
+            ];
+
+            foreach ((string LabelCell, string ValueCell, string Label, string Value) in headerInfo)
+            {
+                IXLCell labelCell = worksheet.Cell(LabelCell);
+                IXLCell valueCell = worksheet.Cell(ValueCell);
+
+                labelCell.Value = Label;
+                valueCell.Value = Value;
+
+                labelCell.Style.Font.Bold = true;
+                labelCell.Style.Fill.BackgroundColor = XLColor.FromHtml(Constants.LIGHT_BLUE);
+                labelCell.Style.Font.FontColor = XLColor.White;
+                labelCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                labelCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                labelCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                valueCell.Style.Font.Bold = true;
+                valueCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                valueCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                valueCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            }
+        };
+
+        return commonService.ExportToExcel(tableData, "Users", XLTableTheme.TableStyleMedium9, 10, 1, worksheetSetup);  
+    }
+    #endregion
+
+
 }
