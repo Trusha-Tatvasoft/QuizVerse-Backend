@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
+using QuizVerse.Infrastructure.Validators;
 
 namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 public class UserRequestDto

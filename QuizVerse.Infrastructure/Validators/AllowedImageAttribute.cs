@@ -1,26 +1,25 @@
 using Microsoft.AspNetCore.Http;
+using QuizVerse.Infrastructure.Common;
 using System.ComponentModel.DataAnnotations;
+
+namespace QuizVerse.Infrastructure.Validators;
 
 public class AllowedImageAttribute : ValidationAttribute
 {
-    private readonly string[] _allowedExtensions = [".jpg", ".jpeg", ".png", ".gif"];
-    private readonly long _maxFileSize = 10 * 1024 * 1024; 
-
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (value is not IFormFile file) return ValidationResult.Success;
 
-
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
-        if (!_allowedExtensions.Contains(extension))
+        if (!SystemConstants.IMAGE_ALLOWED_EXTENSIONS.Contains(extension))
         {
-            return new ValidationResult($"Only image files are allowed: {string.Join(", ", _allowedExtensions)}");
+            return new ValidationResult(Constants.INVALID_IMAGE_FILE_TYPE_MESSAGE);
         }
 
-        if (file.Length > _maxFileSize)
+        if (file.Length > SystemConstants.IMAGE_UPLOAD_MAX_SIZE)
         {
-            return new ValidationResult("Maximum allowed file size is 10MB.");
+            return new ValidationResult(Constants.IMAGE_FILE_SIZE_EXCEEDED_MESSAGE);
         }
 
         return ValidationResult.Success;

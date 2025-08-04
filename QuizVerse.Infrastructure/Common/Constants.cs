@@ -100,6 +100,11 @@ public static class Constants
     public const string LOGO_PATH = "wwwroot/images/logo.png";
     #endregion
 
+    #region File Upload Messages
+    public const string INVALID_IMAGE_FILE_TYPE_MESSAGE = "Only image files are allowed: .jpg, .jpeg, .png, .gif";
+    public const string IMAGE_FILE_SIZE_EXCEEDED_MESSAGE = "Maximum allowed file size is 10MB.";
+    #endregion
+
     #region Excel Export
     public const string EXCEL_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     #endregion

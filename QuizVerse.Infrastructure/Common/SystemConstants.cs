@@ -15,4 +15,6 @@ public class SystemConstants
     public const string JWT_CONFIGURATION_AUDIENCE = "JwtSettings:Audience";
     public const string REMEMBER_ME_CLAIM_NAME = "remember_me";
     public const int DEFAULT_PAGE_SIZE = 10;
+    public const int IMAGE_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
+    public static readonly string[] IMAGE_ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif"];
 }
