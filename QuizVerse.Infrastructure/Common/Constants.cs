@@ -61,6 +61,7 @@ public static class Constants
     public const string USER_DELETED_SUCCESS = "User {0} deleted successfully.";
     public const string USER_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
     public const string USER_DATA_NULL = "No data available to export.";
+    public const string NO_EMAIL_CHANGE = "Email can't be changed";
     #endregion
 
     #region Email Messages
@@ -104,6 +105,6 @@ public static class Constants
     #endregion
 
     #region Colors
-    public const string LIGHT_BLUE = "#4f81bd"; 
+    public const string LIGHT_BLUE = "#4f81bd";
     #endregion
 }

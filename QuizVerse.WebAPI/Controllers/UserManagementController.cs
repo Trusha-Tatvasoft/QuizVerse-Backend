@@ -46,7 +46,8 @@ public class UsersController(IUserService userService) : ControllerBase
     #region Create or Update
     // POST: api/users/create-or-update-user
     [HttpPost("create-or-update-user")]
-    public async Task<IActionResult> CreateOrUpdateUser([FromBody] UserRequestDto dto)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> CreateOrUpdateUser([FromForm] UserRequestDto dto)
     {
         var (success, message) = await userService.CreateOrUpdateUser(dto);
 
