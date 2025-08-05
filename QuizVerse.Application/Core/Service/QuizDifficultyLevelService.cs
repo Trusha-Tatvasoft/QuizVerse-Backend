@@ -1,0 +1,24 @@
+using AutoMapper;
+using QuizVerse.Application.Core.Interface;
+using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Interface;
+
+namespace QuizVerse.Application.Core.Service;
+
+public class QuizDifficultyLevelService(IGenericRepository<QuizDifficulty> quizDifficultyRepository, IMapper mapper) : IQuizDifficultyLevelService
+{
+    public async Task<List<QuizDifficultyResponse>> GetQuizDifficultyList()
+    {
+        List<QuizDifficulty> quizDifficultiesList = [.. (await quizDifficultyRepository.GetAllAsync()).Where(d => !d.IsDeleted)];
+
+        if (quizDifficultiesList.Count == 0)
+        {
+            throw new AppException(Constants.NO_DATA_FOUND);
+        }
+
+        return mapper.Map<List<QuizDifficultyResponse>>(quizDifficultiesList);
+    }
+}
