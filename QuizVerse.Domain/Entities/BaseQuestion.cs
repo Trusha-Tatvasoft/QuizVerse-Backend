@@ -33,11 +33,11 @@ public partial class BaseQuestion
 
     public virtual QuestionDifficulty QueDifficulty { get; set; } = null!;
 
-    public virtual ICollection<QueOptionsAn> QueOptionsAns { get; set; } = new List<QueOptionsAn>();
-
     public virtual QuestionType QueType { get; set; } = null!;
 
     public virtual ICollection<QuestionIssueReport> QuestionIssueReports { get; set; } = new List<QuestionIssueReport>();
+
+    public virtual ICollection<QuestionOptionsAnswer> QuestionOptionsAnswers { get; set; } = new List<QuestionOptionsAnswer>();
 
     public virtual ICollection<QuizToBaseQuestionMap> QuizToBaseQuestionMaps { get; set; } = new List<QuizToBaseQuestionMap>();
 }
