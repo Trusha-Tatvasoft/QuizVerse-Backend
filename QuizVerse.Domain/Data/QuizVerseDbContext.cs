@@ -46,11 +46,11 @@ public partial class QuizVerseDbContext : DbContext
 
     public virtual DbSet<PlatformConfiguration> PlatformConfigurations { get; set; }
 
-    public virtual DbSet<QueOptionsAn> QueOptionsAns { get; set; }
-
     public virtual DbSet<QuestionDifficulty> QuestionDifficulties { get; set; }
 
     public virtual DbSet<QuestionIssueReport> QuestionIssueReports { get; set; }
+
+    public virtual DbSet<QuestionOptionsAnswer> QuestionOptionsAnswers { get; set; }
 
     public virtual DbSet<QuestionType> QuestionTypes { get; set; }
 
@@ -642,45 +642,6 @@ public partial class QuizVerseDbContext : DbContext
                 .HasConstraintName("PlatformConfiguration_modified_by_fkey");
         });
 
-        modelBuilder.Entity<QueOptionsAn>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("QueOptionsAns_pkey");
-
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
-            entity.Property(e => e.CreatedDate)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("created_date");
-            entity.Property(e => e.IsDeleted)
-                .HasDefaultValue(false)
-                .HasColumnName("is_deleted");
-            entity.Property(e => e.Key)
-                .HasColumnType("character varying")
-                .HasColumnName("key");
-            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
-            entity.Property(e => e.ModifiedDate)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP")
-                .HasColumnName("modified_date");
-            entity.Property(e => e.QuestionId).HasColumnName("question_id");
-            entity.Property(e => e.Value)
-                .HasColumnType("character varying")
-                .HasColumnName("value");
-
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QueOptionsAnCreatedByNavigations)
-                .HasForeignKey(d => d.CreatedBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("QueOptionsAns_created_by_fkey");
-
-            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QueOptionsAnModifiedByNavigations)
-                .HasForeignKey(d => d.ModifiedBy)
-                .HasConstraintName("QueOptionsAns_modified_by_fkey");
-
-            entity.HasOne(d => d.Question).WithMany(p => p.QueOptionsAns)
-                .HasForeignKey(d => d.QuestionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("QueOptionsAns_question_id_fkey");
-        });
-
         modelBuilder.Entity<QuestionDifficulty>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("QuestionDifficulty_pkey");
@@ -763,6 +724,47 @@ public partial class QuizVerseDbContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuestionIssueReports_user_id_fkey");
+        });
+
+        modelBuilder.Entity<QuestionOptionsAnswer>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("QueOptionsAns_pkey");
+
+            entity.Property(e => e.Id)
+                .HasDefaultValueSql("nextval('\"QueOptionsAns_id_seq\"'::regclass)")
+                .HasColumnName("id");
+            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false)
+                .HasColumnName("is_deleted");
+            entity.Property(e => e.Key)
+                .HasColumnType("character varying")
+                .HasColumnName("key");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("modified_date");
+            entity.Property(e => e.QuestionId).HasColumnName("question_id");
+            entity.Property(e => e.Value)
+                .HasColumnType("character varying")
+                .HasColumnName("value");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuestionOptionsAnswerCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("QueOptionsAns_created_by_fkey");
+
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuestionOptionsAnswerModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
+                .HasConstraintName("QueOptionsAns_modified_by_fkey");
+
+            entity.HasOne(d => d.Question).WithMany(p => p.QuestionOptionsAnswers)
+                .HasForeignKey(d => d.QuestionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("QueOptionsAns_question_id_fkey");
         });
 
         modelBuilder.Entity<QuestionType>(entity =>

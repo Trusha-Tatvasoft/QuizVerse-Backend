@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+        services.AddScoped<IQuizDifficultyLevelService, QuizDifficultyLevelService>();
         services.AddScoped<IQuizCategoryService, QuizCategoryService>();
 
         //mappers

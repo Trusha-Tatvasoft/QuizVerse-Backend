@@ -28,10 +28,6 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
 
         // Validate page number
         int totalRecords = quizCategories.Count();
-        if (totalRecords == 0)
-        {
-            throw new AppException(Constants.NO_DATA_Found, StatusCodes.Status404NotFound);
-        }
         int maxPageNumber = (int)Math.Ceiling((double)totalRecords / pageListRequest.PageSize);
         if (pageListRequest.PageNumber > maxPageNumber && totalRecords > 0)
         {
