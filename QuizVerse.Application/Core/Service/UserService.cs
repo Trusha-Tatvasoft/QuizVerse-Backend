@@ -101,19 +101,30 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #region Create Or Update
     public async Task<(bool Success, string Message)> CreateOrUpdateUser(UserRequestDto dto)
     {
+        string? imagePath = null;
+
+        if (dto.ProfilePic != null && dto.ProfilePic.Length > 0)
+        {
+            imagePath = await commonService.SaveFile(dto.ProfilePic, "users");
+        }
+
         if (dto.Id.HasValue && dto.Id.Value > 0)
         {
             // UPDATE
             var user = await userRepository.GetAsync(u => u.Id == dto.Id && !u.IsDeleted)
                 ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, dto.Id));
 
-            if (await userRepository.Exists(u => u.Email == dto.Email && u.Id != dto.Id))
-                throw new AppException(Constants.DUPLICATE_EMAIL);
+            if (!string.Equals(user.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new AppException(Constants.NO_EMAIL_CHANGE);
+            }
 
             if (await userRepository.Exists(u => u.UserName == dto.UserName && u.Id != dto.Id))
                 throw new AppException(Constants.DUPLICATE_USERNAME);
 
             mapper.Map(dto, user);
+            if (imagePath != null) user.ProfilePic = imagePath;
+
             user.ModifiedBy = UserId;
             user.ModifiedDate = DateTime.UtcNow;
 
@@ -134,6 +145,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
 
             var user = mapper.Map<User>(dto);
             user.Password = commonService.Hash(dto.Password);
+            user.ProfilePic = imagePath;
             user.RoleId = (int)UserRoles.Player;
             user.Status = (int)UserStatus.Active;
             user.CreatedDate = DateTime.UtcNow;
@@ -223,10 +235,10 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #region User export
     public async Task<MemoryStream> UserExportData(PageListRequest pageListRequest)
     {
-        List<UserExportDto> tableData = [.. (await GetUserData(pageListRequest)  
-                                        .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)  
-                                        .ToListAsync())  
-                                        .Select((u, i) => { u.No = i + 1; return u; })];  
+        List<UserExportDto> tableData = [.. (await GetUserData(pageListRequest)
+                                        .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)
+                                        .ToListAsync())
+                                        .Select((u, i) => { u.No = i + 1; return u; })];
         if (tableData.Count == 0)
             throw new AppException(Constants.USER_DATA_NULL);
 
@@ -264,7 +276,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
             }
         };
 
-        return commonService.ExportToExcel(tableData, "Users", XLTableTheme.TableStyleMedium9, 10, 1, worksheetSetup);  
+        return commonService.ExportToExcel(tableData, "Users", XLTableTheme.TableStyleMedium9, 10, 1, worksheetSetup);
     }
     #endregion
 

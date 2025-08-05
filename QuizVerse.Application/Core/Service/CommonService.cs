@@ -1,5 +1,6 @@
 using System.Globalization;
 using ClosedXML.Excel;
+using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.Common;
 
@@ -54,5 +55,26 @@ namespace QuizVerse.Application.Core.Service
             return stream;
         }
         #endregion Excel Export
+
+        #region File Upload
+        public async Task<string?> SaveFile(IFormFile file, string folderName)
+        {
+            if (file == null || file.Length == 0) return null;
+
+            string wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", folderName);
+            Directory.CreateDirectory(wwwrootPath); 
+
+            string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+            string filePath = Path.Combine(wwwrootPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            string finalFileName = Path.Combine(folderName, fileName).Replace("\\", "/");
+            return finalFileName;
+        }
+        #endregion
     }
 }

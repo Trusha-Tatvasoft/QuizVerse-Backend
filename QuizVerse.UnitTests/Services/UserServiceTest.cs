@@ -366,6 +366,61 @@ public class UserServiceTests
         Assert.Equal(Constants.PASSWORD_REQUIRED_FOR_NEW_USER, ex.Message);
     }
 
+
+    [Fact]
+    public async Task CreateUser_WithTemplateAndProfileImage_SendsEmailAndSavesImage()
+    {
+        var content = "FakeImageContent";
+        var fileName = "test.png";
+        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.FileName).Returns(fileName);
+        mockFile.Setup(f => f.Length).Returns(stream.Length);
+        mockFile.Setup(f => f.OpenReadStream()).Returns(stream);
+        mockFile.Setup(f => f.ContentType).Returns("image/png");
+        mockFile.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), default))
+                .Returns<Stream, CancellationToken>((target, token) => stream.CopyToAsync(target, token));
+
+        var dto = new UserRequestDto
+        {
+            FullName = "Template Pic User",
+            Email = "templatepicuser@example.com",
+            UserName = "templatepicuser",
+            Password = "password123",
+            ProfilePic = mockFile.Object
+        };
+
+        _commonServiceMock
+            .Setup(s => s.SaveFile(It.IsAny<IFormFile>(), "users"))
+            .ReturnsAsync("uploads/users/test.png");
+
+        _emailServiceMock
+            .Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()))
+            .ReturnsAsync(true);
+
+        var currentDir = Directory.GetCurrentDirectory();
+        var templateDir = Path.Combine(currentDir, "Templates");
+        var templatePath = Path.Combine(templateDir, "NewUser.html");
+
+        try
+        {
+            Directory.CreateDirectory(templateDir);
+            File.WriteAllText(templatePath, "Hello {username}, your password is {password}");
+
+            var (success, message) = await _userService.CreateOrUpdateUser(dto);
+
+            Assert.True(success);
+            Assert.Contains("created", message.ToLower());
+            _commonServiceMock.Verify(s => s.SaveFile(It.IsAny<IFormFile>(), "users"), Times.Once);
+            _emailServiceMock.Verify(s => s.SendEmailAsync(It.IsAny<EmailRequestDto>()), Times.Once);
+        }
+        finally
+        {
+            if (File.Exists(templatePath)) File.Delete(templatePath);
+        }
+    }
+
     #endregion
 
     #region UpdateUser
@@ -390,9 +445,8 @@ public class UserServiceTests
     }
 
     [Fact]
-    public async Task UpdateUser_DuplicateEmail_ThrowsAppException()
+    public async Task UpdateUser_EmailChange_ThrowsAppException()
     {
-        // Arrange
         var existingUser = _context.Users.First();
         var anotherUser = _context.Users.First(u => u.Id != existingUser.Id);
 
@@ -403,9 +457,61 @@ public class UserServiceTests
             UserName = existingUser.UserName,
         };
 
-        // Act & Assert
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
-        Assert.Equal(Constants.DUPLICATE_EMAIL, ex.Message);
+        Assert.Equal("Email cannot be changed.", ex.Message);
+    }
+
+    [Fact]
+    public async Task UpdateUser_WithoutProfileImage_KeepsExistingImage()
+    {
+        var user = _context.Users.First(u => u.Id == 1);
+        var originalImage = user.ProfilePic;
+        _context.Entry(user).State = EntityState.Detached;
+
+        var dto = new UserRequestDto
+        {
+            Id = 1,
+            FullName = "Updated Name",
+            Email = user.Email,
+            UserName = user.UserName,
+            ProfilePic = null
+        };
+
+        var (success, message) = await _userService.CreateOrUpdateUser(dto);
+
+        Assert.True(success);
+        var updated = _context.Users.First(u => u.Id == 1);
+        Assert.Equal(originalImage, updated.ProfilePic); // Image should not change
+    }
+
+    [Fact]
+    public async Task UpdateUser_WithProfileImage_ChangesImagePath()
+    {
+        var user = _context.Users.First(u => u.Id == 1);
+        var mockFile = new Mock<IFormFile>();
+        mockFile.Setup(f => f.Length).Returns(100);
+        mockFile.Setup(f => f.FileName).Returns("newpic.jpg");
+
+        var dto = new UserRequestDto
+        {
+            Id = 1,
+            FullName = user.FullName,
+            Email = user.Email,
+            UserName = user.UserName,
+            ProfilePic = mockFile.Object
+        };
+
+        _commonServiceMock
+            .Setup(s => s.SaveFile(dto.ProfilePic, "users"))
+            .ReturnsAsync("uploads/users/newpic.jpg");
+
+        _context.Entry(user).State = EntityState.Detached;
+
+        var (success, message) = await _userService.CreateOrUpdateUser(dto);
+
+        Assert.True(success);
+        var updated = _context.Users.First(u => u.Id == 1);
+        Assert.Equal("uploads/users/newpic.jpg", updated.ProfilePic);
     }
     #endregion
 
@@ -584,7 +690,7 @@ public class UserServiceTests
     public async Task UserExportData_WithSearchAndFilters_SetsWorksheetMetadata()
     {
         // Arrange
-        SeedTestData(); 
+        SeedTestData();
 
         var query = new PageListRequest
         {
