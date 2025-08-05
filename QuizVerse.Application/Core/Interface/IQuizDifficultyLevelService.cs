@@ -4,5 +4,5 @@ namespace QuizVerse.Application.Core.Interface;
 
 public interface IQuizDifficultyLevelService
 {
-    Task<List<QuizDifficultyResponse>> GetQuizDifficultyList();
+    Task<List<QuizDifficultyDTO>> GetQuizDifficultyList();
 }

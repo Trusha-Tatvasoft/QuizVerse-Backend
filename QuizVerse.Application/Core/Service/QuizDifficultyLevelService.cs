@@ -10,7 +10,7 @@ namespace QuizVerse.Application.Core.Service;
 
 public class QuizDifficultyLevelService(IGenericRepository<QuizDifficulty> quizDifficultyRepository, IMapper mapper) : IQuizDifficultyLevelService
 {
-    public async Task<List<QuizDifficultyResponse>> GetQuizDifficultyList()
+    public async Task<List<QuizDifficultyDTO>> GetQuizDifficultyList()
     {
         List<QuizDifficulty> quizDifficultiesList = [.. (await quizDifficultyRepository.GetAllAsync()).Where(d => !d.IsDeleted)];
 
@@ -19,6 +19,6 @@ public class QuizDifficultyLevelService(IGenericRepository<QuizDifficulty> quizD
             throw new AppException(Constants.NO_DATA_FOUND);
         }
 
-        return mapper.Map<List<QuizDifficultyResponse>>(quizDifficultiesList);
+        return mapper.Map<List<QuizDifficultyDTO>>(quizDifficultiesList);
     }
 }

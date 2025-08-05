@@ -67,7 +67,7 @@ public class MappingProfile : Profile
 
         #region Quiz Difficulty Levels
         // quiz difficulty levels list
-        CreateMap<QuizDifficulty, QuizDifficultyResponse>();
+        CreateMap<QuizDifficulty, QuizDifficultyDTO>();
 
         #endregion
     }

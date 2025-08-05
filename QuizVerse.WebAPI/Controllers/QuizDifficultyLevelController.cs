@@ -14,7 +14,7 @@ public class QuizDifficultyLevelController(IQuizDifficultyLevelService quizDiffi
     [HttpGet("get-quiz-difficulty-list")]
     public async Task<IActionResult> GetQuizDifficultyList()
     {
-        return Ok(new ApiResponse<List<QuizDifficultyResponse>>
+        return Ok(new ApiResponse<List<QuizDifficultyDTO>>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
