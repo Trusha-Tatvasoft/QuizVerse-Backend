@@ -70,5 +70,14 @@ public class MappingProfile : Profile
         CreateMap<QuizDifficulty, QuizDifficultyDTO>();
 
         #endregion
+
+        #region QuizCategory To QuizCategoryDTO
+
+        // quiz category to quiz category DTO
+        CreateMap<QuizCategory, QuizCategoryDTO>()
+            .ForMember(dest => dest.QuizCount, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
+
+        #endregion
     }
 }
