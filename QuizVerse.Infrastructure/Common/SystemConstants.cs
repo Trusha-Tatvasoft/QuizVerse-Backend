@@ -14,4 +14,5 @@ public class SystemConstants
     public const string JWT_CONFIGURATION_ISSUER = "JwtSettings:Issuer";
     public const string JWT_CONFIGURATION_AUDIENCE = "JwtSettings:Audience";
     public const string REMEMBER_ME_CLAIM_NAME = "remember_me";
+    public const int DEFAULT_PAGE_SIZE = 10;
 }

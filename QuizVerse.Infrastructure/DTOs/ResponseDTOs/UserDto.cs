@@ -9,6 +9,8 @@ public class UserDto
     public int RoleId { get; set; }
     public int Status { get; set; }
     public DateTime CreatedDate { get; set; }
+    public DateTime LastLogin { get; set; }
     public string? Bio { get; set; }
     public string? ProfilePic { get; set; }
+    public int AttemptedQuizzes { get; set; }
 }

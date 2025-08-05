@@ -11,17 +11,37 @@ using System.Linq.Expressions;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
+using FluentAssertions;
+using AutoMapper;
 
 namespace QuizVerse.UnitTests.Services
 {
     public class AuthServiceTests
     {
         private readonly Mock<ITokenService> _tokenServiceMock = new();
-        private readonly Mock<ICommonService> _customServiceMock = new();
+        private readonly Mock<ICommonService> _commonServiceMock = new();
         private readonly Mock<IGenericRepository<User>> _userRepoMock = new();
+        private readonly Mock<IEmailService> _emailServiceMock = new();
+        private readonly Mock<IMapper> _mapperMock = new();
+        private readonly Mock<IConfiguration> _configurationMock = new();
+        private readonly Mock<IGenericRepository<PasswordResetToken>> _passwordResetTokenRepoMock = new();
 
         private AuthService CreateService() =>
-            new AuthService(_tokenServiceMock.Object, _customServiceMock.Object, _userRepoMock.Object);
+            new(_tokenServiceMock.Object, _commonServiceMock.Object, _userRepoMock.Object, _passwordResetTokenRepoMock.Object, _emailServiceMock.Object, _mapperMock.Object,_configurationMock.Object);
+
+
+        public AuthServiceTests()
+        {
+            _userRepoMock = new Mock<IGenericRepository<User>>();
+            _emailServiceMock = new Mock<IEmailService>();
+            _tokenServiceMock = new Mock<ITokenService>();
+
+            // Ensure test email template file exists
+            Directory.CreateDirectory("TestTemplates");
+            File.WriteAllText(Path.Combine("TestTemplates", "WelcomeEmail.html"),
+                "<html>Welcome {{userEmail}} on {{registrationDate}}</html>");
+        }
 
         private User CreateTestUser(int status = (int)UserStatus.Active, DateTime? modifiedDate = null)
         {
@@ -44,7 +64,7 @@ namespace QuizVerse.UnitTests.Services
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim("remember_me", "true")
                 } : null,
-                isAuthenticated ? "TestAuthType" : null 
+                isAuthenticated ? "TestAuthType" : null
             );
 
             return new ClaimsPrincipal(identity);
@@ -60,7 +80,7 @@ namespace QuizVerse.UnitTests.Services
             _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(),
                                                 It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
                          .ReturnsAsync(user);
-            _customServiceMock.Setup(s => s.VerifyPassword(userDto.Password, user.Password)).Returns(true);
+            _commonServiceMock.Setup(s => s.VerifyPassword(userDto.Password, user.Password)).Returns(true);
             _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns("access_token");
             _tokenServiceMock.Setup(t => t.GenerateRefreshToken(user, userDto.RememberMe)).Returns("refresh_token");
 
@@ -146,7 +166,7 @@ namespace QuizVerse.UnitTests.Services
             _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(),
                                                 It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
                          .ReturnsAsync(user);
-            _customServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(true);
+            _commonServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(true);
             _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns("access_token");
             _tokenServiceMock.Setup(t => t.GenerateRefreshToken(user, dto.RememberMe)).Returns("refresh_token");
 
@@ -167,7 +187,7 @@ namespace QuizVerse.UnitTests.Services
             _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(),
                                                 It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
                          .ReturnsAsync(user);
-            _customServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(false);
+            _commonServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(false);
 
             var service = CreateService();
             var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.AuthenticateUser(dto));
@@ -183,7 +203,7 @@ namespace QuizVerse.UnitTests.Services
             _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(),
                                                 It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
                          .ReturnsAsync(user);
-            _customServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(true);
+            _commonServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(true);
             _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns("");
             _tokenServiceMock.Setup(t => t.GenerateRefreshToken(user, dto.RememberMe)).Returns("");
 
@@ -328,6 +348,365 @@ namespace QuizVerse.UnitTests.Services
 
             Assert.Equal("new_access", result.accessToken);
             Assert.Equal("new_refresh", result.refreshToken);
+        }
+        private static UserRegisterDto CreateValidUserDto() => new()
+        {
+            FullName = "Jane Doe",
+            Email = "jane@example.com",
+            UserName = "janedoe",
+            Password = "SecurePass123",
+            Bio = "Tester at QuizVerse"
+        };
+
+        [Fact]
+        public async Task RegisterUser_Should_Throw_When_EmailAlreadyExists()
+        {
+            var userRegisterDto = CreateValidUserDto();
+
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(true);
+
+            var service = CreateService();
+
+            var act = async () => await service.RegisterUser(userRegisterDto);
+
+            await act.Should().ThrowAsync<AppException>().WithMessage(Constants.DUPLICATE_EMAIL);
+        }
+
+
+        [Fact]
+        public async Task RegisterUser_Should_Throw_When_UsernameAlreadyExists()
+        {
+            var userRegisterDto = CreateValidUserDto();
+
+            _userRepoMock.SetupSequence(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                .ReturnsAsync(false) // Email does not exist
+                .ReturnsAsync(true); // Username exists
+
+            var service = CreateService();
+
+            var act = async () => await service.RegisterUser(userRegisterDto);
+
+            await act.Should().ThrowAsync<AppException>().WithMessage(Constants.DUPLICATE_USERNAME);
+        }
+
+
+        [Fact]
+        public async Task RegisterUser_Should_Throw_When_TemplatePathMissing()
+        {
+            UserRegisterDto userRegisterDto = CreateValidUserDto();
+
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(false);
+            _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
+            _mapperMock.Setup(m => m.Map<User>(It.IsAny<UserRegisterDto>())).Returns(new User { CreatedDate = DateTime.UtcNow });
+
+            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()))
+                             .ThrowsAsync(new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED));
+
+            AuthService service = CreateService();
+
+            // Act
+            Func<Task<(bool success, string message)>> act = async () => await service.RegisterUser(userRegisterDto);
+
+            // Assert
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.EMAIL_PATH_NOT_CONFIGURED);
+        }
+
+
+        [Fact]
+        public async Task RegisterUser_Should_Throw_When_TemplateFileMissing()
+        {
+            // Arrange
+            var userRegisterDto = CreateValidUserDto();
+
+            // Ensure the template file is deleted if it exists
+            string templateFullPath = Path.Combine(Directory.GetCurrentDirectory(), Constants.REGISTER_USER_TEMPLATE_PATH);
+            if (File.Exists(templateFullPath))
+                File.Delete(templateFullPath);
+
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(false);
+            _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
+            _mapperMock.Setup(m => m.Map<User>(It.IsAny<UserRegisterDto>())).Returns(new User { CreatedDate = DateTime.UtcNow });
+
+            var service = CreateService();
+
+            // Act
+            Func<Task<(bool success, string message)>> act = async () => await service.RegisterUser(userRegisterDto);
+
+            // Assert
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.EMAIL_PATH_NOT_CONFIGURED);
+        }
+
+
+
+        [Fact]
+        public async Task RegisterUser_Should_ReturnTrue_WhenEmailSentSuccessfully()
+        {
+            // Arrange
+            var userRegisterDto = CreateValidUserDto();
+
+            // Create test template file at the exact location used in your service
+            string templateFullPath = Path.Combine(Directory.GetCurrentDirectory(), Constants.REGISTER_USER_TEMPLATE_PATH );
+            string templateDirectory = Path.GetDirectoryName(templateFullPath)!;
+
+            Directory.CreateDirectory(templateDirectory);
+            await File.WriteAllTextAsync(templateFullPath, "Welcome {{userEmail}}!");
+
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(false);
+            _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
+
+            var mappedUser = new User
+            {
+                Email = userRegisterDto.Email,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _mapperMock.Setup(m => m.Map<User>(It.IsAny<UserRegisterDto>())).Returns(mappedUser);
+            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(true);
+
+            var service = CreateService();
+
+            var (success, message) = await service.RegisterUser(userRegisterDto);
+            success.Should().BeTrue();
+            message.Should().Contain(Constants.USER_REGISTERED_AND_EMAIL_SENT);
+            _emailServiceMock.Verify(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_ReturnsTrue_WhenValidUser()
+        {
+            // Arrange
+            var user = CreateTestUser();
+
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            _tokenServiceMock.Setup(t => t.GenerateSecureToken(32)).Returns("secure_token");
+
+            _configurationMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("30");
+            _configurationMock.Setup(c => c["baseUrl"]).Returns("https://example.com");
+
+            _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
+                                       .Returns(Task.CompletedTask)
+                                       .Callback<PasswordResetToken>(token => token.TokenId = 1);
+
+            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(true);
+
+            string projectRoot = Directory.GetCurrentDirectory();
+            string templateRelativePath = Path.Combine("Templates", "ResetPassword.html");
+            string templateFullPath = Path.Combine(projectRoot, templateRelativePath);
+            Directory.CreateDirectory(Path.GetDirectoryName(templateFullPath)!);
+
+            string templateContent = "Hi {userName}, use this link to reset: {resetLink}";
+            await File.WriteAllTextAsync(templateFullPath, templateContent);
+
+            try
+            {
+                // Act
+                var service = CreateService();
+                var result = await service.ForgotPassword(user.Email);
+
+                // Assert
+                Assert.True(result);
+            }
+            finally
+            {
+                if (File.Exists(templateFullPath))
+                    File.Delete(templateFullPath);
+            }
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Throws_WhenUserNotFound()
+        {
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync((User?)null);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ForgotPassword("notfound@example.com"));
+
+            Assert.Equal(Constants.USER_NOT_FOUND_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Throws_WhenUserInactive()
+        {
+            var user = CreateTestUser((int)UserStatus.Inactive);
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ForgotPassword(user.Email));
+
+            Assert.Equal(Constants.INACTIVE_USER_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Throws_WhenTokenSaveFails()
+        {
+            var user = CreateTestUser();
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+            _tokenServiceMock.Setup(t => t.GenerateSecureToken(32)).Returns("secure_token");
+            _configurationMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("15");
+            _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
+             .Callback<PasswordResetToken>(t =>
+             {
+                 t.TokenId = 0;
+                 t.Token = "";
+             })
+             .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<AppException>(() => service.ForgotPassword(user.Email));
+
+            Assert.Equal(Constants.FAILED_TO_CREATE_RESET_PASSWORD_TOKEN, ex.Message);
+        }
+
+        [Fact]
+        public async Task ForgotPassword_Throws_WhenEmailFails()
+        {
+            // Arrange
+            var user = CreateTestUser();
+            var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
+            var fullFilePath = Path.Combine(templatePath, "ResetPassword.html");
+
+            // Ensure the directory exists
+            Directory.CreateDirectory(templatePath);
+
+            // Create a dummy file with valid placeholders
+            await File.WriteAllTextAsync(fullFilePath, "Hello {userName}, reset your password here: {resetLink}");
+
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+            _tokenServiceMock.Setup(t => t.GenerateSecureToken(32)).Returns("secure_token");
+            _configurationMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("30");
+            _configurationMock.Setup(c => c["baseUrl"]).Returns("https://example.com");
+            _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
+                                       .Callback<PasswordResetToken>(t => t.TokenId = 1)
+                                       .Returns(Task.CompletedTask);
+            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(false);
+
+            var service = CreateService();
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => service.ForgotPassword(user.Email));
+            Assert.Equal(Constants.EMAIL_NOT_SENT, ex.Message);
+
+            // Cleanup
+            if (File.Exists(fullFilePath))
+                File.Delete(fullFilePath);
+        }
+
+        [Fact]
+        public async Task VerifyTokenResetPassword_ReturnsTrue_WhenValid()
+        {
+            var user = CreateTestUser();
+            var token = new PasswordResetToken { UserId = user.Id, IsUsed = false, ExpireAt = DateTime.UtcNow.AddMinutes(10) };
+
+            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
+                               .ReturnsAsync(token);
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            var service = CreateService();
+            var result = await service.VerifyTokenResetPassword("valid_token");
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task VerifyTokenResetPassword_Throws_WhenTokenEmpty()
+        {
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.VerifyTokenResetPassword(""));
+
+            Assert.Equal(Constants.EMPTY_TOKEN_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task VerifyTokenResetPassword_Throws_WhenTokenInvalid()
+        {
+            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
+                               .ReturnsAsync((PasswordResetToken?)null);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.VerifyTokenResetPassword("invalid_token"));
+
+            Assert.Equal(Constants.INVALID_RESET_PASSWORD_TOKEN, ex.Message);
+        }
+
+        [Fact]
+        public async Task VerifyTokenResetPassword_Throws_WhenUserInactive()
+        {
+            var user = CreateTestUser((int)UserStatus.Inactive);
+            var token = new PasswordResetToken { UserId = user.Id, IsUsed = false, ExpireAt = DateTime.UtcNow.AddMinutes(10) };
+
+            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
+                               .ReturnsAsync(token);
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null)).ReturnsAsync(user);
+
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.VerifyTokenResetPassword("some_token"));
+
+            Assert.Equal(Constants.INACTIVE_USER_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task ResetPassword_ReturnsTrue_WhenValid()
+        {
+            // Arrange
+            var user = CreateTestUser(); // helper method to get a valid user
+            var token = new PasswordResetToken
+            {
+                Token = "valid_token",
+                UserId = user.Id,
+                IsUsed = false,
+                ExpireAt = DateTime.UtcNow.AddMinutes(10)
+            };
+
+            var resetPasswordDto = new ResetPasswordDTO
+            {
+                ResetPasswordToken = "valid_token",
+                Password = "new_password"
+            };
+
+            _passwordResetTokenRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>(), null))
+                                       .ReturnsAsync(token);
+
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            _commonServiceMock.Setup(c => c.Hash("new_password"))
+                              .Returns("hashed_new_password");
+
+            _userRepoMock.Setup(r => r.UpdateAsync(user)).Returns(Task.CompletedTask);
+
+            _passwordResetTokenRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<PasswordResetToken, bool>>>()))
+                               .ReturnsAsync(new List<PasswordResetToken> { token });
+
+            _passwordResetTokenRepoMock.Setup(r => r.DeleteRangeAsync(It.IsAny<List<PasswordResetToken>>()))
+                                       .Returns(Task.CompletedTask);
+
+            var service = CreateService();
+
+            // Act
+            var result = await service.ResetPassword(resetPasswordDto);
+
+            // Assert
+            Assert.True(result);
+            Assert.True(token.IsUsed);
+            Assert.Equal("hashed_new_password", user.Password);
+        }
+
+        [Fact]
+        public async Task ResetPassword_Throws_WhenDtoInvalid()
+        {
+            var service = CreateService();
+            var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(null!));
+
+            Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
         }
     }
 }

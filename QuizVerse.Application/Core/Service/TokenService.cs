@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Infrastructure.Common;
+using System.Security.Cryptography;
 
 namespace QuizVerse.Application.Core.Service
 {
@@ -131,6 +132,19 @@ namespace QuizVerse.Application.Core.Service
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwtToken = tokenHandler.ReadJwtToken(token);
             return jwtToken.ValidTo;
+        }
+
+        public string GenerateSecureToken(int byteLength = 32)
+        {
+            var randomBytes = new byte[byteLength];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomBytes);
+
+            string base64Token = Convert.ToBase64String(randomBytes);
+            return base64Token
+                .Replace("+", "-")
+                .Replace("/", "_")
+                .Replace("=", "");
         }
     }
 }

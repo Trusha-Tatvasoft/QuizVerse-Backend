@@ -1,5 +1,7 @@
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
@@ -10,12 +12,81 @@ using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
+using System.Linq.Dynamic.Core;
+using ClosedXML.Excel;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IConfiguration config, IEmailService emailService, IMapper mapper, IHttpContextAccessor httpContextAccessor) : IUserService
+public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IEmailService emailService, IMapper mapper, IHttpContextAccessor httpContextAccessor) : IUserService
 {
     public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
+
+    #region User Queries
+    private IQueryable<User> GetUserData(PageListRequest query)
+    {
+        IQueryable<User> userQuery = userRepository.GetQueryableInclude(u => u.Role).Where(u => !u.IsDeleted);
+
+        // Search
+        if (!string.IsNullOrWhiteSpace(query.SearchTerm))
+        {
+            var term = query.SearchTerm.ToLower();
+            userQuery = userQuery.Where(u =>
+                u.FullName.ToLower().Contains(term) ||
+                u.UserName.ToLower().Contains(term) ||
+                u.Email.ToLower().Contains(term));
+        }
+
+        // Filters
+        var filters = query.Filters;
+        if (filters != null)
+        {
+            if (filters.Status.HasValue)
+            {
+                if (Enum.IsDefined(typeof(UserStatus), filters.Status.Value))
+                {
+                    userQuery = userQuery.Where(u => u.Status == (int)filters.Status.Value);
+                }
+                else
+                {
+                    throw new AppException(Constants.INVALID_STATUS_MESSAGE);
+                }
+            }
+
+            if (filters.Role.HasValue)
+            {
+                if (Enum.IsDefined(typeof(UserRoles), filters.Role.Value))
+                {
+                    userQuery = userQuery.Where(u => u.RoleId == (int)filters.Role.Value);
+                }
+                else
+                {
+                    throw new AppException(Constants.INVALID_ROLE_MESSAGE);
+                }
+            }
+        }
+
+        // Sorting
+        if (!string.IsNullOrEmpty(query.SortColumn))
+        {
+            if (query.SortColumn == "quizattempt")
+                query.SortColumn = "QuizAttempteds.Count()";
+            userQuery = userQuery.OrderBy($"{query.SortColumn} {(query.SortDescending ? "desc" : "asc")}");
+        }
+        else
+        {
+            userQuery = userQuery.OrderBy("Id asc");
+        }
+        return userQuery;
+    }
+    #endregion
+
+    #region GetAllUsers
+    public async Task<PageListResponse<UserDto>> GetUsersByPagination(PageListRequest pageListRequest)
+    {
+        IQueryable<User>? userQuery = GetUserData(pageListRequest);
+        return await userRepository.PaginatedList<UserDto>(userQuery, pageListRequest, q => q.ProjectTo<UserDto>(mapper.ConfigurationProvider));
+    }
+    #endregion
 
     #region GetUserById
     public async Task<UserDto> GetUserById(int id)
@@ -68,7 +139,6 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
             user.CreatedDate = DateTime.UtcNow;
             user.CreatedBy = UserId;
             user.FirstTimeLogin = true;
-            user.LastLogin = DateTime.UtcNow;
 
             await userRepository.AddAsync(user);
 
@@ -125,7 +195,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #region Send mail
     private async Task<string> SendMailToNewUser(string email, string plainPassword)
     {
-        string? templatePath = config["EmailSettings:NewUserTemplatePath"];
+        string? templatePath = Constants.NEW_USER_TEMPLATE_PATH;
         if (string.IsNullOrWhiteSpace(templatePath))
             throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
 
@@ -149,4 +219,54 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
 
     }
     #endregion
+
+    #region User export
+    public async Task<MemoryStream> UserExportData(PageListRequest pageListRequest)
+    {
+        List<UserExportDto> tableData = [.. (await GetUserData(pageListRequest)  
+                                        .ProjectTo<UserExportDto>(mapper.ConfigurationProvider)  
+                                        .ToListAsync())  
+                                        .Select((u, i) => { u.No = i + 1; return u; })];  
+        if (tableData.Count == 0)
+            throw new AppException(Constants.USER_DATA_NULL);
+
+        string role = pageListRequest.Filters?.Role?.ToString() ?? "All";
+        string status = pageListRequest.Filters?.Status?.ToString() ?? "All";
+
+        Action<IXLWorksheet> worksheetSetup = worksheet =>
+        {
+            (string LabelCell, string ValueCell, string Label, string Value)[] headerInfo =
+            [
+                ("A7", "B7", "Search Text:", string.IsNullOrWhiteSpace(pageListRequest.SearchTerm) ? "-" : pageListRequest.SearchTerm),
+                ("D7", "E7", "Total Records:", tableData.Count.ToString()),
+                ("G7", "H7", "Filter:", $"Role: {role}, Status: {status}")
+            ];
+
+            foreach ((string LabelCell, string ValueCell, string Label, string Value) in headerInfo)
+            {
+                IXLCell labelCell = worksheet.Cell(LabelCell);
+                IXLCell valueCell = worksheet.Cell(ValueCell);
+
+                labelCell.Value = Label;
+                valueCell.Value = Value;
+
+                labelCell.Style.Font.Bold = true;
+                labelCell.Style.Fill.BackgroundColor = XLColor.FromHtml(Constants.LIGHT_BLUE);
+                labelCell.Style.Font.FontColor = XLColor.White;
+                labelCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                labelCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                labelCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+                valueCell.Style.Font.Bold = true;
+                valueCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                valueCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                valueCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            }
+        };
+
+        return commonService.ExportToExcel(tableData, "Users", XLTableTheme.TableStyleMedium9, 10, 1, worksheetSetup);  
+    }
+    #endregion
+
+
 }
