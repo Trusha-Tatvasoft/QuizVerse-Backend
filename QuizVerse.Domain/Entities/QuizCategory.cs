@@ -23,6 +23,8 @@ public partial class QuizCategory
 
     public int? ModifiedBy { get; set; }
 
+    public string Description { get; set; } = null!;
+
     public virtual ICollection<BaseQuestion> BaseQuestions { get; set; } = new List<BaseQuestion>();
 
     public virtual User CreatedByNavigation { get; set; } = null!;
