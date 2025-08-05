@@ -97,10 +97,6 @@ public partial class User
 
     public virtual ICollection<PlatformConfiguration> PlatformConfigurations { get; set; } = new List<PlatformConfiguration>();
 
-    public virtual ICollection<QueOptionsAn> QueOptionsAnCreatedByNavigations { get; set; } = new List<QueOptionsAn>();
-
-    public virtual ICollection<QueOptionsAn> QueOptionsAnModifiedByNavigations { get; set; } = new List<QueOptionsAn>();
-
     public virtual ICollection<QuestionDifficulty> QuestionDifficultyCreatedByNavigations { get; set; } = new List<QuestionDifficulty>();
 
     public virtual ICollection<QuestionDifficulty> QuestionDifficultyModifiedByNavigations { get; set; } = new List<QuestionDifficulty>();
@@ -110,6 +106,10 @@ public partial class User
     public virtual ICollection<QuestionIssueReport> QuestionIssueReportModifiedByNavigations { get; set; } = new List<QuestionIssueReport>();
 
     public virtual ICollection<QuestionIssueReport> QuestionIssueReportUsers { get; set; } = new List<QuestionIssueReport>();
+
+    public virtual ICollection<QuestionOptionsAnswer> QuestionOptionsAnswerCreatedByNavigations { get; set; } = new List<QuestionOptionsAnswer>();
+
+    public virtual ICollection<QuestionOptionsAnswer> QuestionOptionsAnswerModifiedByNavigations { get; set; } = new List<QuestionOptionsAnswer>();
 
     public virtual ICollection<QuizAttempted> QuizAttempteds { get; set; } = new List<QuizAttempted>();
 
