@@ -11,6 +11,7 @@ public static class Constants
     public const string INVALID_USER_ID_MESSAGE = "Invalid UserId.";
     public const string INVALID_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Inactive), 3 (Suspend)";
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
+    public const string NO_DATA_FOUND = "No data found.";
     #endregion
 
     #region Auth Messages

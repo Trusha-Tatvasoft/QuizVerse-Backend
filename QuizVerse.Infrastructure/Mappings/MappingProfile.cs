@@ -10,6 +10,8 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        #region User Management
+        // user create/update
         CreateMap<UserRequestDto, User>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.Password, opt =>
@@ -29,19 +31,13 @@ public class MappingProfile : Profile
                 );
             });
 
+        // user edit info fetch
         CreateMap<User, UserRequestDto>();
 
+        // user list
         CreateMap<User, UserDto>()
             .ForMember(dest => dest.AttemptedQuizzes,
                         opt => opt.MapFrom(src => src.QuizAttempteds.Count));
-
-
-        CreateMap<UserRegisterDto, User>()
-           .ForMember(dest => dest.FirstTimeLogin, opt => opt.MapFrom(src => false))
-           .ForMember(dest => dest.Status, opt => opt.MapFrom(src => UserStatus.Active))
-           .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => UserRole.Player))
-           .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => false))
-           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow));
 
         CreateMap<User, UserExportDto>()
             .ForMember(dest => dest.TotalQuizAttemptedCount,
@@ -57,5 +53,22 @@ public class MappingProfile : Profile
                     src.LastLogin.HasValue
                         ? src.LastLogin.Value.ToString("dd-MM-yyyy")
                         : "-"));
+        #endregion
+
+        #region Login/Registration User
+        // user registration
+        CreateMap<UserRegisterDto, User>()
+           .ForMember(dest => dest.FirstTimeLogin, opt => opt.MapFrom(src => false))
+           .ForMember(dest => dest.Status, opt => opt.MapFrom(src => UserStatus.Active))
+           .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => UserRole.Player))
+           .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => false))
+           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow));
+        #endregion
+
+        #region Quiz Difficulty Levels
+        // quiz difficulty levels list
+        CreateMap<QuizDifficulty, QuizDifficultyDTO>();
+
+        #endregion
     }
 }
