@@ -82,6 +82,7 @@ public static class Constants
     public const string CREATE_SUCCESS = "Created successfully";
     public const string UPDATE_SUCCESS = "Updated successfully";
     public const string DELETE_SUCCESS = "Deleted successfully";
+    public const string NO_DATA_Found = "No data found";
     #endregion
 
     #region Reset Password Messages
@@ -105,5 +106,10 @@ public static class Constants
 
     #region Colors
     public const string LIGHT_BLUE = "#4f81bd"; 
+    #endregion
+
+    #region Quiz Category Messages
+    public const string INVALID_PAGE_NO = "Page number {0} exceeds maximum page number {1}."; 
+    public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist."; 
     #endregion
 }

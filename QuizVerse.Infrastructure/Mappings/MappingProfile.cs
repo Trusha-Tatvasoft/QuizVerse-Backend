@@ -57,5 +57,9 @@ public class MappingProfile : Profile
                     src.LastLogin.HasValue
                         ? src.LastLogin.Value.ToString("dd-MM-yyyy")
                         : "-"));
+
+        CreateMap<QuizCategory, QuizCategoryDTO>()
+            .ForMember(dest => dest.QuizCount, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
     }
 }
