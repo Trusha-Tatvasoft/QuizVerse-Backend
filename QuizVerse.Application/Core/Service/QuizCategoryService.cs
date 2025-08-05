@@ -73,7 +73,7 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
         return new PageListResponse<QuizCategoryDTO>
         {
             Records = quizCategoryDtos,
-            TotalRecords = quizCategories.Count(),
+            TotalRecords = totalRecords,
         };
     }
 }
