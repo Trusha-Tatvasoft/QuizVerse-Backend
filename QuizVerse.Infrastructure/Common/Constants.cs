@@ -62,6 +62,7 @@ public static class Constants
     public const string USER_DELETED_SUCCESS = "User {0} deleted successfully.";
     public const string USER_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
     public const string USER_DATA_NULL = "No data available to export.";
+    public const string NO_EMAIL_CHANGE = "Email can't be changed";
     #endregion
 
     #region Email Messages
@@ -98,6 +99,11 @@ public static class Constants
 
     #region Images Path
     public const string LOGO_PATH = "wwwroot/images/logo.png";
+    #endregion
+
+    #region File Upload Messages
+    public const string INVALID_IMAGE_FILE_TYPE_MESSAGE = "Only image files are allowed: .jpg, .jpeg, .png, .gif";
+    public const string IMAGE_FILE_SIZE_EXCEEDED_MESSAGE = "Maximum allowed file size is 10MB.";
     #endregion
 
     #region Excel Export

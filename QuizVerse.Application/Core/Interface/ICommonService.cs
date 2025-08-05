@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using Microsoft.AspNetCore.Http;
 
 namespace QuizVerse.Application.Core.Interface
 {
@@ -8,5 +9,6 @@ namespace QuizVerse.Application.Core.Interface
         bool VerifyPassword(string password, string hashedPassword);
         DateTime ToDate(string dateString);
         MemoryStream ExportToExcel<T>(List<T> data, string sheetName, XLTableTheme? tableTheme, int startRow = 10, int startCol = 1, Action<IXLWorksheet>? setup = null);
+        Task<string?> SaveFile(IFormFile file, string folderName);
     }
 }

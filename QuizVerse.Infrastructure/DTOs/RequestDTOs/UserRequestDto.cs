@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
+using QuizVerse.Infrastructure.Validators;
 
 namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 public class UserRequestDto
@@ -9,6 +11,7 @@ public class UserRequestDto
     [StringLength(100, ErrorMessage = "Full Name can't be longer than 100 characters.")]
     public string FullName { get; set; } = null!;
 
+    [Required(ErrorMessage = "Username is required.")]
     [StringLength(50, ErrorMessage = "Username can't be longer than 50 characters.")]
     public string UserName { get; set; } = null!;
 
@@ -25,8 +28,8 @@ public class UserRequestDto
     [StringLength(500, ErrorMessage = "Bio can't be longer than 500 characters.")]
     public string? Bio { get; set; }
 
-    [StringLength(250, ErrorMessage = "Profile picture URL can't be longer than 250 characters.")]
-    public string? ProfilePic { get; set; }
+    [AllowedImage(ErrorMessage = "Invalid profile picture. Only .jpg, .jpeg, .png, and .gif files are allowed, with a maximum size of 5MB.")]
+    public IFormFile? ProfilePic { get; set; }
 }
 
 

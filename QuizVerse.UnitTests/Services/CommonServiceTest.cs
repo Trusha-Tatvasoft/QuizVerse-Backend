@@ -1,5 +1,7 @@
+using System.Text;
 using ClosedXML.Excel;
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Infrastructure.Common;
 using Xunit;
@@ -11,6 +13,7 @@ namespace QuizVerse.UnitTests.Services
         private readonly CommonService _service = new();
 
 
+        #region PasswordHash
         [Fact]
         public void Hash_ReturnsHashedPassword_WhenValidPasswordProvided()
         {
@@ -37,6 +40,7 @@ namespace QuizVerse.UnitTests.Services
             var result = _service.VerifyPassword(password, hashed);
             Assert.True(result);
         }
+        #endregion
 
         [Fact]
         public void VerifyPassword_ReturnsTrue_WhenPasswordMatchesHash()
@@ -110,7 +114,7 @@ namespace QuizVerse.UnitTests.Services
         }
 
         #region ExportToExcel
-        
+
         [Fact]
         public void ExportToExcel_WithAnonymousType_ShouldReturnNonEmptyStream()
         {
@@ -217,6 +221,51 @@ namespace QuizVerse.UnitTests.Services
             worksheet.Pictures.Count.Should().BeGreaterThan(0);
 
             File.Delete(expectedPath);
+        }
+        #endregion
+
+        #region FileUpload
+        [Fact]
+        public async Task SaveFile_ShouldReturnNull_WhenFileIsNull()
+        {
+            var result = await _service.SaveFile(null, "test");
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task SaveFile_ShouldReturnNull_WhenFileIsEmpty()
+        {
+            var fileMock = new FormFile(Stream.Null, 0, 0, "Data", "empty.txt");
+            var result = await _service.SaveFile(fileMock, "test");
+
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task SaveFile_ShouldSaveFileAndReturnRelativePath()
+        {
+            string folderName = "unittestfiles";
+            string fileContent = "Hello Test";
+            byte[] fileBytes = Encoding.UTF8.GetBytes(fileContent);
+            using var stream = new MemoryStream(fileBytes);
+
+            var formFile = new FormFile(stream, 0, fileBytes.Length, "Data", "testfile.txt")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "text/plain"
+            };
+
+            var result = await _service.SaveFile(formFile, folderName);
+
+            result.Should().NotBeNull();
+            result.Should().Contain(folderName);
+            result.Should().EndWith(".txt");
+
+            var savedFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", result.Replace("/", Path.DirectorySeparatorChar.ToString()));
+            File.Exists(savedFilePath).Should().BeTrue();
+
+            if (File.Exists(savedFilePath))
+                File.Delete(savedFilePath);
         }
         #endregion
     }
