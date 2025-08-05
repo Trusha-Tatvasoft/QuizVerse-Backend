@@ -896,6 +896,9 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_date");
+            entity.Property(e => e.Description)
+                .HasColumnType("character varying")
+                .HasColumnName("description");
             entity.Property(e => e.Icon)
                 .HasColumnType("character varying")
                 .HasColumnName("icon");
