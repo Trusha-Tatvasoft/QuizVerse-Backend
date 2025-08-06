@@ -24,4 +24,18 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
         };
         return Ok(response);
     }
+
+    [HttpGet("get-all-quiz-categories")]
+    public IActionResult GetAllQuizCategories()
+    {
+        ApiResponse<List<CommonListDropDownDto>> response = new()
+        {
+            Result = true,
+            StatusCode = StatusCodes.Status200OK,
+            Message = Constants.FETCH_SUCCESS,
+            Data = _quizCategoryService.GetAllQuizCategories()
+        };
+
+        return Ok(response);
+    }
 }

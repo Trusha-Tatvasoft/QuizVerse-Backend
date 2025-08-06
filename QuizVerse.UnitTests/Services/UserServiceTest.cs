@@ -458,7 +458,7 @@ public class UserServiceTests
         };
 
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
-        Assert.Equal("Email cannot be changed.", ex.Message);
+        Assert.Equal("Email can't be changed", ex.Message);
     }
 
     [Fact]

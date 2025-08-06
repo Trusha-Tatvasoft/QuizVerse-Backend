@@ -6,6 +6,7 @@ using QuizVerse.Infrastructure.Enums;
 using UserRole = QuizVerse.Infrastructure.Enums.UserRoles;
 
 namespace QuizVerse.Infrastructure.Mappings;
+
 public class MappingProfile : Profile
 {
     public MappingProfile()
@@ -68,16 +69,23 @@ public class MappingProfile : Profile
         #region Quiz Difficulty Levels
         // quiz difficulty levels list
         CreateMap<QuizDifficulty, QuizDifficultyDTO>();
-
+        CreateMap<QuizDifficulty, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
 
-        #region QuizCategory To QuizCategoryDTO
-
+        #region Quiz Category
         // quiz category to quiz category DTO
         CreateMap<QuizCategory, QuizCategoryDTO>()
             .ForMember(dest => dest.QuizCount, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
 
+        CreateMap<QuizCategory, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.CategoryName));
+        #endregion
+
+        #region Quiz Tag
+        CreateMap<QuizTag, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TagName));
         #endregion
     }
 }

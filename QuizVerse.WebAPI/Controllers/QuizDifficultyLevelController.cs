@@ -22,4 +22,19 @@ public class QuizDifficultyLevelController(IQuizDifficultyLevelService quizDiffi
             Data = await quizDifficultyLevelService.GetQuizDifficultyList()
         });
     }
+
+
+    [HttpGet("get-all-quiz-difficulties")]
+    public IActionResult GetAllQuizDifficulties()
+    {
+        ApiResponse<List<CommonListDropDownDto>> response = new()
+        {
+            Result = true,
+            StatusCode = StatusCodes.Status200OK,
+            Message = Constants.FETCH_SUCCESS,
+            Data = quizDifficultyLevelService.GetAllQuizDifficulties()
+        };
+
+        return Ok(response);
+    }
 }

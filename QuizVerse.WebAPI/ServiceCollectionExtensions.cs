@@ -8,25 +8,26 @@ namespace QuizVerse.WebAPI;
 
 public static class ServiceCollectionExtensions
 {
-    public static void RegisterDependency(this IServiceCollection services)
-    {
-        //services
-        services.AddScoped<ILandingPageService, LandingPageService>();
-        services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<ICommonService, CommonService>();
-        services.AddScoped<ITokenService, TokenService>();
-        services.AddScoped<IUserService, UserService>();
-        services.AddScoped<IEmailService, EmailService>();
-        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
-        services.AddScoped<IQuizDifficultyLevelService, QuizDifficultyLevelService>();
-        services.AddScoped<IQuizCategoryService, QuizCategoryService>();
+        public static void RegisterDependency(this IServiceCollection services)
+        {
+                //services
+                services.AddScoped<ILandingPageService, LandingPageService>();
+                services.AddScoped<IAuthService, AuthService>();
+                services.AddScoped<ICommonService, CommonService>();
+                services.AddScoped<ITokenService, TokenService>();
+                services.AddScoped<IUserService, UserService>();
+                services.AddScoped<IEmailService, EmailService>();
+                services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+                services.AddScoped<IQuizDifficultyLevelService, QuizDifficultyLevelService>();
+                services.AddScoped<IQuizCategoryService, QuizCategoryService>();
+                services.AddScoped<IQuizTagsService, QuizTagsService>();
+                
+                //mappers
+                services.AddAutoMapper(typeof(MappingProfile));
 
-        //mappers
-        services.AddAutoMapper(typeof(MappingProfile));
-
-        //repository
-        services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-        services.AddScoped(typeof(ISqlQueryRepository), typeof(SqlQueryRepository));
-    }
+                //repository
+                services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+                services.AddScoped(typeof(ISqlQueryRepository), typeof(SqlQueryRepository));
+        }
 
 }

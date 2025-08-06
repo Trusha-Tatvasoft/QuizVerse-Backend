@@ -1,10 +1,9 @@
 using System.Linq.Dynamic.Core;
+using System.Reflection;
 using AutoMapper;
-using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
-using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
@@ -37,7 +36,16 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
         // Validate Sort Column
         if (!string.IsNullOrEmpty(pageListRequest.SortColumn))
         {
-            bool columnExists = typeof(QuizCategory).GetProperty(pageListRequest.SortColumn) != null;
+            bool columnExists = typeof(QuizCategory).GetProperty(
+                 pageListRequest.SortColumn,
+                 BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance
+
+             ) != null;
+            if (pageListRequest.SortColumn.ToLower() == "quizcount")
+            {
+                pageListRequest.SortColumn = "Quizzes.Count()";
+                columnExists = true;
+            }
             if (!columnExists)
             {
                 throw new ArgumentException(
@@ -71,5 +79,11 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
             Records = quizCategoryDtos,
             TotalRecords = totalRecords,
         };
+    }
+
+    public List<CommonListDropDownDto> GetAllQuizCategories()
+    {
+        IQueryable<QuizCategory> quizCategories = _quizCategoryRepository.GetQueryableInclude().Where(u => !u.IsDeleted);
+        return _mapper.ProjectTo<CommonListDropDownDto>(quizCategories).ToList();
     }
 }
