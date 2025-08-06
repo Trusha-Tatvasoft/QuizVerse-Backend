@@ -31,7 +31,7 @@ public class QuizDifficultyLevelTest
                 new() { Id = 3, Name = "Hard", Description = "Hard level", IsDeleted = true }
             };
 
-        var expectedMappedList = new List<QuizDifficultyResponse>
+        var expectedMappedList = new List<QuizDifficultyDTO>
             {
                 new() { Id = 1, Name = "Easy", Description = "Easy level" },
                 new() { Id = 2, Name = "Medium", Description = "Medium level" }
@@ -40,7 +40,7 @@ public class QuizDifficultyLevelTest
         _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(quizDifficulties);
 
         _mockMapper.Setup(m =>
-            m.Map<List<QuizDifficultyResponse>>(It.Is<List<QuizDifficulty>>(src =>
+            m.Map<List<QuizDifficultyDTO>>(It.Is<List<QuizDifficulty>>(src =>
                 src.Count == 2 && src.TrueForAll(d => !d.IsDeleted))))
             .Returns(expectedMappedList);
 
@@ -56,7 +56,7 @@ public class QuizDifficultyLevelTest
     public async Task GetQuizDifficultyList_ShouldReturnEmptyList_WhenNoDataExists()
     {
         _mockRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<QuizDifficulty>());
-        _mockMapper.Setup(m => m.Map<List<QuizDifficultyResponse>>(It.IsAny<List<QuizDifficulty>>()))
+        _mockMapper.Setup(m => m.Map<List<QuizDifficultyDTO>>(It.IsAny<List<QuizDifficulty>>()))
                    .Returns([]);
 
         var result = await _service.GetQuizDifficultyList();

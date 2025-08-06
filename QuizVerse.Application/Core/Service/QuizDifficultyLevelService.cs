@@ -14,11 +14,6 @@ public class QuizDifficultyLevelService(IGenericRepository<QuizDifficulty> quizD
     {
         List<QuizDifficulty> quizDifficultiesList = [.. (await quizDifficultyRepository.GetAllAsync()).Where(d => !d.IsDeleted)];
 
-        if (quizDifficultiesList.Count == 0)
-        {
-            throw new AppException(Constants.NO_DATA_FOUND);
-        }
-
         return mapper.Map<List<QuizDifficultyDTO>>(quizDifficultiesList);
     }
 }
