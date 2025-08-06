@@ -26,7 +26,7 @@ public class QuizManagementService(
             .Where(q => !q.IsDeleted)
             .Select(q => new
             {
-                IsActive = q.Status == 1,
+                IsActive = q.Status == (int)QuizStatus.Active,
                 Participants = q.QuizAttempteds.Select(qa => qa.UserId),
                 Questions = q.QuizToBaseQuestionMaps.Select(qm => qm.QueId)
             })
