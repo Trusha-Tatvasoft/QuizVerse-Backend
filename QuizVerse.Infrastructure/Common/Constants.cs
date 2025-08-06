@@ -116,7 +116,11 @@ public static class Constants
     #endregion
 
     #region Quiz Category Messages
-    public const string INVALID_PAGE_NO = "Page number {0} exceeds maximum page number {1}."; 
-    public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist."; 
+    public const string INVALID_PAGE_NO = "Page number {0} exceeds maximum page number {1}.";
+    public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist.";
     #endregion
+
+    #region Quiz Managment List
+    public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
+    #endregion 
 }

@@ -1,4 +1,5 @@
 using System.Linq.Dynamic.Core;
+using System.Reflection;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Interface;
@@ -37,14 +38,23 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
         // Validate Sort Column
         if (!string.IsNullOrEmpty(pageListRequest.SortColumn))
         {
-            bool columnExists = typeof(QuizCategory).GetProperty(pageListRequest.SortColumn) != null;
+            bool columnExists = typeof(QuizCategory).GetProperty(
+                 pageListRequest.SortColumn,
+                 BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance
+                 
+             ) != null;
+            if (pageListRequest.SortColumn.ToLower() == "quizcount")
+            {
+                pageListRequest.SortColumn = "Quizzes.Count()";
+                columnExists = true;
+            }
             if (!columnExists)
             {
                 throw new ArgumentException(
                     string.Format(Constants.INVALID_COLUMN_NAME, pageListRequest.SortColumn),
                     nameof(pageListRequest.SortColumn));
             }
-
+ 
             quizCategories = quizCategories.OrderBy($"{pageListRequest.SortColumn} {(pageListRequest.SortDescending ? "desc" : "asc")}");
         }
         else
