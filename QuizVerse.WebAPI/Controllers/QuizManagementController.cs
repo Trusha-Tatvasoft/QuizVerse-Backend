@@ -10,32 +10,32 @@ namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class QuizManagmentController(IQuizManagmentService quizManagmentService) : ControllerBase
+public class QuizManagementController(IQuizManagementService quizManagementService) : ControllerBase
 {
     #region Quiz Card Data 
     [HttpPost("get-quiz-card-data")]
     public async Task<IActionResult> GetQuizCardData()
     {
-        return Ok(new ApiResponse<QuizManagmentPageDataDto>
+        return Ok(new ApiResponse<QuizManagementPageDataDto>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
-            Data = await quizManagmentService.GetQuizCardData()
+            Data = await quizManagementService.GetQuizCardData()
         });
     }
     #endregion
 
     #region Get Paginated Quiz List
-    [HttpPost("get-quiz-list")]
-    public async Task<IActionResult> GetQuizList([FromBody] PageListRequest pageListRequest)
+    [HttpPost("get-quizzes-by-pagination")]
+    public async Task<IActionResult> GetQuizzesByPagination([FromBody] PageListRequest pageListRequest)
     {
         return Ok(new ApiResponse<PageListResponse<QuizListDto>>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
-            Data = await quizManagmentService.GetQuizzesByPagination(pageListRequest)
+            Data = await quizManagementService.GetQuizzesByPagination(pageListRequest)
         });
     }
     #endregion

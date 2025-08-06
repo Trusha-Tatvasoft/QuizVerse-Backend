@@ -13,13 +13,13 @@ using System.Linq.Dynamic.Core;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class QuizManagmentService(
+public class QuizManagementService(
         IGenericRepository<Quiz> quizRepository,
         IMapper mapper
-) : IQuizManagmentService
+) : IQuizManagementService
 {
     #region Get Card Data
-    public async Task<QuizManagmentPageDataDto> GetQuizCardData()
+    public async Task<QuizManagementPageDataDto> GetQuizCardData()
     {
         var data = await quizRepository
             .GetQueryableInclude(q => q.QuizAttempteds, q => q.QuizToBaseQuestionMaps)
@@ -37,7 +37,7 @@ public class QuizManagmentService(
         long totalParticipants = data.SelectMany(q => q.Participants).Distinct().Count();
         long totalQuestions = data.SelectMany(q => q.Questions).Distinct().Count();
 
-        return new QuizManagmentPageDataDto
+        return new QuizManagementPageDataDto
         {
             TotalQuiz = totalQuiz,
             ActiveQuiz = activeQuiz,

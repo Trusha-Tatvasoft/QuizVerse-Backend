@@ -120,7 +120,7 @@ public static class Constants
     public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist.";
     #endregion
 
-    #region Quiz Managment List
+    #region Quiz Management List
     public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
     #endregion 
 }

@@ -81,7 +81,7 @@ public class MappingProfile : Profile
 
         #endregion
 
-        #region QuizManagment
+        #region QuizManagement
 
         CreateMap<Quiz, QuizListDto>()
            .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Name))

@@ -13,13 +13,13 @@ using Xunit;
 
 namespace QuizVerse.UnitTests.Services;
 
-public class QuizManagmentServiceTests
+public class QuizManagementServiceTests
 {
     private readonly QuizVerseDbContext _context;
-    private readonly QuizManagmentService _quizService;
+    private readonly QuizManagementService _quizService;
     private readonly IMapper _mapper;
 
-    public QuizManagmentServiceTests()
+    public QuizManagementServiceTests()
     {
         var options = new DbContextOptionsBuilder<QuizVerseDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -35,7 +35,7 @@ public class QuizManagmentServiceTests
         _mapper = mapperConfig.CreateMapper();
 
         var quizRepo = new GenericRepository<Quiz>(_context);
-        _quizService = new QuizManagmentService(quizRepo, _mapper);
+        _quizService = new QuizManagementService(quizRepo, _mapper);
     }
 
     private void SeedTestData()
@@ -127,7 +127,7 @@ public class QuizManagmentServiceTests
         Assert.Equal(3, result.TotalQuestions);
     }
     #endregion
-    #region Quiz Managment List
+    #region Quiz Management List
     [Fact]
     public async Task GetQuizzesByPagination_WithSearchTerm_ReturnsFilteredResults()
     {

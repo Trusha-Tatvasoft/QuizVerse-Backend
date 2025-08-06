@@ -3,8 +3,8 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.Application.Core.Interface;
 
-public interface IQuizManagmentService
+public interface IQuizManagementService
 {
-    Task<QuizManagmentPageDataDto> GetQuizCardData();
+    Task<QuizManagementPageDataDto> GetQuizCardData();
     Task<PageListResponse<QuizListDto>> GetQuizzesByPagination(PageListRequest pageListRequest);
 }
