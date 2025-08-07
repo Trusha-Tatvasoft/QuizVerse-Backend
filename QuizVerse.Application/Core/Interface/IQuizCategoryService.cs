@@ -6,5 +6,4 @@ namespace QuizVerse.Application.Core.Interface;
 public interface IQuizCategoryService
 {
     Task<PageListResponse<QuizCategoryDTO>> GetQuizCategories(PageListRequest pageListRequest);
-    List<CommonListDropDownDto> GetAllQuizCategories();
 }

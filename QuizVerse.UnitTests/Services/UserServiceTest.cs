@@ -449,14 +449,14 @@ public class UserServiceTests
     {
         var existingUser = _context.Users.First();
         var anotherUser = _context.Users.First(u => u.Id != existingUser.Id);
-
+ 
         var dto = new UserRequestDto
         {
             Id = existingUser.Id,
             Email = anotherUser.Email,
             UserName = existingUser.UserName,
         };
-
+ 
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
         Assert.Equal("Email can't be changed", ex.Message);
     }

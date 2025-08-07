@@ -39,7 +39,7 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
             bool columnExists = typeof(QuizCategory).GetProperty(
                  pageListRequest.SortColumn,
                  BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance
-
+                 
              ) != null;
             if (pageListRequest.SortColumn.ToLower() == "quizcount")
             {
@@ -52,7 +52,7 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
                     string.Format(Constants.INVALID_COLUMN_NAME, pageListRequest.SortColumn),
                     nameof(pageListRequest.SortColumn));
             }
-
+ 
             quizCategories = quizCategories.OrderBy($"{pageListRequest.SortColumn} {(pageListRequest.SortDescending ? "desc" : "asc")}");
         }
         else
@@ -79,11 +79,5 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
             Records = quizCategoryDtos,
             TotalRecords = totalRecords,
         };
-    }
-
-    public List<CommonListDropDownDto> GetAllQuizCategories()
-    {
-        IQueryable<QuizCategory> quizCategories = _quizCategoryRepository.GetQueryableInclude().Where(u => !u.IsDeleted);
-        return _mapper.ProjectTo<CommonListDropDownDto>(quizCategories).ToList();
     }
 }

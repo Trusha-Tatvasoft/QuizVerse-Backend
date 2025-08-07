@@ -14,12 +14,4 @@ public class QuizDifficultyLevelService(IGenericRepository<QuizDifficulty> quizD
 
         return mapper.Map<List<QuizDifficultyDTO>>(quizDifficultiesList);
     }
-
-
-    public List<CommonListDropDownDto> GetAllQuizDifficulties()
-    {
-        IQueryable<QuizDifficulty> quizDifficulties = quizDifficultyRepository.GetQueryableInclude().Where(u => !u.IsDeleted);
-        
-        return mapper.ProjectTo<CommonListDropDownDto>(quizDifficulties).ToList();
-    }
 }

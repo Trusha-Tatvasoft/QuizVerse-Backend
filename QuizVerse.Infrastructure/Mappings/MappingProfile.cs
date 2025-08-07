@@ -87,5 +87,18 @@ public class MappingProfile : Profile
         CreateMap<QuizTag, CommonListDropDownDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TagName));
         #endregion
+
+        #region QuizManagement
+
+        CreateMap<Quiz, QuizListDto>()
+           .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Name))
+           .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName))
+           .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => src.DifficultyLevel.Name))
+           .ForMember(dest => dest.TotalQuestion, opt => opt.MapFrom(src => src.TotalQuestion))
+           .ForMember(dest => dest.NoOfPersonAttempted, opt => opt.MapFrom(src => src.NoOfPersonAttempted))
+           .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
+
+        #endregion
     }
 }

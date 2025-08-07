@@ -18,4 +18,11 @@ namespace QuizVerse.Infrastructure.Enums
         Delete = 1,
         ChangeStatus = 2
     }
+
+    public enum QuizStatus
+    {
+        Active = 1,
+        Draft = 2,
+        Inactive = 3
+    }
 }
