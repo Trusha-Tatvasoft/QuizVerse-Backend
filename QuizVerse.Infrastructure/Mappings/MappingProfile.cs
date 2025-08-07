@@ -113,5 +113,15 @@ public class MappingProfile : Profile
            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
 
         #endregion
+
+        #region Question Type
+        CreateMap<QuestionType, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TypeName));
+        #endregion
+
+        #region Question Difficulty
+        CreateMap<QuestionDifficulty, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
+        #endregion
     }
 }

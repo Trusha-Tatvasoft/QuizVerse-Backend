@@ -122,5 +122,15 @@ public static class Constants
 
     #region Quiz Management List
     public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
+    #endregion
+
+    #region Entity Field Names
+    public const string IS_DELETED = "IsDeleted";
+    public const string ID = "Id";
+    #endregion
+
+    #region Linq Function Names
+    public const string WHERE = "Where";
+    public const string ORDER_BY = "OrderBy";
     #endregion 
 }

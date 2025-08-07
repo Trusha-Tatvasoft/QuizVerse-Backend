@@ -25,4 +25,13 @@ namespace QuizVerse.Infrastructure.Enums
         Draft = 2,
         Inactive = 3
     }
+
+    public enum DropDownType
+    {
+        QuizCategory = 1,
+        QuizDifficulty = 2,
+        QuizTag = 3,
+        QuestionDifficulty = 4,
+        QuestionType = 5
+    }
 }
