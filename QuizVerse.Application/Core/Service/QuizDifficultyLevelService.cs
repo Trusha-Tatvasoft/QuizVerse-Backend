@@ -37,7 +37,7 @@ public class QuizDifficultyLevelService(IGenericRepository<QuizDifficulty> quizD
     #region Create difficulty level
     public async Task<string> CreateDifficultyLevel(QuizDifficultyRequestDto difficultyRequestDto)
     {
-        await NameValid(difficultyRequestDto.Name);
+        await IsDifficultyNameAvailable(difficultyRequestDto.Name);
 
         var difficulty = mapper.Map<QuizDifficulty>(difficultyRequestDto);
         difficulty.CreatedDate = DateTime.UtcNow;
@@ -48,8 +48,8 @@ public class QuizDifficultyLevelService(IGenericRepository<QuizDifficulty> quizD
     }
     #endregion
 
-    #region Name Valid
-    public async Task<bool> NameValid(string name)
+    #region Difficulty Name Available
+    public async Task<bool> IsDifficultyNameAvailable(string name)
     {
         if (await quizDifficultyRepository.Exists(u => u.Name.ToLower().Trim() == name.ToLower().Trim() && !u.IsDeleted))
             throw new AppException(Constants.DUPLICATE_DIFFICULTY_LEVEL_NAME);

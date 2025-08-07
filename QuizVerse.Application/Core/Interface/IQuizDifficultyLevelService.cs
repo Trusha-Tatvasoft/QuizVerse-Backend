@@ -8,5 +8,5 @@ public interface IQuizDifficultyLevelService
     Task<List<QuizDifficultyDTO>> GetQuizDifficultyList();
     Task<QuizDifficultyDTO> GetDifficultyLevelById(int id);
     Task<string> CreateDifficultyLevel(QuizDifficultyRequestDto difficultyRequestDto);
-    Task<bool> NameValid(string name);  
+    Task<bool> IsDifficultyNameAvailable(string name);  
 }

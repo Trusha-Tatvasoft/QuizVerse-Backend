@@ -152,7 +152,7 @@ public class QuizDifficultyLevelTest
     }
     #endregion
 
-    #region Name Valid
+    #region Difficulty Name Available
     [Fact]
     public async Task NameValid_ShouldThrowException_WhenNameExistsAndNotDeleted()
     {
@@ -163,7 +163,7 @@ public class QuizDifficultyLevelTest
                  .ReturnsAsync(true);
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<AppException>(() => _service.NameValid(testName));
+        var exception = await Assert.ThrowsAsync<AppException>(() => _service.IsDifficultyNameAvailable(testName));
         Assert.Equal(Constants.DUPLICATE_DIFFICULTY_LEVEL_NAME, exception.Message);
     }
 
@@ -177,7 +177,7 @@ public class QuizDifficultyLevelTest
                  .ReturnsAsync(false);
 
         // Act
-        var result = await _service.NameValid(testName);
+        var result = await _service.IsDifficultyNameAvailable(testName);
 
         // Assert
         Assert.True(result);

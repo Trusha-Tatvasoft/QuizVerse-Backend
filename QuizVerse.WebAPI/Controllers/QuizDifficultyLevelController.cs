@@ -42,13 +42,13 @@ public class QuizDifficultyLevelController(IQuizDifficultyLevelService quizDiffi
     }
     #endregion
 
-    #region Name Valid
-    [HttpGet("name-valid/{name}")]
-    public async Task<IActionResult> NameValid(string name)
+    #region Difficulty Name Available
+    [HttpGet("is-difficulty-name-available/{name}")]
+    public async Task<IActionResult> IsDifficultyNameAvailable(string name)
     {
         return Ok(new ApiResponse<string>
         {
-            Result = await quizDifficultyLevelService.NameValid(name),
+            Result = await quizDifficultyLevelService.IsDifficultyNameAvailable(name),
             Message = Constants.VALID_DATA,
             StatusCode = 200,
             Data = null
