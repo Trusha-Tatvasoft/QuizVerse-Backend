@@ -1,3 +1,4 @@
+using System.Globalization;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
@@ -68,7 +69,16 @@ public class MappingProfile : Profile
 
         #region Quiz Difficulty Levels
         // quiz difficulty levels list
-        CreateMap<QuizDifficulty, QuizDifficultyDTO>();
+        CreateMap<QuizDifficulty, QuizDifficultyDTO>()
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => ToTitleCase(src.Name)))
+            .ForMember(dest => dest.Description,
+                opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
+
+        CreateMap<QuizDifficultyRequestDto, QuizDifficulty>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
+
         CreateMap<QuizDifficulty, CommonListDropDownDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
@@ -101,19 +111,6 @@ public class MappingProfile : Profile
 
         #endregion
 
-        #region QuizManagement
-
-        CreateMap<Quiz, QuizListDto>()
-           .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Name))
-           .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName))
-           .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => src.DifficultyLevel.Name))
-           .ForMember(dest => dest.TotalQuestion, opt => opt.MapFrom(src => src.TotalQuestion))
-           .ForMember(dest => dest.NoOfPersonAttempted, opt => opt.MapFrom(src => src.NoOfPersonAttempted))
-           .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
-           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
-
-        #endregion
-
         #region Question Type
         CreateMap<QuestionType, CommonListDropDownDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TypeName));
@@ -124,4 +121,11 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
     }
+
+    private static string ToTitleCase(string input) =>
+      CultureInfo.CurrentCulture.TextInfo.ToTitleCase(input?.ToLower() ?? string.Empty);
+
+    private static string CapitalizeFirst(string input) =>
+        string.IsNullOrWhiteSpace(input) ? string.Empty
+            : char.ToUpper(input[0]) + input[1..];
 }

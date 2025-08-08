@@ -7,11 +7,13 @@ public static class Constants
     public const string QUIZVERSE_DEFAULT_QUOTE = "Welcome to QuizVerse!";
     public const string FETCH_DATA_MESSAGE = "Data Fetched Successfully.";
     public const string INVALID_DATA_MESSAGE = "Invalid Data.";
+    public const string VALID_DATA = "Valid Data.";
     public const string NULL_MODIFIED_DATE_MESSAGE = "Modified Date is null.";
     public const string INVALID_USER_ID_MESSAGE = "Invalid UserId.";
     public const string INVALID_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Inactive), 3 (Suspend)";
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
     public const string NO_DATA_FOUND = "No data found.";
+    public const string UNAUTHORIZED_USER = "User ID missing";
     #endregion
 
     #region Auth Messages
@@ -122,6 +124,11 @@ public static class Constants
 
     #region Quiz Management List
     public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
+    #endregion
+
+    #region Quiz Difficulty Level Message
+    public const string DIFFICULTY_LEVEL_NOT_FOUND = "Difficulty level with ID {0} not found.";
+    public const string DUPLICATE_DIFFICULTY_LEVEL_NAME = "Difficulty level with this name already exists.";
     #endregion
 
     #region Entity Field Names
