@@ -1,3 +1,4 @@
+using System.Globalization;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
@@ -68,7 +69,15 @@ public class MappingProfile : Profile
 
         #region Quiz Difficulty Levels
         // quiz difficulty levels list
-        CreateMap<QuizDifficulty, QuizDifficultyDTO>();
+        CreateMap<QuizDifficulty, QuizDifficultyDTO>()
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => ToTitleCase(src.Name)))
+            .ForMember(dest => dest.Description,
+                opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
+                
+        CreateMap<QuizDifficultyRequestDto, QuizDifficulty>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
 
         #endregion
 
@@ -94,4 +103,11 @@ public class MappingProfile : Profile
 
         #endregion
     }
+
+    private static string ToTitleCase(string input) =>
+      CultureInfo.CurrentCulture.TextInfo.ToTitleCase(input?.ToLower() ?? string.Empty);
+
+    private static string CapitalizeFirst(string input) =>
+        string.IsNullOrWhiteSpace(input) ? string.Empty
+            : char.ToUpper(input[0]) + input[1..];
 }
