@@ -11,8 +11,8 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 public class QuestionPoolController(IQuestionPoolService _questionPoolService) : ControllerBase
 {
-    [HttpGet("get-question-pool-list")]
-    public async Task<IActionResult> GetQuestionPoolListAsync([FromQuery] PageListRequest pageListRequest)
+    [HttpPost("get-question-pool-list")]
+    public async Task<IActionResult> GetQuestionPoolListAsync([FromBody] PageListRequest pageListRequest)
     {
         ApiResponse<PageListResponse<QuestionPoolListDto>> response = new()
         {
