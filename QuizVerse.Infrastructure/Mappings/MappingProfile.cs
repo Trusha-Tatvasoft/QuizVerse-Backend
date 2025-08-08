@@ -74,13 +74,13 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => ToTitleCase(src.Name)))
             .ForMember(dest => dest.Description,
                 opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
-
+                
         CreateMap<QuizDifficultyRequestDto, QuizDifficulty>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
 
         CreateMap<QuizDifficulty, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
+                    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
 
         #region Quiz Category
