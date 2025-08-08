@@ -220,5 +220,100 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal(2, result.Records.Count);
             Assert.Equal("Zoology", result.Records[0].CategoryName);
         }
+
+        [Fact]
+        public async Task GetQuizCategories_WithQuizCountSort_ShouldSortByQuizCount()
+        {
+            // Arrange
+            var quizCategories = new List<QuizCategory>
+            {
+                new QuizCategory { Id = 1, CategoryName = "Math", Description = "Math", Quizzes = new List<Quiz> { new Quiz(), new Quiz() } },
+                new QuizCategory { Id = 2, CategoryName = "Science", Description = "Sci", Quizzes = new List<Quiz>() }
+            }.AsQueryable();
+
+            var request = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 10,
+                SortColumn = "QuizCount",
+                SortDescending = true
+            };
+
+            var pagedResult = new PageListResponse<QuizCategory>
+            {
+                Records = quizCategories.OrderByDescending(q => q.Quizzes.Count).ToList(),
+                TotalRecords = quizCategories.Count()
+            };
+
+            _quizCategoryRepoMock.Setup(r => r.GetQueryableInclude(It.IsAny<Expression<Func<QuizCategory, object>>>()))
+                .Returns(quizCategories);
+
+            _quizCategoryRepoMock.Setup(r => r.PaginatedList<QuizCategory>(It.IsAny<IQueryable<QuizCategory>>(), request, null))
+                .ReturnsAsync(pagedResult);
+
+            _mapperMock.Setup(m => m.Map<List<QuizCategoryDTO>>(pagedResult.Records))
+                .Returns(pagedResult.Records.Select(q => new QuizCategoryDTO
+                {
+                    Id = q.Id,
+                    CategoryName = q.CategoryName,
+                    Description = q.Description
+                }).ToList());
+
+            // Act
+            var result = await _service.GetQuizCategories(request);
+
+            // Assert
+            Assert.Equal(2, result.Records.Count);
+            Assert.Equal("Math", result.Records[0].CategoryName); // Math has 2 quizzes, Science has 0
+            Assert.Equal(2, result.Records[0].QuizCount);
+            Assert.Equal(0, result.Records[1].QuizCount);
+        }
+
+        [Fact]
+        public async Task GetQuizCategories_BooleanSortColumn_ShouldInvertSortDirection()
+        {
+            // Arrange
+            var quizCategories = new List<QuizCategory>
+            {
+                new QuizCategory { Id = 1, CategoryName = "Math", Status = true, Quizzes = new List<Quiz>() },
+                new QuizCategory { Id = 2, CategoryName = "Science", Status = false, Quizzes = new List<Quiz>() }
+            }.AsQueryable();
+
+            var request = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 10,
+                SortColumn = "Status",
+                SortDescending = false // This should get inverted inside the method
+            };
+
+            var pagedResult = new PageListResponse<QuizCategory>
+            {
+                Records = quizCategories.OrderByDescending(q => q.Status).ToList(),
+                TotalRecords = quizCategories.Count()
+            };
+
+            _quizCategoryRepoMock.Setup(r => r.GetQueryableInclude(It.IsAny<Expression<Func<QuizCategory, object>>>()))
+                .Returns(quizCategories);
+
+            _quizCategoryRepoMock.Setup(r => r.PaginatedList<QuizCategory>(It.IsAny<IQueryable<QuizCategory>>(), request, null))
+                .ReturnsAsync(pagedResult);
+
+            _mapperMock.Setup(m => m.Map<List<QuizCategoryDTO>>(pagedResult.Records))
+                .Returns(pagedResult.Records.Select(q => new QuizCategoryDTO
+                {
+                    Id = q.Id,
+                    CategoryName = q.CategoryName,
+                    IsActive = q.Status
+                }).ToList());
+
+            // Act
+            var result = await _service.GetQuizCategories(request);
+
+            // Assert
+            Assert.Equal(2, result.Records.Count);
+            Assert.True(result.Records[0].IsActive); // Should come first due to descending order after inversion
+            Assert.False(result.Records[1].IsActive);
+        }
     }
 }
