@@ -9,4 +9,10 @@ public class SqlConstants
     public const string GET_PERFORMANCE_SCORE_CHART_DATA = "get_performance_score_chart_data";
     public const string CHART_FUNCTION_CALL_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}})";
     #endregion
+
+
+    #region QuestionPool
+    public const string GET_QUESTION_POOL_LIST_FUNCTION = "get_question_pool_list";
+    public const string GET_QUESTION_POOL_LIST_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}})";
+    #endregion
 }
