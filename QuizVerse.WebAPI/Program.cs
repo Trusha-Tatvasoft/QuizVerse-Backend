@@ -27,6 +27,7 @@ builder.Services.RegisterDependency();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddMemoryCache();
 
 //mappers
 builder.Services.AddAutoMapper(typeof(MappingProfile));

@@ -79,15 +79,23 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
 
+        CreateMap<QuizDifficulty, CommonListDropDownDto>()
+                    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
 
-        #region QuizCategory To QuizCategoryDTO
-
+        #region Quiz Category
         // quiz category to quiz category DTO
         CreateMap<QuizCategory, QuizCategoryDTO>()
             .ForMember(dest => dest.QuizCount, opt => opt.Ignore())
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
 
+        CreateMap<QuizCategory, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.CategoryName));
+        #endregion
+
+        #region Quiz Tag
+        CreateMap<QuizTag, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TagName));
         #endregion
 
         #region QuizManagement
@@ -101,6 +109,16 @@ public class MappingProfile : Profile
            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
 
+        #endregion
+
+        #region Question Type
+        CreateMap<QuestionType, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TypeName));
+        #endregion
+
+        #region Question Difficulty
+        CreateMap<QuestionDifficulty, CommonListDropDownDto>()
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
     }
 

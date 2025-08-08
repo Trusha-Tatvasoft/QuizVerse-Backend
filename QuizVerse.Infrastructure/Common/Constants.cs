@@ -130,4 +130,14 @@ public static class Constants
     public const string DIFFICULTY_LEVEL_NOT_FOUND = "Difficulty level with ID {0} not found.";
     public const string DUPLICATE_DIFFICULTY_LEVEL_NAME = "Difficulty level with this name already exists.";
     #endregion
+
+    #region Entity Field Names
+    public const string IS_DELETED = "IsDeleted";
+    public const string ID = "Id";
+    #endregion
+
+    #region Linq Function Names
+    public const string WHERE = "Where";
+    public const string ORDER_BY = "OrderBy";
+    #endregion
 }
