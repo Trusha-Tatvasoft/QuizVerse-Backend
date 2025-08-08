@@ -7,10 +7,13 @@ public static class Constants
     public const string QUIZVERSE_DEFAULT_QUOTE = "Welcome to QuizVerse!";
     public const string FETCH_DATA_MESSAGE = "Data Fetched Successfully.";
     public const string INVALID_DATA_MESSAGE = "Invalid Data.";
+    public const string VALID_DATA = "Valid Data.";
     public const string NULL_MODIFIED_DATE_MESSAGE = "Modified Date is null.";
     public const string INVALID_USER_ID_MESSAGE = "Invalid UserId.";
     public const string INVALID_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Inactive), 3 (Suspend)";
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
+    public const string NO_DATA_FOUND = "No data found.";
+    public const string UNAUTHORIZED_USER = "User ID missing";
     #endregion
 
     #region Auth Messages
@@ -61,6 +64,7 @@ public static class Constants
     public const string USER_DELETED_SUCCESS = "User {0} deleted successfully.";
     public const string USER_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
     public const string USER_DATA_NULL = "No data available to export.";
+    public const string NO_EMAIL_CHANGE = "Email can't be changed";
     #endregion
 
     #region Email Messages
@@ -82,6 +86,7 @@ public static class Constants
     public const string CREATE_SUCCESS = "Created successfully";
     public const string UPDATE_SUCCESS = "Updated successfully";
     public const string DELETE_SUCCESS = "Deleted successfully";
+    public const string NO_DATA_Found = "No data found";
     #endregion
 
     #region Reset Password Messages
@@ -99,11 +104,40 @@ public static class Constants
     public const string LOGO_PATH = "wwwroot/images/logo.png";
     #endregion
 
+    #region File Upload Messages
+    public const string INVALID_IMAGE_FILE_TYPE_MESSAGE = "Only image files are allowed: .jpg, .jpeg, .png, .gif";
+    public const string IMAGE_FILE_SIZE_EXCEEDED_MESSAGE = "Maximum allowed file size is 10MB.";
+    #endregion
+
     #region Excel Export
     public const string EXCEL_MIME_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     #endregion
 
     #region Colors
-    public const string LIGHT_BLUE = "#4f81bd"; 
+    public const string LIGHT_BLUE = "#4f81bd";
+    #endregion
+
+    #region Quiz Category Messages
+    public const string INVALID_PAGE_NO = "Page number {0} exceeds maximum page number {1}.";
+    public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist.";
+    #endregion
+
+    #region Quiz Management List
+    public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
+    #endregion
+
+    #region Quiz Difficulty Level Message
+    public const string DIFFICULTY_LEVEL_NOT_FOUND = "Difficulty level with ID {0} not found.";
+    public const string DUPLICATE_DIFFICULTY_LEVEL_NAME = "Difficulty level with this name already exists.";
+    #endregion
+
+    #region Entity Field Names
+    public const string IS_DELETED = "IsDeleted";
+    public const string ID = "Id";
+    #endregion
+
+    #region Linq Function Names
+    public const string WHERE = "Where";
+    public const string ORDER_BY = "OrderBy";
     #endregion
 }

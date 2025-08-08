@@ -18,7 +18,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IAdminDashboardService, AdminDashboardService>();
-
+        services.AddScoped<IQuizDifficultyLevelService, QuizDifficultyLevelService>();
+        services.AddScoped<IQuizCategoryService, QuizCategoryService>();
+        services.AddScoped<IQuizManagementService, QuizManagementService>();
+        services.AddScoped<IMemoryCacheService, MemoryCacheService>();
+        services.AddScoped<IDropDownDataService, DropDownDataService>();
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
 

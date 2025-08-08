@@ -18,4 +18,20 @@ namespace QuizVerse.Infrastructure.Enums
         Delete = 1,
         ChangeStatus = 2
     }
+
+    public enum QuizStatus
+    {
+        Active = 1,
+        Draft = 2,
+        Inactive = 3
+    }
+
+    public enum DropDownType
+    {
+        QuizCategory = 1,
+        QuizDifficulty = 2,
+        QuizTag = 3,
+        QuestionDifficulty = 4,
+        QuestionType = 5
+    }
 }
