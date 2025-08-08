@@ -23,6 +23,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQuizManagementService, QuizManagementService>();
         services.AddScoped<IMemoryCacheService, MemoryCacheService>();
         services.AddScoped<IDropDownDataService, DropDownDataService>();
+        services.AddScoped<IQuestionPoolService, QuestionPoolService>();
+
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
 
