@@ -67,10 +67,6 @@ public static class Constants
     public const string NO_EMAIL_CHANGE = "Email can't be changed";
     #endregion
 
-    #region Quiz Category Messages
-
-    #endregion
-
     #region Email Messages
     public const string EMAIL_PATH_NOT_CONFIGURED = "Email template path is not configured.";
     public const string EMAIL_SENT_SUCCESS = "Email successfully sent to {0}.";

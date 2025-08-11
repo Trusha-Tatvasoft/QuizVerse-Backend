@@ -63,12 +63,10 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
     [HttpPut("update-quiz-category-by-action")]
     public async Task<IActionResult> UpdateQuizCategoryByAction([FromBody] QuizCategoryActionRequestDto quizCategoryAction)
     {
-        string resultMessage = await _quizCategoryService.UpdateQuizCategoryByAction(quizCategoryAction);
-
         return Ok(new ApiResponse<object>
         {
             Result = true,
-            Message = resultMessage,
+            Message = await _quizCategoryService.UpdateQuizCategoryByAction(quizCategoryAction),
             StatusCode = 200,
             Data = null
         });
