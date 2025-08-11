@@ -34,4 +34,16 @@ namespace QuizVerse.Infrastructure.Enums
         QuestionDifficulty = 4,
         QuestionType = 5
     }
+
+    public enum QuizCategoryStatus
+    {
+        Active = 1,
+        Inactive = 0
+    }
+    
+    public enum QuizCategoryActionType
+    {
+        Delete = 1,
+        ChangeStatus = 2
+    }
 }

@@ -15,4 +15,8 @@ public class SqlConstants
     public const string GET_QUESTION_POOL_LIST_FUNCTION = "get_question_pool_list";
     public const string GET_QUESTION_POOL_LIST_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}})";
     #endregion
+
+    #region QuizCategory
+    public const string FN_CREATE_OR_UPDATE_QUIZ_CATEGORY = "SELECT * FROM fn_create_or_update_quiz_category(@p_id, @p_category_name, @p_description, @p_icon, @p_user_id)";
+    #endregion
 }
