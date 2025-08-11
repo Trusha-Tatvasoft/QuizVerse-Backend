@@ -36,21 +36,28 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
         // Validate Sort Column
         if (!string.IsNullOrEmpty(pageListRequest.SortColumn))
         {
-            bool columnExists = typeof(QuizCategory).GetProperty(
-                 pageListRequest.SortColumn,
-                 BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance
-                 
-             ) != null;
             if (pageListRequest.SortColumn.ToLower() == "quizcount")
             {
                 pageListRequest.SortColumn = "Quizzes.Count()";
-                columnExists = true;
             }
-            if (!columnExists)
+
+            // Check if property exists
+            var propertyInfo = typeof(QuizCategory).GetProperty(
+                pageListRequest.SortColumn,
+                BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance
+            );
+
+            if (propertyInfo == null && pageListRequest.SortColumn != "Quizzes.Count()")
             {
                 throw new ArgumentException(
                     string.Format(Constants.INVALID_COLUMN_NAME, pageListRequest.SortColumn),
                     nameof(pageListRequest.SortColumn));
+            }
+
+            // If the property is boolean, invert the sort direction
+            if (propertyInfo?.PropertyType == typeof(bool))
+            {
+                pageListRequest.SortDescending = !pageListRequest.SortDescending;
             }
  
             quizCategories = quizCategories.OrderBy($"{pageListRequest.SortColumn} {(pageListRequest.SortDescending ? "desc" : "asc")}");
