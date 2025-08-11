@@ -105,8 +105,10 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
     #region GetQuizCategoryById
     public async Task<QuizCategoryDTO> GetQuizCategoryById(int id)
     {
-        QuizCategory quizCategory = await _quizCategoryRepository.GetQueryableInclude(c => c.Status).FirstOrDefaultAsync(u => u.Id == id)
-           ?? throw new AppException(string.Format(Constants.QUIZ_CATEGORY_NOT_FOUND, id));
+        QuizCategory quizCategory = await _quizCategoryRepository
+            .GetQueryableInclude(c => c.Quizzes)
+            .FirstOrDefaultAsync(u => u.Id == id)
+            ?? throw new AppException(string.Format(Constants.QUIZ_CATEGORY_NOT_FOUND, id));
 
         QuizCategoryDTO quizCategoryDTO = _mapper.Map<QuizCategoryDTO>(quizCategory);
         quizCategoryDTO.QuizCount = quizCategory.Quizzes?.Count ?? 0;

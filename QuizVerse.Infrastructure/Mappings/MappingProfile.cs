@@ -87,7 +87,7 @@ public class MappingProfile : Profile
         #region Quiz Category
         // quiz category to quiz category DTO
         CreateMap<QuizCategory, QuizCategoryDTO>()
-            .ForMember(dest => dest.QuizCount, opt => opt.Ignore())
+            .ForMember(dest => dest.QuizCount, opt => opt.MapFrom(src => src.Quizzes != null ? src.Quizzes.Count : 0))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
 
         CreateMap<QuizCategory, CommonListDropDownDto>()
@@ -122,18 +122,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
 
-        CreateMap<QuizCategoryDTO, QuizCategory>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.IsActive));
-
-        CreateMap<QuizCategoryDTO, QuizCategory>()
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName))
-            .ForMember(dest => dest.Icon,
-                       opt => opt.MapFrom((src, dest) =>
-                           string.IsNullOrWhiteSpace(src.Icon) ? Constants.QUIZ_CATEGORY_DEFAULT_ICON : src.Icon))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.IsActive))
-            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow));
-
+        CreateMap<QuizCategory, QuizCategoryDTO>()
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
     }
 
     private static string ToTitleCase(string input) =>
