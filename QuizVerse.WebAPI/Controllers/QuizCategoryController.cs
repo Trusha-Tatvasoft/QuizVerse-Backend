@@ -41,9 +41,9 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
     }
     #endregion
 
-    #region  Create or Update
-    [HttpPost("create-or-update-category")]
-    public async Task<IActionResult> CreateOrUpdateUser([FromBody] QuizCategoryDTO quizCategoryDTO)
+    #region  Create or Update category
+    [HttpPost("create-or-update-quiz-category")]
+    public async Task<IActionResult> CreateOrUpdateQuizCategory([FromBody] QuizCategoryDTO quizCategoryDTO)
     {
         (bool success, string message) = await _quizCategoryService.CreateOrUpdateQuizCategory(quizCategoryDTO);
 
@@ -59,8 +59,8 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
     }
     #endregion
 
-    #region  Create or Update
-    [HttpPost("update-quiz-category-by-action")]
+    #region  update quiz category by action
+    [HttpPut("update-quiz-category-by-action")]
     public async Task<IActionResult> UpdateQuizCategoryByAction([FromBody] QuizCategoryActionRequestDto quizCategoryAction)
     {
         string resultMessage = await _quizCategoryService.UpdateQuizCategoryByAction(quizCategoryAction);
