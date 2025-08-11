@@ -1,6 +1,7 @@
 using System.Globalization;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
@@ -120,6 +121,18 @@ public class MappingProfile : Profile
         CreateMap<QuestionDifficulty, CommonListDropDownDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
+
+        CreateMap<QuizCategory, QuizCategoryDTO>();
+
+        CreateMap<QuizCategoryDTO, QuizCategory>()
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName))
+            .ForMember(dest => dest.Icon,
+                       opt => opt.MapFrom((src, dest) =>
+                           string.IsNullOrWhiteSpace(src.Icon) ? Constants.QUIZ_CATEGORY_DEFAULT_ICON : src.Icon))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.IsActive))
+            .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow));
+
     }
 
     private static string ToTitleCase(string input) =>

@@ -1,17 +1,27 @@
 using System.Linq.Dynamic.Core;
 using System.Reflection;
-using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
+using QuizVerse.Infrastructure.Common.Helper;
+using QuizVerse.Infrastructure.Enums;
+using Npgsql;
+using System.Data;
+using QuizVerse.Infrastructure.Common.Exceptions;
+using AutoMapper;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryRepository, IMapper _mapper) : IQuizCategoryService
+public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryRepository, IMapper _mapper, IHttpContextAccessor _httpContextAccessor, ISqlQueryRepository _sqlQueryRepository) : IQuizCategoryService
 {
+
+    private int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new Exception(Constants.USER_NOT_FOUND);
+
     public async Task<PageListResponse<QuizCategoryDTO>> GetQuizCategories(PageListRequest pageListRequest)
     {
         IQueryable<QuizCategory> quizCategories = _quizCategoryRepository.GetQueryableInclude(q => q.Quizzes);
@@ -36,6 +46,11 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
         // Validate Sort Column
         if (!string.IsNullOrEmpty(pageListRequest.SortColumn))
         {
+
+            bool columnExists = typeof(QuizCategory).GetProperty(
+                 pageListRequest.SortColumn,
+                 BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance
+             ) != null;
             if (pageListRequest.SortColumn.ToLower() == "quizcount")
             {
                 pageListRequest.SortColumn = "Quizzes.Count()";
@@ -59,7 +74,6 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
             {
                 pageListRequest.SortDescending = !pageListRequest.SortDescending;
             }
- 
             quizCategories = quizCategories.OrderBy($"{pageListRequest.SortColumn} {(pageListRequest.SortDescending ? "desc" : "asc")}");
         }
         else
@@ -80,11 +94,104 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
             dto.QuizCount = matchingEntity?.Quizzes?.Count ?? 0;
         }
 
-        // Return paginated DTO response
         return new PageListResponse<QuizCategoryDTO>
         {
             Records = quizCategoryDtos,
             TotalRecords = totalRecords,
         };
     }
+
+
+    #region GetQuizCategoryById
+    public async Task<QuizCategoryDTO> GetQuizCategoryById(int id)
+    {
+        QuizCategory quizCategory = await _quizCategoryRepository.GetQueryableInclude(c => c.Status).FirstOrDefaultAsync(u => u.Id == id)
+           ?? throw new AppException(string.Format(Constants.QUIZ_CATEGORY_NOT_FOUND, id));
+
+        QuizCategoryDTO quizCategoryDTO = _mapper.Map<QuizCategoryDTO>(quizCategory);
+        quizCategoryDTO.QuizCount = quizCategory.Quizzes?.Count ?? 0;
+
+        return quizCategoryDTO;
+    }
+    #endregion
+
+    #region  Create Or Update
+    public async Task<(bool Success, string Message)> CreateOrUpdateQuizCategory(QuizCategoryDTO dto)
+    {
+        var parameters = new[]
+        {
+            new NpgsqlParameter("@p_id", dto.Id ?? (object)DBNull.Value),
+            new NpgsqlParameter("@p_category_name", dto.CategoryName),
+            new NpgsqlParameter("@p_description", dto.Description),
+            new NpgsqlParameter("@p_icon", dto.Icon ?? Constants.QUIZ_CATEGORY_DEFAULT_ICON),
+            new NpgsqlParameter("@p_user_id", UserId)
+        };
+
+        RawQuizCategoryResponseDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawQuizCategoryResponseDto>(
+            SqlConstants.FN_CREATE_OR_UPDATE_QUIZ_CATEGORY,
+            parameters
+        );
+
+        return (raw.Success, raw.Message);
+    }
+
+    #endregion
+
+    #region Update By Action
+    public async Task<string> UpdateQuizCategoryByAction(QuizCategoryActionRequestDto quizCategoryAction)
+    {
+        QuizCategory quizCategory = await _quizCategoryRepository.GetAsync(q => q.Id == quizCategoryAction.Id && !q.IsDeleted) ?? throw new AppException(string.Format(Constants.QUIZ_CATEGORY_NOT_FOUND, quizCategoryAction.Id));
+
+        string resultMessage;
+        bool existingStatus = quizCategory.Status;
+
+        switch (quizCategoryAction.Action)
+        {
+            case QuizCategoryActionType.Delete:
+                if (quizCategory.IsDeleted)
+                {
+                    throw new AppException(string.Format(Constants.USER_ALREADY_DELETED, quizCategoryAction.Id));
+                }
+
+                quizCategory.IsDeleted = true;
+                quizCategory.ModifiedBy = UserId;
+                quizCategory.ModifiedDate = DateTime.UtcNow;
+
+                await _quizCategoryRepository.UpdateAsync(quizCategory);
+
+                resultMessage = Constants.DELETE_SUCCESS;
+                break;
+
+            case QuizCategoryActionType.ChangeStatus:
+                if (quizCategoryAction.NewStatus is null)
+                {
+                    throw new AppException(Constants.STATUS_REQUIRED);
+                }
+
+                bool requestedStatus = quizCategoryAction.NewStatus != 0;
+
+                if (existingStatus == requestedStatus)
+                {
+                    throw new AppException(string.Format(Constants.QUIZ_CATEGORY_STATUS_ALREADY_SET, quizCategoryAction.NewStatus));
+                }
+
+                quizCategory.Status = requestedStatus;
+                quizCategory.ModifiedBy = UserId;
+                quizCategory.ModifiedDate = DateTime.UtcNow;
+
+                await _quizCategoryRepository.UpdateAsync(quizCategory);
+
+                resultMessage = string.Format(Constants.QUIZ_CATEGORY_STATUS_CHANGED_SUCCESS, quizCategory.Id, quizCategoryAction.NewStatus);
+                break;
+
+            default:
+                throw new AppException(Constants.INVALID_DATA_MESSAGE);
+        }
+
+        await _quizCategoryRepository.UpdateAsync(quizCategory);
+        return resultMessage;
+    }
+    #endregion
+
+
 }
