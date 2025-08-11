@@ -75,7 +75,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => ToTitleCase(src.Name)))
             .ForMember(dest => dest.Description,
                 opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
-                
+
         CreateMap<QuizDifficultyRequestDto, QuizDifficulty>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
@@ -122,7 +122,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
 
-        CreateMap<QuizCategory, QuizCategoryDTO>();
+        CreateMap<QuizCategoryDTO, QuizCategory>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.IsActive));
 
         CreateMap<QuizCategoryDTO, QuizCategory>()
             .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.CategoryName))

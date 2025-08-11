@@ -122,7 +122,6 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
         {
             new NpgsqlParameter("@p_id", dto.Id ?? (object)DBNull.Value),
             new NpgsqlParameter("@p_category_name", dto.CategoryName),
-            new NpgsqlParameter("@p_description", dto.Description),
             new NpgsqlParameter("@p_icon", dto.Icon ?? Constants.QUIZ_CATEGORY_DEFAULT_ICON),
             new NpgsqlParameter("@p_user_id", UserId)
         };
