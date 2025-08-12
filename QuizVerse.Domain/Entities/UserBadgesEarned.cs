@@ -13,6 +13,8 @@ public partial class UserBadgesEarned
 
     public DateTime DateEarned { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     public virtual Badge Badge { get; set; } = null!;
 
     public virtual User User { get; set; } = null!;

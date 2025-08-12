@@ -17,7 +17,19 @@ public partial class BattleQuesDifficultyMap
 
     public DateTime CreatedDate { get; set; }
 
+    public bool IsDeleted { get; set; }
+
+    public int CreatedBy { get; set; }
+
+    public int? ModifiedBy { get; set; }
+
+    public DateTime? ModifiedDate { get; set; }
+
     public virtual BattleList Battle { get; set; } = null!;
+
+    public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual User? ModifiedByNavigation { get; set; }
 
     public virtual QuestionDifficulty QueDifficulty { get; set; } = null!;
 }

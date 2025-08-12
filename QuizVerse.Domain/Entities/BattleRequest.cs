@@ -19,6 +19,10 @@ public partial class BattleRequest
 
     public bool IsDeleted { get; set; }
 
+    public int? ModifiedBy { get; set; }
+
+    public virtual User? ModifiedByNavigation { get; set; }
+
     public virtual User Receiver { get; set; } = null!;
 
     public virtual User Sender { get; set; } = null!;
