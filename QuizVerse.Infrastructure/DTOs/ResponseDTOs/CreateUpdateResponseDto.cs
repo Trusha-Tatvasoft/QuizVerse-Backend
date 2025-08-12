@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 [Keyless]
-public class DbScriptCreateUpdateResponseDto
+public class CreateUpdateResponseDto
 {
     [Column("p_success")]
     public bool Success { get; set; }

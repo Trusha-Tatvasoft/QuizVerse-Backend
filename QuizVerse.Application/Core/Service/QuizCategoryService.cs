@@ -129,7 +129,7 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
             new NpgsqlParameter("@p_user_id", UserId)
         };
 
-        DbScriptCreateUpdateResponseDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<DbScriptCreateUpdateResponseDto>(
+        CreateUpdateResponseDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(
             SqlConstants.FN_CREATE_OR_UPDATE_QUIZ_CATEGORY,
             parameters
         );

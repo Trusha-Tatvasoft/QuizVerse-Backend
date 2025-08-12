@@ -253,14 +253,14 @@ namespace QuizVerse.UnitTests.Services
                 Icon = "science-icon"
             };
 
-            DbScriptCreateUpdateResponseDto expectedResponse = new()
+            CreateUpdateResponseDto expectedResponse = new()
             {
                 Success = true,
                 Message = "Category created successfully"
             };
 
             _sqlQueryRepositoryMock
-                .Setup(r => r.SqlQuerySingleAsync<DbScriptCreateUpdateResponseDto>(
+                .Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
                     SqlConstants.FN_CREATE_OR_UPDATE_QUIZ_CATEGORY,
                     It.IsAny<NpgsqlParameter[]>()
                 ))
@@ -271,7 +271,7 @@ namespace QuizVerse.UnitTests.Services
             Assert.True(Success);
             Assert.Equal("Category created successfully", Message);
 
-            _sqlQueryRepositoryMock.Verify(r => r.SqlQuerySingleAsync<DbScriptCreateUpdateResponseDto>(
+            _sqlQueryRepositoryMock.Verify(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
                 SqlConstants.FN_CREATE_OR_UPDATE_QUIZ_CATEGORY,
                 It.Is<NpgsqlParameter[]>(p =>
                     p.Any(x =>
@@ -293,14 +293,14 @@ namespace QuizVerse.UnitTests.Services
                 Icon = ""
             };
 
-            DbScriptCreateUpdateResponseDto expectedResponse = new()
+            CreateUpdateResponseDto expectedResponse = new()
             {
                 Success = false,
                 Message = "Category already exists"
             };
 
             _sqlQueryRepositoryMock
-                .Setup(r => r.SqlQuerySingleAsync<DbScriptCreateUpdateResponseDto>(
+                .Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
                     SqlConstants.FN_CREATE_OR_UPDATE_QUIZ_CATEGORY,
                     It.IsAny<NpgsqlParameter[]>()
                 ))
