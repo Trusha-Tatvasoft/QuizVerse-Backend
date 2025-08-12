@@ -46,7 +46,7 @@ public class QuizManagementService(
         };
     }
     #endregion
-    
+
     #region Get Quiz List
     public async Task<PageListResponse<QuizListDto>> GetQuizzesByPagination(PageListRequest pageListRequest)
     {
@@ -101,5 +101,23 @@ public class QuizManagementService(
 
         return await quizRepository.PaginatedList<QuizListDto>(query, pageListRequest, q => q.ProjectTo<QuizListDto>(mapper.ConfigurationProvider));
     }
+    #endregion
+
+
+
+    #region update refrence
+
+    public async Task MoveQuizzesToCategoryAsync(QuizCategory quizCategoryWithQuizzes, int toCategoryId)
+    {
+        if (quizCategoryWithQuizzes is not null && quizCategoryWithQuizzes.Quizzes is not null)
+        {
+            foreach (var quiz in quizCategoryWithQuizzes.Quizzes)
+            {
+                quiz.CategoryId = toCategoryId;
+                await quizRepository.UpdateAsync(quiz);
+            }
+        }
+    }
+
     #endregion
 }

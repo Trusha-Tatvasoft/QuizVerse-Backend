@@ -1,6 +1,7 @@
 using System.Globalization;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
@@ -74,7 +75,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => ToTitleCase(src.Name)))
             .ForMember(dest => dest.Description,
                 opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
-                
+
         CreateMap<QuizDifficultyRequestDto, QuizDifficulty>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
@@ -86,7 +87,7 @@ public class MappingProfile : Profile
         #region Quiz Category
         // quiz category to quiz category DTO
         CreateMap<QuizCategory, QuizCategoryDTO>()
-            .ForMember(dest => dest.QuizCount, opt => opt.Ignore())
+            .ForMember(dest => dest.QuizCount, opt => opt.MapFrom(src => src.Quizzes != null ? src.Quizzes.Count : 0))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
 
         CreateMap<QuizCategory, CommonListDropDownDto>()
@@ -120,6 +121,9 @@ public class MappingProfile : Profile
         CreateMap<QuestionDifficulty, CommonListDropDownDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
+
+        CreateMap<QuizCategory, QuizCategoryDTO>()
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
     }
 
     private static string ToTitleCase(string input) =>
