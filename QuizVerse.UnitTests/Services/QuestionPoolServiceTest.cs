@@ -6,125 +6,139 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Infrastructure.Interface;
 using Npgsql;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace QuizVerse.UnitTests.Services;
-
-public class QuestionPoolServiceTest
+namespace QuizVerse.UnitTests.Services
 {
-    private readonly Mock<IGenericRepository<BaseQuestion>> _mockBaseQuestionRepo;
-    private readonly Mock<ISqlQueryRepository> _mockSqlQueryRepo;
-    private readonly QuestionPoolService _service;
-
-    public QuestionPoolServiceTest()
+    public class QuestionPoolServiceTest
     {
-        _mockBaseQuestionRepo = new Mock<IGenericRepository<BaseQuestion>>();
-        _mockSqlQueryRepo = new Mock<ISqlQueryRepository>();
-        _service = new QuestionPoolService(_mockBaseQuestionRepo.Object, _mockSqlQueryRepo.Object);
-    }
+        private readonly Mock<ISqlQueryRepository> _mockSqlQueryRepo;
+        private readonly QuestionPoolService _service;
 
-    [Fact]
-    public async Task GetQuestionPoolListAsync_ReturnsPaginatedList()
-    {
-        // Arrange
-        var request = new PageListRequest
+        public QuestionPoolServiceTest()
         {
-            PageNumber = 1,
-            PageSize = 10,
-            SearchTerm = "sample",
-            SortColumn = "queText",
-            SortDescending = false,
-            Filters = new FilterDto
+            _mockSqlQueryRepo = new Mock<ISqlQueryRepository>();
+            _service = new QuestionPoolService(_mockSqlQueryRepo.Object);
+        }
+
+        [Fact]
+        public async Task GetQuestionPoolListAsync_ReturnsPaginatedList()
+        {
+            // Arrange
+            var request = new PageListRequest
             {
-                QuizCategoryId = 1,
-                QuestionDifficultyId = 2,
-                QuestionTypeId = 3
-            }
-        };
+                PageNumber = 1,
+                PageSize = 10,
+                SearchTerm = "sample",
+                SortColumn = "queText",
+                SortDescending = false,
+                Filters = new FilterDto
+                {
+                    QuizCategoryId = 1,
+                    QuestionDifficultyId = 2,
+                    QuestionTypeId = 3
+                }
+            };
 
-        var questionPoolList = new List<QuestionPoolListDto>
+            var questionPoolList = new List<QuestionPoolListDto>
+            {
+                new() { Id = 1, QueText = "Sample Question 1" },
+                new() { Id = 2, QueText = "Sample Question 2" }
+            };
+
+            var totalRecords = new TotalRecordsDto { TotalRecords = 3 };
+
+            _mockSqlQueryRepo
+                .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(questionPoolList);
+
+            _mockSqlQueryRepo
+                .Setup(repo => repo.SqlQuerySingleAsync<TotalRecordsDto>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(totalRecords);
+
+            // Act
+            var result = await _service.GetQuestionPoolListAsync(request);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalRecords);
+            Assert.Equal(2, result.Records.Count);
+        }
+
+        [Fact]
+        public async Task GetQuestionPoolListAsync_WithEmptyResults_ReturnsEmptyList()
         {
-            new() { Id = 1, QueText = "Sample Question 1" },
-            new() { Id = 2, QueText = "Sample Question 2" }
-        };
+            // Arrange
+            var request = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 10,
+                SearchTerm = null,
+                SortColumn = null,
+                SortDescending = false,
+                Filters = null
+            };
 
-        _mockSqlQueryRepo
-            .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
-                It.IsAny<string>(),
-                It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync(questionPoolList);
+            var totalRecords = new TotalRecordsDto { TotalRecords = 0 };
 
-        _mockBaseQuestionRepo
-            .Setup(repo => repo.GetQueryableInclude())
-            .Returns(new List<BaseQuestion> { new(), new(), new() }.AsQueryable());
+            _mockSqlQueryRepo
+                .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(new List<QuestionPoolListDto>());
 
-        // Act
-        var result = await _service.GetQuestionPoolListAsync(request);
+            _mockSqlQueryRepo
+                .Setup(repo => repo.SqlQuerySingleAsync<TotalRecordsDto>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(totalRecords);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(3, result.TotalRecords);
-        Assert.Equal(2, result.Records.Count);
-    }
+            // Act
+            var result = await _service.GetQuestionPoolListAsync(request);
 
-    [Fact]
-    public async Task GetQuestionPoolListAsync_WithEmptyResults_ReturnsEmptyList()
-    {
-        // Arrange
-        var request = new PageListRequest
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(0, result.TotalRecords);
+            Assert.Empty(result.Records);
+        }
+
+        [Fact]
+        public async Task GetQuestionPoolListAsync_NullFilters_DoesNotThrow()
         {
-            PageNumber = 1,
-            PageSize = 10,
-            SearchTerm = null,
-            SortColumn = null,
-            SortDescending = false,
-            Filters = null
-        };
+            // Arrange
+            var request = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 5,
+                Filters = null
+            };
 
-        _mockSqlQueryRepo
-            .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
-                It.IsAny<string>(),
-                It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync([]);
+            var totalRecords = new TotalRecordsDto { TotalRecords = 0 };
 
-        _mockBaseQuestionRepo
-            .Setup(repo => repo.GetQueryableInclude())
-            .Returns(new List<BaseQuestion>().AsQueryable());
+            _mockSqlQueryRepo
+                .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(new List<QuestionPoolListDto>());
 
-        // Act
-        var result = await _service.GetQuestionPoolListAsync(request);
+            _mockSqlQueryRepo
+                .Setup(repo => repo.SqlQuerySingleAsync<TotalRecordsDto>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(totalRecords);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(0, result.TotalRecords);
-        Assert.Empty(result.Records);
-    }
+            // Act
+            var result = await _service.GetQuestionPoolListAsync(request);
 
-    [Fact]
-    public async Task GetQuestionPoolListAsync_NullFilters_DoesNotThrow()
-    {
-        // Arrange
-        var request = new PageListRequest
-        {
-            PageNumber = 1,
-            PageSize = 5,
-            Filters = null
-        };
-
-        _mockSqlQueryRepo
-            .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
-                It.IsAny<string>(),
-                It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync([]);
-
-        _mockBaseQuestionRepo
-            .Setup(repo => repo.GetQueryableInclude())
-            .Returns(new List<BaseQuestion>().AsQueryable());
-
-        // Act
-        var result = await _service.GetQuestionPoolListAsync(request);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Empty(result.Records);
+            // Assert
+            Assert.NotNull(result);
+            Assert.Empty(result.Records);
+            Assert.Equal(0, result.TotalRecords);
+        }
     }
 }

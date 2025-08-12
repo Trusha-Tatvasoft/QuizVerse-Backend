@@ -13,10 +13,26 @@ public class SqlConstants
 
     #region QuestionPool
     public const string GET_QUESTION_POOL_LIST_FUNCTION = "get_question_pool_list";
-    public const string GET_QUESTION_POOL_LIST_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}})";
+    public const string GET_QUESTION_POOL_TOTAL_COUNT_FUNCTION = "get_question_pool_total_count";
+
+    public const string GET_QUESTION_POOL_LIST_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}})";
+    public const string GET_QUESTION_POOL_TOTAL_COUNT_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}})";
     #endregion
 
     #region QuizCategory
     public const string FN_CREATE_OR_UPDATE_QUIZ_CATEGORY = "SELECT * FROM fn_create_or_update_quiz_category(@p_id, @p_category_name, @p_description, @p_icon, @p_user_id)";
+    #endregion
+
+    #region QuizManagement
+    public const string CREATE_UPDATE_QUIZ_FUNCTION = "create_update_quiz";
+    public const string GET_QUIZ_DATA_BY_ID_FUNCTION = "get_quiz_data_by_id";
+
+    public const string CREATE_UPDATE_QUIZ_QUERY_TEMPLATE =
+        "SELECT * FROM {0}(" +
+        "@p_quiz_id, @p_name, @p_category_id, @p_description, @p_total_time, " +
+        "@p_difficulty_level_id, @p_total_question, @p_is_paid, @p_price, " +
+        "@p_status, @p_tags, @p_questions, @p_created_by)";
+    public const string GET_QUIZ_DATA_BY_ID_QUERY_TEMPLATE =
+        "SELECT * FROM {0}(@p_quiz_id)";
     #endregion
 }

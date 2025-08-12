@@ -1,23 +1,33 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 using System.Linq.Dynamic.Core;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace QuizVerse.Application.Core.Service;
 
 public class QuizManagementService(
         IGenericRepository<Quiz> quizRepository,
-        IMapper mapper
+        IMapper mapper,
+        IHttpContextAccessor httpContextAccessor,
+        ISqlQueryRepository _sqlQueryRepository
 ) : IQuizManagementService
 {
+    public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
+
     #region Get Card Data
     public async Task<QuizManagementPageDataDto> GetQuizCardData()
     {
@@ -103,10 +113,7 @@ public class QuizManagementService(
     }
     #endregion
 
-
-
     #region update refrence
-
     public async Task MoveQuizzesToCategoryAsync(QuizCategory quizCategoryWithQuizzes, int toCategoryId)
     {
         if (quizCategoryWithQuizzes is not null && quizCategoryWithQuizzes.Quizzes is not null)
@@ -118,6 +125,73 @@ public class QuizManagementService(
             }
         }
     }
+    #endregion
 
+    #region Create/Update Quiz
+    public async Task<CreateUpdateResponseDto> CreateUpdateQuiz(QuizCreateUpdateRequestDto quizCreationRequestDto)
+    {
+        if (quizCreationRequestDto == null)
+            throw new AppException(Constants.INVALID_DATA_MESSAGE);
+
+        string query = string.Format(
+            SqlConstants.CREATE_UPDATE_QUIZ_QUERY_TEMPLATE,
+            SqlConstants.CREATE_UPDATE_QUIZ_FUNCTION
+        );
+
+        var jsonOptions = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        var parameters = new NpgsqlParameter[]
+        {
+            new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.Id ?? (object)DBNull.Value },
+            new("p_name", NpgsqlDbType.Text) { Value = quizCreationRequestDto.Name },
+            new("p_category_id", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.CategoryId },
+            new("p_description", NpgsqlDbType.Text) { Value = quizCreationRequestDto.Description },
+            new("p_total_time", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.TotalTime },
+            new("p_difficulty_level_id", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.DifficultyLevelId },
+            new("p_total_question", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.TotalQuestion },
+            new("p_is_paid", NpgsqlDbType.Boolean) { Value = quizCreationRequestDto.IsPaid },
+            new("p_price", NpgsqlDbType.Numeric) { Value = (object?)quizCreationRequestDto.Price ?? DBNull.Value },
+            new("p_status", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.Status },
+            new("p_tags", NpgsqlDbType.Jsonb)
+            {
+                Value = quizCreationRequestDto.Tags != null
+                    ? JsonSerializer.Serialize(quizCreationRequestDto.Tags, jsonOptions)
+                    : "[]"
+            },
+            new("p_questions", NpgsqlDbType.Jsonb)
+            {
+                Value = quizCreationRequestDto.Questions != null
+                    ? JsonSerializer.Serialize(quizCreationRequestDto.Questions, jsonOptions)
+                    : "[]"
+            },
+            new("p_created_by", NpgsqlDbType.Integer) { Value = UserId },
+        };
+
+        return await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
+    }
+    #endregion
+
+    #region Get Quiz Data By Id
+    public async Task<QuizDataResponseDto> GetQuizDataById(int quizId)
+    {
+        if (quizId <= 0)
+            throw new AppException(Constants.INVALID_DATA_MESSAGE);
+
+        string query = string.Format(
+            SqlConstants.GET_QUIZ_DATA_BY_ID_QUERY_TEMPLATE,
+            SqlConstants.GET_QUIZ_DATA_BY_ID_FUNCTION
+        );
+
+        var parameters = new NpgsqlParameter[]
+        {
+            new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizId }
+        };
+
+        return await _sqlQueryRepository.SqlQuerySingleAsync<QuizDataResponseDto>(query, parameters);
+    }
     #endregion
 }

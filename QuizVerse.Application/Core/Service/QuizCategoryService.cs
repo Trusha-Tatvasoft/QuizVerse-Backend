@@ -24,7 +24,7 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
 
     public async Task<PageListResponse<QuizCategoryDTO>> GetQuizCategories(PageListRequest pageListRequest)
     {
-        IQueryable<QuizCategory> quizCategories = _quizCategoryRepository.GetQueryableInclude(q => q.Quizzes);
+        IQueryable<QuizCategory> quizCategories = _quizCategoryRepository.GetQueryableInclude(q => q.Quizzes).Where(q => !q.IsDeleted);
 
         // Search
         if (!string.IsNullOrWhiteSpace(pageListRequest.SearchTerm))
