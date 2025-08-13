@@ -4,7 +4,7 @@ using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
-public class QuizDataResponseDto
+public class QuizResponseDto
 {
     [Column("id")]
     public int? Id { get; set; }

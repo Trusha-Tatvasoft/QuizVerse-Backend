@@ -286,7 +286,7 @@ public class QuizManagementServiceTests
     [Fact]
     public async Task CreateUpdateQuiz_ValidRequest_ReturnsResponse()
     {
-        var request = new QuizCreateUpdateRequestDto
+        var request = new SaveQuizRequestDto
         {
             Id = 1,
             Name = "Updated Quiz",
@@ -321,9 +321,9 @@ public class QuizManagementServiceTests
     [Fact]
     public async Task GetQuizDataById_ValidId_ReturnsDto()
     {
-        var expectedDto = new QuizDataResponseDto { Id = 1, Name = "Quiz 1" };
+        var expectedDto = new QuizResponseDto { Id = 1, Name = "Quiz 1" };
         _sqlRepoMock
-            .Setup(s => s.SqlQuerySingleAsync<QuizDataResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .Setup(s => s.SqlQuerySingleAsync<QuizResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
             .ReturnsAsync(expectedDto);
 
         var result = await _quizService.GetQuizDataById(1);

@@ -128,9 +128,9 @@ public class QuizManagementService(
     #endregion
 
     #region Create/Update Quiz
-    public async Task<CreateUpdateResponseDto> CreateUpdateQuiz(QuizCreateUpdateRequestDto quizCreationRequestDto)
+    public async Task<CreateUpdateResponseDto> CreateUpdateQuiz(SaveQuizRequestDto quizCreateUpdateRequestDto)
     {
-        if (quizCreationRequestDto == null)
+        if (quizCreateUpdateRequestDto == null)
             throw new AppException(Constants.INVALID_DATA_MESSAGE);
 
         string query = string.Format(
@@ -146,29 +146,29 @@ public class QuizManagementService(
 
         var parameters = new NpgsqlParameter[]
         {
-            new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.Id ?? (object)DBNull.Value },
-            new("p_name", NpgsqlDbType.Text) { Value = quizCreationRequestDto.Name },
-            new("p_category_id", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.CategoryId },
-            new("p_description", NpgsqlDbType.Text) { Value = quizCreationRequestDto.Description },
-            new("p_total_time", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.TotalTime },
-            new("p_difficulty_level_id", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.DifficultyLevelId },
-            new("p_total_question", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.TotalQuestion },
-            new("p_is_paid", NpgsqlDbType.Boolean) { Value = quizCreationRequestDto.IsPaid },
-            new("p_price", NpgsqlDbType.Numeric) { Value = (object?)quizCreationRequestDto.Price ?? DBNull.Value },
-            new("p_status", NpgsqlDbType.Integer) { Value = quizCreationRequestDto.Status },
+            new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.Id ?? (object)DBNull.Value },
+            new("p_name", NpgsqlDbType.Text) { Value = quizCreateUpdateRequestDto.Name },
+            new("p_category_id", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.CategoryId },
+            new("p_description", NpgsqlDbType.Text) { Value = quizCreateUpdateRequestDto.Description },
+            new("p_total_time", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.TotalTime },
+            new("p_difficulty_level_id", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.DifficultyLevelId },
+            new("p_total_question", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.TotalQuestion },
+            new("p_is_paid", NpgsqlDbType.Boolean) { Value = quizCreateUpdateRequestDto.IsPaid },
+            new("p_price", NpgsqlDbType.Numeric) { Value = (object?)quizCreateUpdateRequestDto.Price ?? DBNull.Value },
+            new("p_status", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.Status },
             new("p_tags", NpgsqlDbType.Jsonb)
             {
-                Value = quizCreationRequestDto.Tags != null
-                    ? JsonSerializer.Serialize(quizCreationRequestDto.Tags, jsonOptions)
+                Value = quizCreateUpdateRequestDto.Tags != null
+                    ? JsonSerializer.Serialize(quizCreateUpdateRequestDto.Tags, jsonOptions)
                     : "[]"
             },
             new("p_questions", NpgsqlDbType.Jsonb)
             {
-                Value = quizCreationRequestDto.Questions != null
-                    ? JsonSerializer.Serialize(quizCreationRequestDto.Questions, jsonOptions)
+                Value = quizCreateUpdateRequestDto.Questions != null
+                    ? JsonSerializer.Serialize(quizCreateUpdateRequestDto.Questions, jsonOptions)
                     : "[]"
             },
-            new("p_created_by", NpgsqlDbType.Integer) { Value = UserId },
+            new("p_created_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value },
         };
 
         return await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
@@ -176,7 +176,7 @@ public class QuizManagementService(
     #endregion
 
     #region Get Quiz Data By Id
-    public async Task<QuizDataResponseDto> GetQuizDataById(int quizId)
+    public async Task<QuizResponseDto> GetQuizDataById(int quizId)
     {
         if (quizId <= 0)
             throw new AppException(Constants.INVALID_DATA_MESSAGE);
@@ -191,7 +191,7 @@ public class QuizManagementService(
             new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizId }
         };
 
-        return await _sqlQueryRepository.SqlQuerySingleAsync<QuizDataResponseDto>(query, parameters);
+        return await _sqlQueryRepository.SqlQuerySingleAsync<QuizResponseDto>(query, parameters);
     }
     #endregion
 }

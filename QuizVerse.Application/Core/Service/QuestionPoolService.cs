@@ -1,7 +1,6 @@
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
-using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;

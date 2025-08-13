@@ -1,15 +1,18 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
+[Authorize(Roles = nameof(UserRoles.Admin))]
 [Route("api/[controller]")]
-public class QuizManagementController(IQuizManagementService quizManagementService) : ControllerBase
+public class QuizManagementController(IQuizManagementService quizManagementService,IDropDownDataService dropDownDataService) : ControllerBase
 {
     // #region Quiz Card Data 
     // [HttpPost("get-quiz-card-data")]
@@ -41,9 +44,13 @@ public class QuizManagementController(IQuizManagementService quizManagementServi
 
     #region Create/Update Quiz
     [HttpPost("create-update-quiz")]
-    public async Task<IActionResult> CreateUpdateQuiz([FromBody] QuizCreateUpdateRequestDto quizCreationRequestDto)
+    public async Task<IActionResult> CreateUpdateQuiz([FromBody] SaveQuizRequestDto quizCreateUpdateRequestDto)
     {
-        var response = await quizManagementService.CreateUpdateQuiz(quizCreationRequestDto);
+        var response = await quizManagementService.CreateUpdateQuiz(quizCreateUpdateRequestDto);
+        if (response.Success)
+        {
+            dropDownDataService.ClearCache(DropDownType.QuizTag);
+        }
         return Ok(new ApiResponse<CreateUpdateResponseDto>
         {
             Result = response.Success,
@@ -58,13 +65,12 @@ public class QuizManagementController(IQuizManagementService quizManagementServi
     [HttpGet("get-quiz-by-id/{quizId}")]
     public async Task<IActionResult> GetQuizById(int quizId)
     {
-        QuizDataResponseDto response = await quizManagementService.GetQuizDataById(quizId);
-        return Ok(new ApiResponse<QuizDataResponseDto>
+        return Ok(new ApiResponse<QuizResponseDto>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
-            Data = response
+            Data = await quizManagementService.GetQuizDataById(quizId)
         });
     }
     #endregion

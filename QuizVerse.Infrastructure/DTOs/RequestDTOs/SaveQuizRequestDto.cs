@@ -3,7 +3,7 @@ using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 
-public class QuizCreateUpdateRequestDto
+public class SaveQuizRequestDto
 {
     public int? Id { get; set; }
 
@@ -20,7 +20,7 @@ public class QuizCreateUpdateRequestDto
     public string Description { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Quiz total time is required.")]
-    [Range(2, 180 , ErrorMessage = "Total time must be between 2 and 180 minutes.")]
+    [Range(2, 180, ErrorMessage = "Total time must be between 2 and 180 minutes.")]
     public int TotalTime { get; set; }
 
     [Required(ErrorMessage = "Difficulty level is required.")]

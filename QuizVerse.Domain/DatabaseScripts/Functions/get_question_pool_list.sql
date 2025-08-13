@@ -76,6 +76,12 @@ BEGIN
     AND (p_question_type_id IS NULL OR bq.que_type_id = p_question_type_id)
   ORDER BY
     CASE
+      WHEN p_sort_column = '' AND NOT p_sort_descending THEN bq.id
+    END ASC,
+    CASE 
+      WHEN p_sort_column = '' AND p_sort_descending THEN bq.id
+    END DESC,
+    CASE
       WHEN p_sort_column = 'queText' AND NOT p_sort_descending THEN bq.que_text
       WHEN p_sort_column = 'categoryName' AND NOT p_sort_descending THEN qc.category_name
       WHEN p_sort_column = 'queDifficultyName' AND NOT p_sort_descending THEN qd.name

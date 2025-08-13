@@ -11,6 +11,7 @@ using Xunit;
 using System.Linq.Expressions;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Application.Core.Interface;
 
 namespace QuizVerse.UnitTests.Services;
 
@@ -20,12 +21,14 @@ public class QuizDifficultyLevelTest
     private readonly Mock<IMapper> _mockMapper;
     private readonly QuizDifficultyLevelService _service;
     private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
+    private readonly Mock<IDropDownDataService> _dropDownDataServiceMock;
 
     public QuizDifficultyLevelTest()
     {
         _mockRepo = new Mock<IGenericRepository<QuizDifficulty>>();
         _mockMapper = new Mock<IMapper>();
         _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+        _dropDownDataServiceMock = new Mock<IDropDownDataService>();
 
         // Mock authenticated user with ClaimTypes.UserData
         var httpContext = new DefaultHttpContext();
@@ -34,7 +37,8 @@ public class QuizDifficultyLevelTest
 
         _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
 
-        _service = new QuizDifficultyLevelService(_mockRepo.Object, _mockMapper.Object, _mockHttpContextAccessor.Object);
+        _service = new QuizDifficultyLevelService(_mockRepo.Object, _mockMapper.Object, _mockHttpContextAccessor.Object,_dropDownDataServiceMock.Object
+        );
     }
 
     #region Get Difficulty List
