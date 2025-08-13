@@ -122,8 +122,44 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
         #endregion
 
+        #region Question Mapping
         CreateMap<QuizCategory, QuizCategoryDTO>()
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
+
+        CreateMap<QuestionRequestDTO, BaseQuestion>()
+            .ForMember(dest => dest.QueText,
+                opt => opt.MapFrom(src => src.QuestionText))
+            .ForMember(dest => dest.CategoryId,
+                opt => opt.MapFrom(src => src.CategoryId))
+            .ForMember(dest => dest.QueDifficultyId,
+                opt => opt.MapFrom(src => src.DifficultyId))
+            .ForMember(dest => dest.QueTypeId,
+                opt => opt.MapFrom(src => src.QuestionTypeId))
+            .ForMember(dest => dest.CreatedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.Ignore());
+
+        CreateMap<BaseQuestion, QuestionDetailDTO>()
+            .ForMember(dest => dest.QuestionText,
+                opt => opt.MapFrom(src => src.QueText))
+            .ForMember(dest => dest.QuestionType,
+                opt => opt.MapFrom(src => src.QueType.TypeName))
+            .ForMember(dest => dest.Difficulty,
+                opt => opt.MapFrom(src => src.QueDifficulty.Name))
+            .ForMember(dest => dest.Category,
+                opt => opt.MapFrom(src => src.Category.CategoryName))
+            .ForMember(dest => dest.Options,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.CorrectAnswer,
+                opt => opt.Ignore());
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>

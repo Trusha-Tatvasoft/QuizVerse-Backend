@@ -6,4 +6,16 @@ namespace QuizVerse.Application.Core.Interface;
 public interface IQuestionPoolService
 {
     Task<PageListResponse<QuestionPoolListDto>> GetQuestionPoolListAsync(PageListRequest pageListRequest);
+
+    Task<string> CreateQuestion(QuestionRequestDTO dto);
+
+    Task<string> UpdateQuestion(int id, QuestionRequestDTO dto);
+
+    Task<string> DeleteQuestion(int id);
+
+    Task<QuestionDetailDTO?> GetQuestionPreview(int id);
+
+    Task<string> ImportQuestionsFromCsv(Stream fileStream);
+
+    Task<string> ImportQuestionsFromExcel(Stream fileStream);
 }
