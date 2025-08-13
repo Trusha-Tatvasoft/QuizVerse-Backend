@@ -25,6 +25,8 @@ public partial class EmailTemplete
 
     public int? ModifiedBy { get; set; }
 
+    public bool IsDeleted { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual User? ModifiedByNavigation { get; set; }
