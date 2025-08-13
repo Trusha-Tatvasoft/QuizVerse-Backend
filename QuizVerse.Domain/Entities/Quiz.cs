@@ -15,8 +15,6 @@ public partial class Quiz
 
     public int TotalQuestion { get; set; }
 
-    public int NoOfPersonAttempted { get; set; }
-
     public bool IsPaid { get; set; }
 
     public decimal Price { get; set; }
@@ -42,6 +40,8 @@ public partial class Quiz
     public DateTime? ModifiedDate { get; set; }
 
     public bool IsDeleted { get; set; }
+
+    public int QuizType { get; set; }
 
     public virtual ICollection<BattleList> BattleLists { get; set; } = new List<BattleList>();
 

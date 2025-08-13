@@ -7,9 +7,9 @@ public partial class BattleList
 {
     public int Id { get; set; }
 
-    public DateTime StartDate { get; set; }
+    public DateTime? StartDate { get; set; }
 
-    public DateTime EndDate { get; set; }
+    public DateTime? EndDate { get; set; }
 
     public int QuizId { get; set; }
 
@@ -22,6 +22,8 @@ public partial class BattleList
     public DateTime? ModifiedDate { get; set; }
 
     public int? ModifiedBy { get; set; }
+
+    public bool BattleTimeLimited { get; set; }
 
     public virtual ICollection<BattleQuesDifficultyMap> BattleQuesDifficultyMaps { get; set; } = new List<BattleQuesDifficultyMap>();
 

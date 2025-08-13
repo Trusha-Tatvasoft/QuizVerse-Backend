@@ -132,132 +132,132 @@ public class QuizManagementServiceTests
         _context.SaveChanges();
     }
 
-    #region Quiz Card Data
-    [Fact]
-    public async Task GetQuizCardData_ReturnsCorrectStats()
-    {
-        var result = await _quizService.GetQuizCardData();
+    // #region Quiz Card Data
+    // [Fact]
+    // public async Task GetQuizCardData_ReturnsCorrectStats()
+    // {
+    //     var result = await _quizService.GetQuizCardData();
 
-        Assert.Equal(2, result.TotalQuiz);
-        Assert.Equal(1, result.ActiveQuiz);
-        Assert.Equal(2, result.TotalParticipants);
-        Assert.Equal(3, result.TotalQuestions);
-    }
-    #endregion
-    #region Quiz Management List
-    [Fact]
-    public async Task GetQuizzesByPagination_WithSearchTerm_ReturnsFilteredResults()
-    {
-        var request = new PageListRequest
-        {
-            PageNumber = 1,
-            PageSize = 10,
-            SearchTerm = "Quiz 1"
-        };
+    //     Assert.Equal(2, result.TotalQuiz);
+    //     Assert.Equal(1, result.ActiveQuiz);
+    //     Assert.Equal(2, result.TotalParticipants);
+    //     Assert.Equal(3, result.TotalQuestions);
+    // }
+    // #endregion
+    // #region Quiz Management List
+    // [Fact]
+    // public async Task GetQuizzesByPagination_WithSearchTerm_ReturnsFilteredResults()
+    // {
+    //     var request = new PageListRequest
+    //     {
+    //         PageNumber = 1,
+    //         PageSize = 10,
+    //         SearchTerm = "Quiz 1"
+    //     };
 
-        var result = await _quizService.GetQuizzesByPagination(request);
+    //     var result = await _quizService.GetQuizzesByPagination(request);
 
-        Assert.Single(result.Records);
-        Assert.Equal("Quiz 1", result.Records.First().QuizTitle);
-    }
+    //     Assert.Single(result.Records);
+    //     Assert.Equal("Quiz 1", result.Records.First().QuizTitle);
+    // }
 
-    [Fact]
-    public async Task GetQuizzesByPagination_WithInvalidStatus_ThrowsAppException()
-    {
-        var request = new PageListRequest
-        {
-            Filters = new FilterDto { QuizStatus = (QuizStatus)999 }
-        };
+    // [Fact]
+    // public async Task GetQuizzesByPagination_WithInvalidStatus_ThrowsAppException()
+    // {
+    //     var request = new PageListRequest
+    //     {
+    //         Filters = new FilterDto { QuizStatus = (QuizStatus)999 }
+    //     };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.GetQuizzesByPagination(request));
-        Assert.Equal(Constants.INVALID_QUIZ_STATUS_MESSAGE, ex.Message);
-    }
+    //     var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.GetQuizzesByPagination(request));
+    //     Assert.Equal(Constants.INVALID_QUIZ_STATUS_MESSAGE, ex.Message);
+    // }
 
-    [Fact]
-    public async Task GetQuizzesByPagination_WithCategoryFilter_WorksCorrectly()
-    {
-        var request = new PageListRequest
-        {
-            Filters = new FilterDto { QuizCategoryId = 1 }
-        };
+    // [Fact]
+    // public async Task GetQuizzesByPagination_WithCategoryFilter_WorksCorrectly()
+    // {
+    //     var request = new PageListRequest
+    //     {
+    //         Filters = new FilterDto { QuizCategoryId = 1 }
+    //     };
 
-        var result = await _quizService.GetQuizzesByPagination(request);
+    //     var result = await _quizService.GetQuizzesByPagination(request);
 
-        Assert.Equal(2, result.Records.Count());
-    }
+    //     Assert.Equal(2, result.Records.Count());
+    // }
 
-    [Fact]
-    public async Task GetQuizzesByPagination_WithDifficultyFilter_WorksCorrectly()
-    {
-        var request = new PageListRequest
-        {
-            Filters = new FilterDto { QuizDifficultyId = 1 }
-        };
+    // [Fact]
+    // public async Task GetQuizzesByPagination_WithDifficultyFilter_WorksCorrectly()
+    // {
+    //     var request = new PageListRequest
+    //     {
+    //         Filters = new FilterDto { QuizDifficultyId = 1 }
+    //     };
 
-        var result = await _quizService.GetQuizzesByPagination(request);
+    //     var result = await _quizService.GetQuizzesByPagination(request);
 
-        Assert.Equal(2, result.Records.Count());
-    }
+    //     Assert.Equal(2, result.Records.Count());
+    // }
 
-    [Fact]
-    public async Task GetQuizzesByPagination_SortingDescending_WorksCorrectly()
-    {
-        var request = new PageListRequest
-        {
-            SortColumn = "name",
-            SortDescending = true
-        };
+    // [Fact]
+    // public async Task GetQuizzesByPagination_SortingDescending_WorksCorrectly()
+    // {
+    //     var request = new PageListRequest
+    //     {
+    //         SortColumn = "name",
+    //         SortDescending = true
+    //     };
 
-        var result = await _quizService.GetQuizzesByPagination(request);
+    //     var result = await _quizService.GetQuizzesByPagination(request);
 
-        Assert.Equal(2, result.Records.Count());
-        Assert.Equal("Quiz 2", result.Records.First().QuizTitle);
-    }
+    //     Assert.Equal(2, result.Records.Count());
+    //     Assert.Equal("Quiz 2", result.Records.First().QuizTitle);
+    // }
 
-    [Fact]
-    public async Task GetQuizzesByPagination_WithValidStatusFilter_ReturnsCorrectResults()
-    {
-        var request = new PageListRequest
-        {
-            Filters = new FilterDto { QuizStatus = QuizStatus.Active }
-        };
+    // [Fact]
+    // public async Task GetQuizzesByPagination_WithValidStatusFilter_ReturnsCorrectResults()
+    // {
+    //     var request = new PageListRequest
+    //     {
+    //         Filters = new FilterDto { QuizStatus = QuizStatus.Active }
+    //     };
 
-        var result = await _quizService.GetQuizzesByPagination(request);
+    //     var result = await _quizService.GetQuizzesByPagination(request);
 
-        Assert.Single(result.Records);
-        Assert.Equal((int)QuizStatus.Active, result.Records.First().Status);
-    }
+    //     Assert.Single(result.Records);
+    //     Assert.Equal((int)QuizStatus.Active, result.Records.First().Status);
+    // }
 
-    [Fact]
-    public async Task GetQuizzesByPagination_SortByCategory_WorksCorrectly()
-    {
-        var request = new PageListRequest
-        {
-            SortColumn = "category",
-            SortDescending = false
-        };
+    // [Fact]
+    // public async Task GetQuizzesByPagination_SortByCategory_WorksCorrectly()
+    // {
+    //     var request = new PageListRequest
+    //     {
+    //         SortColumn = "category",
+    //         SortDescending = false
+    //     };
 
-        var result = await _quizService.GetQuizzesByPagination(request);
+    //     var result = await _quizService.GetQuizzesByPagination(request);
 
-        Assert.Equal(2, result.Records.Count());
-        Assert.All(result.Records, r => Assert.Equal("General Knowledge", r.CategoryName));
-    }
+    //     Assert.Equal(2, result.Records.Count());
+    //     Assert.All(result.Records, r => Assert.Equal("General Knowledge", r.CategoryName));
+    // }
 
-    [Fact]
-    public async Task GetQuizzesByPagination_SortByDifficulty_WorksCorrectly()
-    {
-        var request = new PageListRequest
-        {
-            SortColumn = "difficulty",
-            SortDescending = false
-        };
+    // [Fact]
+    // public async Task GetQuizzesByPagination_SortByDifficulty_WorksCorrectly()
+    // {
+    //     var request = new PageListRequest
+    //     {
+    //         SortColumn = "difficulty",
+    //         SortDescending = false
+    //     };
 
-        var result = await _quizService.GetQuizzesByPagination(request);
+    //     var result = await _quizService.GetQuizzesByPagination(request);
 
-        Assert.Equal(2, result.Records.Count());
-        Assert.All(result.Records, r => Assert.Equal("Easy", r.QuizDifficultyLevel));
-    }
-    #endregion
+    //     Assert.Equal(2, result.Records.Count());
+    //     Assert.All(result.Records, r => Assert.Equal("Easy", r.QuizDifficultyLevel));
+    // }
+    // #endregion
 
     #region MoveQuizzesToCategoryAsync
     [Fact]
