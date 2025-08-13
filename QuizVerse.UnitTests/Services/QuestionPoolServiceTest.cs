@@ -97,7 +97,7 @@ public class QuestionPoolServiceTest
     }
 
     [Fact]
-    public async Task CreateQuestion_Success_ReturnsSuccessMessage()
+    public async Task CreateOrUpdateQuestion_Create_Success_ReturnsSuccessMessage()
     {
         QuestionRequestDTO dto = GetValidCreateDto();
 
@@ -116,7 +116,7 @@ public class QuestionPoolServiceTest
             .Returns(new BaseQuestion { Id = 10 });
 
 
-        string result = await _service.CreateQuestion(dto);
+        string result = await _service.CreateOrUpdateQuestion(0, dto);
 
         Assert.Equal(Constants.QUESTION_CREATION_SUCCESS_MESSAGE, result);
 
@@ -142,39 +142,39 @@ public class QuestionPoolServiceTest
     }
 
     [Fact]
-    public async Task CreateQuestion_CategoryNotFound_ThrowsAppException()
+    public async Task CreateOrUpdateQuestion_CategoryNotFound_ThrowsAppException()
     {
         QuestionRequestDTO dto = GetValidCreateDto();
         _categoryRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<QuizCategory, bool>>>())).ReturnsAsync(false);
 
-        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.CreateQuestion(dto));
+        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.CreateOrUpdateQuestion(0, dto));
 
         Assert.Equal(string.Format(Constants.CATEGORY_NOT_FOUND, dto.CategoryId), ex.Message);
         Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
     }
 
     [Fact]
-    public async Task CreateQuestion_QuestionTypeNotFound_ThrowsAppException()
+    public async Task CreateOrUpdateQuestion_QuestionTypeNotFound_ThrowsAppException()
     {
         QuestionRequestDTO dto = GetValidCreateDto();
         _categoryRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<QuizCategory, bool>>>())).ReturnsAsync(true);
         _typeRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<QuestionType, bool>>>())).ReturnsAsync(false);
 
-        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.CreateQuestion(dto));
+        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.CreateOrUpdateQuestion(0, dto));
 
         Assert.Equal(string.Format(Constants.QUESTION_TYPE_NOT_FOUND, dto.QuestionTypeId), ex.Message);
         Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
     }
 
     [Fact]
-    public async Task CreateQuestion_DifficultyNotFound_ThrowsAppException()
+    public async Task CreateOrUpdateQuestion_DifficultyNotFound_ThrowsAppException()
     {
         QuestionRequestDTO dto = GetValidCreateDto();
         _categoryRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<QuizCategory, bool>>>())).ReturnsAsync(true);
         _typeRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<QuestionType, bool>>>())).ReturnsAsync(true);
         _difficultyRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<QuestionDifficulty, bool>>>())).ReturnsAsync(false);
 
-        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.CreateQuestion(dto));
+        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.CreateOrUpdateQuestion(0, dto));
 
         Assert.Equal(string.Format(Constants.DIFFICULTY_NOT_FOUND, dto.DifficultyId), ex.Message);
         Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
@@ -193,7 +193,7 @@ public class QuestionPoolServiceTest
 
         _mapperMock.Setup(m => m.Map<BaseQuestion>(dto)).Returns(new BaseQuestion { Id = 5 });
 
-        string result = await _service.CreateQuestion(dto);
+        string result = await _service.CreateOrUpdateQuestion(0, dto);
 
         Assert.Equal(Constants.QUESTION_CREATION_SUCCESS_MESSAGE, result);
         _optionsRepoMock.Verify(r => r.AddRangeAsync(It.Is<List<QuestionOptionsAnswer>>(list =>
@@ -203,7 +203,7 @@ public class QuestionPoolServiceTest
     }
 
     [Fact]
-    public async Task UpdateQuestion_Success_ReturnsSuccessMessage()
+    public async Task CreateOrUpdateQuestion_Update_Success_ReturnsSuccessMessage()
     {
         int questionId = 5;
         QuestionRequestDTO dto = GetValidUpdateDto();
@@ -218,7 +218,7 @@ public class QuestionPoolServiceTest
             .Setup(r => r.Exists(It.IsAny<Expression<Func<QuestionDifficulty, bool>>>()))
             .ReturnsAsync(true);
 
-        BaseQuestion existingQuestion = new BaseQuestion { Id = questionId };
+        BaseQuestion existingQuestion = new() { Id = questionId };
         _baseQuestionRepoMock
             .Setup(r => r.GetAsync(It.IsAny<Expression<Func<BaseQuestion, bool>>>(), null))
             .ReturnsAsync(existingQuestion);
@@ -233,7 +233,7 @@ public class QuestionPoolServiceTest
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<QuestionOptionsAnswer, bool>>>()))
             .ReturnsAsync(existingOptions);
 
-        string result = await _service.UpdateQuestion(questionId, dto);
+        string result = await _service.CreateOrUpdateQuestion(questionId, dto);
 
         Assert.Equal(Constants.QUESTION_UPDATE_SUCCESS_MESSAGE, result);
 
@@ -245,65 +245,16 @@ public class QuestionPoolServiceTest
                 q.ModifiedDate != default)), Times.Once);
 
         _optionsRepoMock.Verify(r =>
-            r.UpdateAsync(It.Is<QuestionOptionsAnswer>(o => o.IsDeleted)), Times.Exactly(existingOptions.Count));
+            r.UpdateRangeAsync(It.Is<List<QuestionOptionsAnswer>>(list =>
+                list.All(o => o.IsDeleted) &&
+                list.Count == existingOptions.Count
+            )), Times.Once);
 
         _optionsRepoMock.Verify(r =>
             r.AddRangeAsync(It.Is<List<QuestionOptionsAnswer>>(list =>
                 list.Count == dto.Options!.Count + 1 &&
                 list.Any(o => o.Value == dto.CorrectAnswer && o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase))
             )), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdateQuestion_CategoryNotFound_ThrowsAppException()
-    {
-        QuestionRequestDTO dto = GetValidUpdateDto();
-
-        _categoryRepoMock
-            .Setup(r => r.Exists(It.IsAny<Expression<Func<QuizCategory, bool>>>()))
-            .ReturnsAsync(false);
-
-        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuestion(1, dto));
-
-        Assert.Equal(string.Format(Constants.CATEGORY_NOT_FOUND, dto.CategoryId), ex.Message);
-        Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
-    }
-
-    [Fact]
-    public async Task UpdateQuestion_QuestionTypeNotFound_ThrowsAppException()
-    {
-        QuestionRequestDTO dto = GetValidUpdateDto();
-
-        _categoryRepoMock
-            .Setup(r => r.Exists(It.IsAny<Expression<Func<QuizCategory, bool>>>()))
-            .ReturnsAsync(true);
-        _typeRepoMock
-            .Setup(r => r.Exists(It.IsAny<Expression<Func<QuestionType, bool>>>()))
-            .ReturnsAsync(false);
-
-        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuestion(1, dto));
-
-        Assert.Equal(string.Format(Constants.QUESTION_TYPE_NOT_FOUND, dto.QuestionTypeId), ex.Message);
-    }
-
-    [Fact]
-    public async Task UpdateQuestion_DifficultyNotFound_ThrowsAppException()
-    {
-        QuestionRequestDTO dto = GetValidUpdateDto();
-
-        _categoryRepoMock
-            .Setup(r => r.Exists(It.IsAny<Expression<Func<QuizCategory, bool>>>()))
-            .ReturnsAsync(true);
-        _typeRepoMock
-            .Setup(r => r.Exists(It.IsAny<Expression<Func<QuestionType, bool>>>()))
-            .ReturnsAsync(true);
-        _difficultyRepoMock
-            .Setup(r => r.Exists(It.IsAny<Expression<Func<QuestionDifficulty, bool>>>()))
-            .ReturnsAsync(false);
-
-        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuestion(1, dto));
-
-        Assert.Equal(string.Format(Constants.DIFFICULTY_NOT_FOUND, dto.DifficultyId), ex.Message);
     }
 
     [Fact]
@@ -319,7 +270,7 @@ public class QuestionPoolServiceTest
             .Setup(r => r.GetAsync(It.IsAny<Expression<Func<BaseQuestion, bool>>>(), null))
             .ReturnsAsync((BaseQuestion)null!);
 
-        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuestion(1, dto));
+        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.CreateOrUpdateQuestion(1, dto));
 
         Assert.Equal(string.Format(Constants.QUESTION_NOT_FOUND_ERROR, 1), ex.Message);
     }
@@ -339,7 +290,7 @@ public class QuestionPoolServiceTest
         _baseQuestionRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<BaseQuestion, bool>>>(), null)).ReturnsAsync(new BaseQuestion { Id = questionId });
         _optionsRepoMock.Setup(r => r.FindAsync(It.IsAny<Expression<Func<QuestionOptionsAnswer, bool>>>())).ReturnsAsync([]);
 
-        string result = await _service.UpdateQuestion(questionId, dto);
+        string result = await _service.CreateOrUpdateQuestion(questionId, dto);
 
         Assert.Equal(Constants.QUESTION_UPDATE_SUCCESS_MESSAGE, result);
         _optionsRepoMock.Verify(r =>

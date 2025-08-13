@@ -12,31 +12,17 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 public class QuestionPoolController(IQuestionPoolService _questionPoolService) : ControllerBase
 {
-    [HttpPost("create-question")]
-    public async Task<IActionResult> CreateQuestion([FromBody] QuestionRequestDTO dto)
+    [HttpPost("create-or-update-question/{id:int}")]
+    public async Task<IActionResult> CreateOrUpdateQuestion(int id, [FromBody] QuestionRequestDTO dto)
     {
-        ApiResponse<object> response = new()
-        {
-            Result = true,
-            StatusCode = StatusCodes.Status200OK,
-            Message = await _questionPoolService.CreateQuestion(dto),
-            Data = null
-        };
-
-        return Ok(response);
-    }
-
-    [HttpPut("update-question/{id:int}")]
-    public async Task<IActionResult> UpdateQuestion(int id, [FromBody] QuestionRequestDTO dto)
-    {
-        if (id <= 0)
+        if (id < 0)
             throw new AppException(Constants.INVALID_QUESTION_ID_MESSAGE, StatusCodes.Status400BadRequest);
 
         ApiResponse<object> response = new()
         {
             Result = true,
             StatusCode = StatusCodes.Status200OK,
-            Message = await _questionPoolService.UpdateQuestion(id, dto),
+            Message = await _questionPoolService.CreateOrUpdateQuestion(id, dto),
             Data = null
         };
 

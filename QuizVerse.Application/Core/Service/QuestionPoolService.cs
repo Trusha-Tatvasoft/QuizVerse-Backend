@@ -32,7 +32,7 @@ public class QuestionPoolService(
     public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.USER_NOT_AUTHENTICATED_MESSAGE);
 
     #region Question Management
-    public async Task<string> CreateQuestion(QuestionRequestDTO dto)
+    public async Task<string> CreateOrUpdateQuestion(int id, QuestionRequestDTO dto)
     {
         if (!await _quizCategoryRepository.Exists(c => c.Id == dto.CategoryId))
             throw new AppException(string.Format(Constants.CATEGORY_NOT_FOUND, dto.CategoryId), StatusCodes.Status404NotFound);
@@ -43,60 +43,50 @@ public class QuestionPoolService(
         if (!await _questionDifficultyRepository.Exists(d => d.Id == dto.DifficultyId))
             throw new AppException(string.Format(Constants.DIFFICULTY_NOT_FOUND, dto.DifficultyId), StatusCodes.Status404NotFound);
 
-        BaseQuestion question = _mapper.Map<BaseQuestion>(dto);
-        question.CreatedBy = UserId;
-        question.CreatedDate = DateTime.UtcNow;
+        BaseQuestion? question;
+        bool isCreate = id == 0;
 
-        await _baseQuestionRepository.AddAsync(question);
+        if (isCreate)
+        {
+            question = _mapper.Map<BaseQuestion>(dto);
+            question.CreatedBy = UserId;
+            question.CreatedDate = DateTime.UtcNow;
 
-        List<QuestionOptionsAnswer> options = dto.Options?.Select(opt => CreateOption(opt, question.Id)).ToList() ?? [];
-        options.Add(CreateAnswer(dto.CorrectAnswer, question.Id));
+            await _baseQuestionRepository.AddAsync(question);
+            id = question.Id;
+        }
+        else
+        {
+            question = await _baseQuestionRepository.GetAsync(q => q.Id == id && !q.IsDeleted);
+
+            if (question == null)
+                throw new AppException(string.Format(Constants.QUESTION_NOT_FOUND_ERROR, id), StatusCodes.Status404NotFound);
+
+            _mapper.Map(dto, question);
+            question.ModifiedBy = UserId;
+            question.ModifiedDate = DateTime.UtcNow;
+
+            await _baseQuestionRepository.UpdateAsync(question);
+
+            List<QuestionOptionsAnswer> existingOptions = await _questionOptionsAnswerRepository.FindAsync(o => o.QuestionId == id && !o.IsDeleted);
+
+            foreach (QuestionOptionsAnswer opt in existingOptions)
+            {
+                opt.IsDeleted = true;
+                opt.ModifiedBy = UserId;
+                opt.ModifiedDate = DateTime.UtcNow;
+            }
+            await _questionOptionsAnswerRepository.UpdateRangeAsync(existingOptions);
+        }
+
+        List<QuestionOptionsAnswer> options = dto.Options?.Select(opt => CreateOption(opt, id)).ToList() ?? [];
+        options.Add(CreateAnswer(dto.CorrectAnswer, id));
 
         await _questionOptionsAnswerRepository.AddRangeAsync(options);
 
-        return Constants.QUESTION_CREATION_SUCCESS_MESSAGE;
-    }
-
-    public async Task<string> UpdateQuestion(int id, QuestionRequestDTO dto)
-    {
-        if (!await _quizCategoryRepository.Exists(c => c.Id == dto.CategoryId))
-            throw new AppException(string.Format(Constants.CATEGORY_NOT_FOUND, dto.CategoryId), StatusCodes.Status404NotFound);
-
-        if (!await _questionTypeRepository.Exists(qt => qt.Id == dto.QuestionTypeId))
-            throw new AppException(string.Format(Constants.QUESTION_TYPE_NOT_FOUND, dto.QuestionTypeId), StatusCodes.Status404NotFound);
-
-        if (!await _questionDifficultyRepository.Exists(d => d.Id == dto.DifficultyId))
-            throw new AppException(string.Format(Constants.DIFFICULTY_NOT_FOUND, dto.DifficultyId), StatusCodes.Status404NotFound);
-
-        BaseQuestion? existingQuestion = await _baseQuestionRepository
-            .GetAsync(q => q.Id == id && !q.IsDeleted);
-
-        if (existingQuestion == null)
-            throw new AppException(string.Format(Constants.QUESTION_NOT_FOUND_ERROR, id), StatusCodes.Status404NotFound);
-
-        _mapper.Map(dto, existingQuestion);
-        existingQuestion.ModifiedBy = UserId;
-        existingQuestion.ModifiedDate = DateTime.UtcNow;
-
-        await _baseQuestionRepository.UpdateAsync(existingQuestion);
-
-        List<QuestionOptionsAnswer> existingOptions = await _questionOptionsAnswerRepository
-            .FindAsync(o => o.QuestionId == id && !o.IsDeleted);
-
-        foreach (QuestionOptionsAnswer opt in existingOptions)
-        {
-            opt.IsDeleted = true;
-            opt.ModifiedBy = UserId;
-            opt.ModifiedDate = DateTime.UtcNow;
-            await _questionOptionsAnswerRepository.UpdateAsync(opt);
-        }
-
-        List<QuestionOptionsAnswer> newOptions = dto.Options?.Select(opt => CreateOption(opt, id)).ToList() ?? [];
-        newOptions.Add(CreateAnswer(dto.CorrectAnswer, id));
-
-        await _questionOptionsAnswerRepository.AddRangeAsync(newOptions);
-
-        return Constants.QUESTION_UPDATE_SUCCESS_MESSAGE;
+        return isCreate
+            ? Constants.QUESTION_CREATION_SUCCESS_MESSAGE
+            : Constants.QUESTION_UPDATE_SUCCESS_MESSAGE;
     }
 
     public async Task<string> DeleteQuestion(int id)

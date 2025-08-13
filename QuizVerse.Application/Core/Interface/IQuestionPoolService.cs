@@ -7,9 +7,7 @@ public interface IQuestionPoolService
 {
     Task<PageListResponse<QuestionPoolListDto>> GetQuestionPoolListAsync(PageListRequest pageListRequest);
 
-    Task<string> CreateQuestion(QuestionRequestDTO dto);
-
-    Task<string> UpdateQuestion(int id, QuestionRequestDTO dto);
+    Task<string> CreateOrUpdateQuestion(int id, QuestionRequestDTO dto);
 
     Task<string> DeleteQuestion(int id);
 

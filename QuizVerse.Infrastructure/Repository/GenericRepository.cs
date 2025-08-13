@@ -66,6 +66,12 @@ public class GenericRepository<T>(QuizVerseDbContext _context) : IGenericReposit
         await _context.SaveChangesAsync();
     }
 
+    public async Task UpdateRangeAsync(List<T> entities)
+    {
+        _context.Set<T>().UpdateRange(entities);
+        await _context.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(T entity)
     {
         _context.Set<T>().Remove(entity);
