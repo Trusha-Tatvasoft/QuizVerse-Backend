@@ -19,4 +19,14 @@ public class SqlConstants
     #region QuizCategory
     public const string FN_CREATE_OR_UPDATE_QUIZ_CATEGORY = "SELECT * FROM fn_create_or_update_quiz_category(@p_id, @p_category_name, @p_description, @p_icon, @p_user_id)";
     #endregion
+
+    #region QuizManagement
+    public const string GET_QUIZ_CARD_DATA_FUNCTION = "get_quiz_card_data";
+    public const string GET_QUIZ_CARD_DATA_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}})";
+    public const string GET_QUIZ_LIST_FUNCTION = "get_quiz_list";
+    public const string GET_QUIZ_LIST_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}})";
+    public const string GET_QUIZ_LIST_COUNT_FUNCTION = "get_quiz_list_count";
+    public const string GET_QUIZ_LIST_COUNT_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}})";
+    #endregion
+
 }

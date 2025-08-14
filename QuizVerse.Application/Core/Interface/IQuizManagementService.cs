@@ -6,7 +6,7 @@ namespace QuizVerse.Application.Core.Interface;
 
 public interface IQuizManagementService
 {
-    // Task<QuizManagementPageDataDto> GetQuizCardData();
-    // Task<PageListResponse<QuizListDto>> GetQuizzesByPagination(PageListRequest pageListRequest);
+    Task<QuizManagementPageDataDto> GetQuizCardData();
+    Task<PageListResponse<QuizListDto>> GetQuizzesByPagination(PageListRequest pageListRequest);
     Task MoveQuizzesToCategoryAsync(QuizCategory quizCategoryWithQuizzes, int toCategoryId);
 }
