@@ -13,6 +13,7 @@ using Npgsql;
 using System.Security.Claims;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Application.Core.Interface;
 
 namespace QuizVerse.UnitTests.Services
 {
@@ -23,6 +24,7 @@ namespace QuizVerse.UnitTests.Services
         private readonly QuizCategoryService _service;
         private readonly Mock<ISqlQueryRepository> _sqlQueryRepositoryMock;
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
+        private readonly Mock<IDropDownDataService> _dropDownDataServiceMock;
 
         public QuizCategoryServiceTest()
         {
@@ -30,6 +32,7 @@ namespace QuizVerse.UnitTests.Services
             _mapperMock = new Mock<IMapper>();
             _sqlQueryRepositoryMock = new Mock<ISqlQueryRepository>();
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+            _dropDownDataServiceMock = new Mock<IDropDownDataService>();
 
             var httpContext = new DefaultHttpContext();
             httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
@@ -41,7 +44,8 @@ namespace QuizVerse.UnitTests.Services
                 _quizCategoryRepoMock.Object,
                 _mapperMock.Object,
                 _httpContextAccessorMock.Object,
-                _sqlQueryRepositoryMock.Object
+                _sqlQueryRepositoryMock.Object,
+                _dropDownDataServiceMock.Object
             );
         }
 
@@ -484,6 +488,101 @@ namespace QuizVerse.UnitTests.Services
 
             AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuizCategoryByAction(request));
             Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateQuizCategoryByAction_ShouldClearCache_WhenDeleted()
+        {
+            // Arrange
+            QuizCategory category = new QuizCategory { Id = 1, Status = true, IsDeleted = false };
+            _quizCategoryRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuizCategory, bool>>>(), null))
+                .ReturnsAsync(category);
+
+            _quizCategoryRepoMock
+                .Setup(r => r.UpdateAsync(It.IsAny<QuizCategory>()))
+                .Returns(Task.CompletedTask);
+
+            var request = new QuizCategoryActionRequestDto
+            {
+                Id = 1,
+                Action = QuizCategoryActionType.Delete
+            };
+
+            // Act
+            string result = await _service.UpdateQuizCategoryByAction(request);
+
+            // Assert
+            Assert.Equal(Constants.DELETE_SUCCESS, result);
+            Assert.True(category.IsDeleted);
+
+            _quizCategoryRepoMock.Verify(r => r.UpdateAsync(category), Times.AtLeastOnce);
+
+            // Verify cache cleared
+            _dropDownDataServiceMock.Verify(d => d.ClearCache(DropDownType.QuizCategory), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateQuizCategoryByAction_ShouldClearCache_WhenStatusChanged()
+        {
+            // Arrange
+            var category = new QuizCategory
+            {
+                Id = 1,
+                Status = true, // initial status
+                IsDeleted = false
+            };
+
+            _quizCategoryRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuizCategory, bool>>>(), null))
+                .ReturnsAsync(category);
+
+            _quizCategoryRepoMock
+                .Setup(r => r.UpdateAsync(It.IsAny<QuizCategory>()))
+                .Returns(Task.CompletedTask);
+
+            var request = new QuizCategoryActionRequestDto
+            {
+                Id = 1,
+                Action = QuizCategoryActionType.ChangeStatus,
+                NewStatus = 0 // changing from true → false
+            };
+
+            // Act
+            string result = await _service.UpdateQuizCategoryByAction(request);
+
+            // Assert
+            Assert.False(category.Status); // status should be updated
+            Assert.Contains(category.Id.ToString(), result);
+
+            // Verify repo update called
+            _quizCategoryRepoMock.Verify(r => r.UpdateAsync(category), Times.AtLeast(2));
+        }
+
+        [Fact]
+        public async Task UpdateQuizCategoryByAction_ShouldNotClearCache_WhenNoMatchingMessage()
+        {
+            // Arrange
+            QuizCategory category = new QuizCategory { Id = 1, Status = false, IsDeleted = false };
+            _quizCategoryRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuizCategory, bool>>>(), null))
+                .ReturnsAsync(category);
+
+            _quizCategoryRepoMock
+                .Setup(r => r.UpdateAsync(It.IsAny<QuizCategory>()))
+                .Returns(Task.CompletedTask);
+
+            var request = new QuizCategoryActionRequestDto
+            {
+                Id = 1,
+                Action = (QuizCategoryActionType)999 // Invalid to simulate default
+            };
+
+            // Expect exception
+            await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuizCategoryByAction(request));
+
+            // Cache clear should never happen
+            _dropDownDataServiceMock.Verify(d => d.ClearCache(It.IsAny<DropDownType>()), Times.Never);
         }
     }
 }

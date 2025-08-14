@@ -1,13 +1,16 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers;
 
 [Route("api/[controller]")]
+[Authorize(Roles = nameof(UserRoles.Admin))]
 [ApiController]
 public class QuestionPoolController(IQuestionPoolService _questionPoolService) : ControllerBase
 {
