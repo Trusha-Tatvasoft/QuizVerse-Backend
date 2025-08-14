@@ -37,9 +37,9 @@ public class QuizManagementService(
             SqlConstants.GET_QUIZ_CARD_DATA_QUERY_TEMPLATE,
             SqlConstants.GET_QUIZ_CARD_DATA_FUNCTION);
 
-        var result = await _sqlQueryRepository.SqlQuerySingleAsync<QuizManagementPageDataDto>(query, parameters);
+        QuizManagementPageDataDto result = await _sqlQueryRepository.SqlQuerySingleAsync<QuizManagementPageDataDto>(query, parameters);
 
-        return result ?? new QuizManagementPageDataDto();
+        return result;
     }
     #endregion
 
