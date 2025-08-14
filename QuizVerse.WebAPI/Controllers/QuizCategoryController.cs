@@ -1,14 +1,17 @@
 using System.Reflection.Metadata;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
+[Authorize(Roles = nameof(UserRoles.Admin))]
 [Route("api/[controller]")]
 public class QuizCategoryController(IQuizCategoryService _quizCategoryService) : ControllerBase
 {

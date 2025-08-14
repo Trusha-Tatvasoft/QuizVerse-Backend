@@ -17,14 +17,14 @@ using AutoMapper;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryRepository, IMapper _mapper, IHttpContextAccessor _httpContextAccessor, ISqlQueryRepository _sqlQueryRepository) : IQuizCategoryService
+public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryRepository, IMapper _mapper, IHttpContextAccessor _httpContextAccessor, ISqlQueryRepository _sqlQueryRepository,IDropDownDataService dropDownDataService) : IQuizCategoryService
 {
 
     private int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new Exception(Constants.USER_NOT_FOUND);
 
     public async Task<PageListResponse<QuizCategoryDTO>> GetQuizCategories(PageListRequest pageListRequest)
     {
-        IQueryable<QuizCategory> quizCategories = _quizCategoryRepository.GetQueryableInclude(q => q.Quizzes);
+        IQueryable<QuizCategory> quizCategories = _quizCategoryRepository.GetQueryableInclude(q => q.Quizzes).Where(q => !q.IsDeleted);
 
         // Search
         if (!string.IsNullOrWhiteSpace(pageListRequest.SearchTerm))
@@ -134,9 +134,13 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
             parameters
         );
 
+        if (raw.Success)
+        {
+            dropDownDataService.ClearCache(DropDownType.QuizCategory);
+        }
+
         return (raw.Success, raw.Message);
     }
-
     #endregion
 
     #region Update By Action
@@ -191,6 +195,12 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
         }
 
         await _quizCategoryRepository.UpdateAsync(quizCategory);
+
+        if (resultMessage == Constants.DELETE_SUCCESS || resultMessage == Constants.QUIZ_CATEGORY_STATUS_CHANGED_SUCCESS)
+        {
+            dropDownDataService.ClearCache(DropDownType.QuizCategory);
+        }
+
         return resultMessage;
     }
     #endregion
