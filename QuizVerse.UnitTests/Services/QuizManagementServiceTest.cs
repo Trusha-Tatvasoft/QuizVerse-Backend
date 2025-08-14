@@ -1,12 +1,16 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Data;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
+using QuizVerse.Infrastructure.Interface;
 using QuizVerse.Infrastructure.Mappings;
 using QuizVerse.Infrastructure.Repository;
 using Xunit;
@@ -18,6 +22,8 @@ public class QuizManagementServiceTests
     private readonly QuizVerseDbContext _context;
     private readonly QuizManagementService _quizService;
     private readonly IMapper _mapper;
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
+    private readonly Mock<ISqlQueryRepository> _sqlRepoMock;
 
     public QuizManagementServiceTests()
     {
@@ -34,8 +40,19 @@ public class QuizManagementServiceTests
         });
         _mapper = mapperConfig.CreateMapper();
 
+        _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        _httpContextAccessorMock.Setup(x => x.HttpContext)
+            .Returns(new DefaultHttpContext()); // can add claims if needed
+        _sqlRepoMock = new Mock<ISqlQueryRepository>();
+
         var quizRepo = new GenericRepository<Quiz>(_context);
-        _quizService = new QuizManagementService(quizRepo, _mapper);
+
+        _quizService = new QuizManagementService(
+            quizRepo,
+            _mapper,
+            _httpContextAccessorMock.Object,
+            _sqlRepoMock.Object
+        );
     }
 
     private void SeedTestData()
@@ -241,4 +258,84 @@ public class QuizManagementServiceTests
     //     Assert.All(result.Records, r => Assert.Equal("Easy", r.QuizDifficultyLevel));
     // }
     // #endregion
+
+    #region MoveQuizzesToCategoryAsync
+    [Fact]
+    public async Task MoveQuizzesToCategoryAsync_UpdatesCategoryIds()
+    {
+        var categoryWithQuizzes = new QuizCategory
+        {
+            Id = 1,
+            Quizzes = _context.Quizzes.ToList()
+        };
+
+        await _quizService.MoveQuizzesToCategoryAsync(categoryWithQuizzes, 99);
+
+        var all = _context.Quizzes.ToList();
+        Assert.All(all, q => Assert.Equal(99, q.CategoryId));
+    }
+
+    [Fact]
+    public async Task MoveQuizzesToCategoryAsync_NullInput_NoException()
+    {
+        await _quizService.MoveQuizzesToCategoryAsync(null!, 99);
+    }
+    #endregion
+
+    #region CreateUpdateQuiz
+    [Fact]
+    public async Task CreateUpdateQuiz_ValidRequest_ReturnsResponse()
+    {
+        var request = new SaveQuizRequestDto
+        {
+            Id = 1,
+            Name = "Updated Quiz",
+            CategoryId = 1,
+            Description = "Desc",
+            TotalTime = 10,
+            DifficultyLevelId = 1,
+            TotalQuestion = 5,
+            IsPaid = false,
+            Status = (int)QuizStatus.Active
+        };
+
+        var expectedResponse = new CreateUpdateResponseDto { Success = true, Message = "Success" };
+        _sqlRepoMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .ReturnsAsync(expectedResponse);
+
+        var result = await _quizService.CreateUpdateQuiz(request);
+        Assert.Equal("Success", result.Message);
+    }
+
+    [Fact]
+    public async Task CreateUpdateQuiz_NullRequest_Throws()
+    {
+        var ex = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.CreateUpdateQuiz(null!));
+        Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
+    }
+    #endregion
+
+    #region GetQuizDataById
+    [Fact]
+    public async Task GetQuizDataById_ValidId_ReturnsDto()
+    {
+        var expectedDto = new QuizResponseDto { Id = 1, Name = "Quiz 1" };
+        _sqlRepoMock
+            .Setup(s => s.SqlQuerySingleAsync<QuizResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .ReturnsAsync(expectedDto);
+
+        var result = await _quizService.GetQuizDataById(1);
+        Assert.Equal(1, result.Id);
+    }
+
+    [Fact]
+    public async Task GetQuizDataById_InvalidId_Throws()
+    {
+        var ex = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.GetQuizDataById(0));
+        Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
+    }
+    #endregion
 }

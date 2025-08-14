@@ -14,6 +14,8 @@ using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace QuizVerse.UnitTests.Services;
 
@@ -728,10 +730,12 @@ public class QuestionPoolServiceTest
         };
 
         var questionPoolList = new List<QuestionPoolListDto>
-        {
-            new() { Id = 1, QueText = "Sample Question 1" },
-            new() { Id = 2, QueText = "Sample Question 2" }
-        };
+            {
+                new() { Id = 1, QueText = "Sample Question 1" },
+                new() { Id = 2, QueText = "Sample Question 2" }
+            };
+
+        var totalRecords = new TotalRecordsDto { TotalRecords = 3 };
 
         _sqlQueryRepoMock
             .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
@@ -739,9 +743,11 @@ public class QuestionPoolServiceTest
                 It.IsAny<NpgsqlParameter[]>()))
             .ReturnsAsync(questionPoolList);
 
-        _baseQuestionRepoMock
-            .Setup(repo => repo.GetQueryableInclude())
-            .Returns(new List<BaseQuestion> { new(), new(), new() }.AsQueryable());
+        _sqlQueryRepoMock
+            .Setup(repo => repo.SqlQuerySingleAsync<TotalRecordsDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(totalRecords);
 
         // Act
         var result = await _service.GetQuestionPoolListAsync(request);
@@ -766,15 +772,19 @@ public class QuestionPoolServiceTest
             Filters = null
         };
 
+        var totalRecords = new TotalRecordsDto { TotalRecords = 0 };
+
         _sqlQueryRepoMock
             .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
                 It.IsAny<string>(),
                 It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync([]);
+            .ReturnsAsync(new List<QuestionPoolListDto>());
 
-        _baseQuestionRepoMock
-            .Setup(repo => repo.GetQueryableInclude())
-            .Returns(new List<BaseQuestion>().AsQueryable());
+        _sqlQueryRepoMock
+            .Setup(repo => repo.SqlQuerySingleAsync<TotalRecordsDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(totalRecords);
 
         // Act
         var result = await _service.GetQuestionPoolListAsync(request);
@@ -796,15 +806,19 @@ public class QuestionPoolServiceTest
             Filters = null
         };
 
+        var totalRecords = new TotalRecordsDto { TotalRecords = 0 };
+
         _sqlQueryRepoMock
             .Setup(repo => repo.SqlQueryListAsync<QuestionPoolListDto>(
                 It.IsAny<string>(),
                 It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync([]);
+            .ReturnsAsync(new List<QuestionPoolListDto>());
 
-        _baseQuestionRepoMock
-            .Setup(repo => repo.GetQueryableInclude())
-            .Returns(new List<BaseQuestion>().AsQueryable());
+        _sqlQueryRepoMock
+            .Setup(repo => repo.SqlQuerySingleAsync<TotalRecordsDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(totalRecords);
 
         // Act
         var result = await _service.GetQuestionPoolListAsync(request);
@@ -812,6 +826,7 @@ public class QuestionPoolServiceTest
         // Assert
         Assert.NotNull(result);
         Assert.Empty(result.Records);
+        Assert.Equal(0, result.TotalRecords);
     }
 
     [Fact]
@@ -947,3 +962,4 @@ public class QuestionPoolServiceTest
         Assert.Equal(Constants.EXCEL_INVALID_OR_EMPTY_ERROR, exception.Message);
     }
 }
+

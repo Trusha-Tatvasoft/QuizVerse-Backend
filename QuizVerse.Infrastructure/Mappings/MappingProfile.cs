@@ -81,7 +81,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
 
         CreateMap<QuizDifficulty, CommonListDropDownDto>()
-                    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
+                    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)));
         #endregion
 
         #region Quiz Category
@@ -91,12 +91,12 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
 
         CreateMap<QuizCategory, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.CategoryName));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.CategoryName)));
         #endregion
 
         #region Quiz Tag
         CreateMap<QuizTag, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TagName));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.TagName)));
         #endregion
 
         #region QuizManagement
@@ -114,12 +114,12 @@ public class MappingProfile : Profile
 
         #region Question Type
         CreateMap<QuestionType, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TypeName));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.TypeName)));
         #endregion
 
         #region Question Difficulty
         CreateMap<QuestionDifficulty, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)));
         #endregion
 
         #region Question Mapping
