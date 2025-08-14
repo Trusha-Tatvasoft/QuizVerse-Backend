@@ -3,7 +3,6 @@ using ClosedXML.Excel;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Service;
-using QuizVerse.Infrastructure.Common;
 using Xunit;
 
 namespace QuizVerse.UnitTests.Services

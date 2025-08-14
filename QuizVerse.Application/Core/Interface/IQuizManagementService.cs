@@ -11,4 +11,6 @@ public interface IQuizManagementService
     Task MoveQuizzesToCategoryAsync(QuizCategory quizCategoryWithQuizzes, int toCategoryId);
     Task<CreateUpdateResponseDto> CreateUpdateQuiz(SaveQuizRequestDto quizCreateUpdateRequestDto);
     Task<QuizResponseDto> GetQuizDataById(int quizId);
+    Task<CreateUpdateResponseDto> DeleteQuiz(int quizId);
+    Task<string> ExportQuestionsToCsv(List<QuestionsListRequestDto> questions);
 }

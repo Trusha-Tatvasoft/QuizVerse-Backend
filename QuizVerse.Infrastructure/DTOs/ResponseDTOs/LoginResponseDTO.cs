@@ -1,5 +1,3 @@
-using QuizVerse.Domain.Entities;
-
 namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs
 {
     public class LoginResponseDTO

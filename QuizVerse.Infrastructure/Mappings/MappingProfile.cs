@@ -1,7 +1,6 @@
 using System.Globalization;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
-using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;

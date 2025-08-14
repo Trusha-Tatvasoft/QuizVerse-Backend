@@ -1,13 +1,10 @@
 using Xunit;
 using Moq;
-using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Infrastructure.Interface;
 using Npgsql;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace QuizVerse.UnitTests.Services
 {

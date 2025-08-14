@@ -12,7 +12,7 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 [Authorize(Roles = nameof(UserRoles.Admin))]
 [Route("api/[controller]")]
-public class QuizManagementController(IQuizManagementService quizManagementService,IDropDownDataService dropDownDataService) : ControllerBase
+public class QuizManagementController(IQuizManagementService quizManagementService, IDropDownDataService dropDownDataService) : ControllerBase
 {
     // #region Quiz Card Data 
     // [HttpPost("get-quiz-card-data")]
@@ -72,6 +72,41 @@ public class QuizManagementController(IQuizManagementService quizManagementServi
             StatusCode = 200,
             Data = await quizManagementService.GetQuizDataById(quizId)
         });
+    }
+    #endregion
+
+    #region Delete Quiz
+    [HttpDelete("delete-quiz/{quizId}")]
+    public async Task<IActionResult> DeleteQuiz(int quizId)
+    {
+        var response = await quizManagementService.DeleteQuiz(quizId);
+        return Ok(new ApiResponse<CreateUpdateResponseDto>
+        {
+            Result = response.Success,
+            Message = response.Message,
+            StatusCode = response.Success ? 200 : 400,
+            Data = null
+        });
+    }
+    #endregion
+
+    #region Export Questions to CSV
+    [HttpPost("export-questions-to-csv")]
+    public async Task<IActionResult> ExportQuestionsToCsv([FromBody] ExportQuizQuestionsRequestDto exportRequest)
+    {
+        if (exportRequest == null || exportRequest.Questions == null || !exportRequest.Questions.Any())
+        {
+            return BadRequest(new ApiResponse<string>
+            {
+                Result = false,
+                Message = "No questions to export.",
+                StatusCode = 400,
+                Data = null
+            });
+        }
+
+        var csvContent = await quizManagementService.ExportQuestionsToCsv(exportRequest.Questions);
+        return File(System.Text.Encoding.UTF8.GetBytes(csvContent), "text/csv", $"{exportRequest.QuizName}_questions.csv");
     }
     #endregion
 }

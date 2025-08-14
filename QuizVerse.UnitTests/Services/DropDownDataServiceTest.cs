@@ -5,7 +5,6 @@ using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
-using System.Linq;
 using Xunit;
 
 namespace QuizVerse.UnitTests.Services

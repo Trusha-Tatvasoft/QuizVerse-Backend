@@ -1,4 +1,3 @@
-using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
