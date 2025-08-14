@@ -114,4 +114,42 @@ public class QuestionPoolController(IQuestionPoolService _questionPoolService) :
 
         return Ok(response);
     }
+
+    [HttpPost("preview-questions-from-csv")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> PreviewQuestionsFromCsv([FromForm] CsvUploadRequestDTO request)
+    {
+        IFormFile file = request.File;
+
+        using Stream stream = file.OpenReadStream();
+
+        ApiResponse<object> response = new()
+        {
+            Result = true,
+            StatusCode = StatusCodes.Status200OK,
+            Message = Constants.CSV_PREVIEW_LOADED_SUCCESSFULLY,
+            Data = await _questionPoolService.PreviewQuestionsFromCsv(stream)
+        };
+
+        return Ok(response);
+    }
+
+    [HttpPost("preview-questions-from-excel")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> PreviewQuestionsFromExcel([FromForm] ExcelUploadRequestDTO request)
+    {
+        IFormFile file = request.File;
+
+        using Stream stream = file.OpenReadStream();
+
+        ApiResponse<object> response = new()
+        {
+            Result = true,
+            StatusCode = StatusCodes.Status200OK,
+            Message = Constants.EXCEL_PREVIEW_LOADED_SUCCESSFULLY,
+            Data = await _questionPoolService.PreviewQuestionsFromExcel(stream)
+        };
+
+        return Ok(response);
+    }
 }

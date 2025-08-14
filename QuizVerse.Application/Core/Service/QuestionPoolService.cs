@@ -15,6 +15,7 @@ using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using Microsoft.EntityFrameworkCore;
 using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.DTOs;
 
 namespace QuizVerse.Application.Core.Service;
 
@@ -43,6 +44,8 @@ public class QuestionPoolService(
         if (!await _questionDifficultyRepository.Exists(d => d.Id == dto.DifficultyId))
             throw new AppException(string.Format(Constants.DIFFICULTY_NOT_FOUND, dto.DifficultyId), StatusCodes.Status404NotFound);
 
+        ValidateOptionsAndAnswer(dto.Options, dto.CorrectAnswer);
+
         BaseQuestion? question;
         bool isCreate = id == 0;
 
@@ -54,6 +57,10 @@ public class QuestionPoolService(
 
             await _baseQuestionRepository.AddAsync(question);
             id = question.Id;
+
+            List<QuestionOptionsAnswer> options = dto.Options?.Select(opt => CreateOption(opt, id)).ToList() ?? [];
+            options.Add(CreateAnswer(dto.CorrectAnswer, id));
+            await _questionOptionsAnswerRepository.AddRangeAsync(options);
         }
         else
         {
@@ -70,19 +77,47 @@ public class QuestionPoolService(
 
             List<QuestionOptionsAnswer> existingOptions = await _questionOptionsAnswerRepository.FindAsync(o => o.QuestionId == id && !o.IsDeleted);
 
-            foreach (QuestionOptionsAnswer opt in existingOptions)
+            List<string> dtoOptions = dto.Options?.Select(o => o.Trim()).ToList() ?? [];
+
+            List<QuestionOptionsAnswer> optionsToDelete = [.. existingOptions
+                .Where(e => e.Key == Constants.QUESTION_KEY_OPTION && !dtoOptions
+                    .Any(o => string.Equals(o, e.Value, StringComparison.OrdinalIgnoreCase)))];
+
+            foreach (QuestionOptionsAnswer opt in optionsToDelete)
             {
                 opt.IsDeleted = true;
                 opt.ModifiedBy = UserId;
                 opt.ModifiedDate = DateTime.UtcNow;
             }
-            await _questionOptionsAnswerRepository.UpdateRangeAsync(existingOptions);
+
+            List<QuestionOptionsAnswer> optionsToAdd = [.. dtoOptions
+                .Where(o => !existingOptions
+                    .Any(e => e.Key == Constants.QUESTION_KEY_OPTION && string.Equals(e.Value, o, StringComparison.OrdinalIgnoreCase)))
+                .Select(o => CreateOption(o, id))];
+
+            QuestionOptionsAnswer? existingAnswer = existingOptions.FirstOrDefault(e => e.Key == Constants.QUESTION_KEY_ANSWER);
+
+            if (existingAnswer != null &&
+                !string.Equals(existingAnswer.Value, dto.CorrectAnswer.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                existingAnswer.Value = dto.CorrectAnswer.Trim();
+                existingAnswer.ModifiedBy = UserId;
+                existingAnswer.ModifiedDate = DateTime.UtcNow;
+            }
+            else if (existingAnswer == null)
+            {
+                optionsToAdd.Add(CreateAnswer(dto.CorrectAnswer, id));
+            }
+
+            if (optionsToDelete.Count != 0)
+                await _questionOptionsAnswerRepository.UpdateRangeAsync(optionsToDelete);
+
+            if (optionsToAdd.Count != 0)
+                await _questionOptionsAnswerRepository.AddRangeAsync(optionsToAdd);
+
+            if (existingAnswer != null)
+                await _questionOptionsAnswerRepository.UpdateAsync(existingAnswer);
         }
-
-        List<QuestionOptionsAnswer> options = dto.Options?.Select(opt => CreateOption(opt, id)).ToList() ?? [];
-        options.Add(CreateAnswer(dto.CorrectAnswer, id));
-
-        await _questionOptionsAnswerRepository.AddRangeAsync(options);
 
         return isCreate
             ? Constants.QUESTION_CREATION_SUCCESS_MESSAGE
@@ -202,6 +237,28 @@ public class QuestionPoolService(
             throw new AppException(Constants.EXCEL_INVALID_OR_EMPTY_ERROR, StatusCodes.Status400BadRequest);
 
         return await ImportRecordsAsync(records, Constants.EXCEL);
+    }
+
+    public async Task<List<QuestionsListResponseDto>> PreviewQuestionsFromCsv(Stream fileStream)
+    {
+        List<QuestionImportDTO> records = ReadCsv(fileStream);
+        if (records.Count == 0)
+            throw new AppException(Constants.CSV_INVALID_OR_EMPTY_ERROR, StatusCodes.Status400BadRequest);
+
+        (Dictionary<string, int> categoryMap, Dictionary<string, int> difficultyMap, Dictionary<string, int> typeMap) = await LoadMappingsAsync();
+
+        return GetValidQuestionsPreview(records, categoryMap, difficultyMap, typeMap);
+    }
+
+    public async Task<List<QuestionsListResponseDto>> PreviewQuestionsFromExcel(Stream fileStream)
+    {
+        List<QuestionImportDTO> records = ReadExcel(fileStream);
+        if (records.Count == 0)
+            throw new AppException(Constants.EXCEL_INVALID_OR_EMPTY_ERROR, StatusCodes.Status400BadRequest);
+
+        (Dictionary<string, int> categoryMap, Dictionary<string, int> difficultyMap, Dictionary<string, int> typeMap) = await LoadMappingsAsync();
+
+        return GetValidQuestionsPreview(records, categoryMap, difficultyMap, typeMap);
     }
     #endregion
 
@@ -360,6 +417,45 @@ public class QuestionPoolService(
             CreatedDate = DateTime.UtcNow
         };
 
+    private static void ValidateOptionsAndAnswer(List<string>? options, string correctAnswer)
+    {
+        if (options == null || options.Count == 0) return;
+
+        List<string> emptyOptions = [.. options.Where(o => string.IsNullOrWhiteSpace(o))];
+
+        if (emptyOptions.Count != 0)
+        {
+            throw new AppException(
+                Constants.OPTIONS_CANNOT_BE_EMPTY,
+                StatusCodes.Status400BadRequest
+            );
+        }
+
+        List<string> normalizedOptions = [.. options.Select(o => o?.Trim() ?? string.Empty)];
+
+        List<string> duplicates = [.. normalizedOptions
+            .GroupBy(o => o, StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)];
+
+        if (duplicates.Count != 0)
+        {
+            throw new AppException(
+                string.Format(Constants.DUPLICATE_OPTIONS_FOUND, string.Join(", ", duplicates)),
+                StatusCodes.Status400BadRequest
+            );
+        }
+
+        if (!normalizedOptions.Any(o =>
+            string.Equals(o, correctAnswer?.Trim() ?? string.Empty, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new AppException(
+                string.Format(Constants.CORRECT_ANSWER_NOT_IN_OPTIONS, correctAnswer),
+                StatusCodes.Status400BadRequest
+            );
+        }
+    }
+
     private static bool IsValidRecord(
         QuestionImportDTO record,
         Dictionary<string, int> categoryMap,
@@ -387,7 +483,60 @@ public class QuestionPoolService(
             !typeMap.TryGetValue(typeKey, out typeId))
             return false;
 
+        try
+        {
+            ValidateOptionsAndAnswer(record.GetOptions(), record.CorrectAnswer);
+        }
+        catch (AppException)
+        {
+            return false;
+        }
+
         return true;
     }
     #endregion
+
+    private static List<QuestionsListResponseDto> GetValidQuestionsPreview(
+    List<QuestionImportDTO> records,
+    Dictionary<string, int> categoryMap,
+    Dictionary<string, int> difficultyMap,
+    Dictionary<string, int> typeMap)
+    {
+        List<QuestionsListResponseDto> previewList = [];
+
+        foreach (QuestionImportDTO record in records)
+        {
+            if (IsValidRecord(record, categoryMap, difficultyMap, typeMap,
+                out int categoryId, out int difficultyId, out int typeId))
+            {
+                List<QueOptionsAndAnswersDto> optionsDto = [.. record.GetOptions()
+                    .Where(option => !string.IsNullOrWhiteSpace(option))
+                    .Select(option => new QueOptionsAndAnswersDto
+                    {
+                        Key = Constants.QUESTION_KEY_OPTION,
+                        Value = option.Trim()
+                    })];
+
+                if (!string.IsNullOrWhiteSpace(record.CorrectAnswer))
+                {
+                    optionsDto.Add(new QueOptionsAndAnswersDto
+                    {
+                        Key = Constants.QUESTION_KEY_ANSWER,
+                        Value = record.CorrectAnswer.Trim()
+                    });
+                }
+
+                previewList.Add(new QuestionsListResponseDto
+                {
+                    QueText = record.Question?.Trim() ?? string.Empty,
+                    CategoryId = categoryId,
+                    QueDifficultyId = difficultyId,
+                    QueTypeId = typeId,
+                    QueOptionsAns = optionsDto
+                });
+            }
+        }
+
+        return previewList;
+    }
 }

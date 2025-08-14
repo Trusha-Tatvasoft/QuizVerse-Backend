@@ -16,4 +16,8 @@ public interface IQuestionPoolService
     Task<string> ImportQuestionsFromCsv(Stream fileStream);
 
     Task<string> ImportQuestionsFromExcel(Stream fileStream);
+
+    Task<List<QuestionsListResponseDto>> PreviewQuestionsFromCsv(Stream fileStream);
+
+    Task<List<QuestionsListResponseDto>> PreviewQuestionsFromExcel(Stream fileStream);
 }

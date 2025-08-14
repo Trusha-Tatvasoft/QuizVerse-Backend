@@ -120,13 +120,13 @@ public static class Constants
 
     #region Quiz Category Messages
     public const string INVALID_PAGE_NO = "Page number {0} exceeds maximum page number {1}.";
-    public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist."; 
+    public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist.";
     public const string QUIZ_CATEGORY_NOT_FOUND = "Quiz category with ID {0} not found.";
     public const string DUPLICATE_QUIZZ_CATEGORY = "Quiz with this category already exist";
     public const string QUIZ_CATEGORY_DELETED = "Quiz with this category {0} is already deleted.";
     public const string QUIZ_CATEGORY_STATUS_ALREADY_SET = "User is already {0}.";
     public const string QUIZ_CATEGORY_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
-    public const string QUIZ_CATEGORY_DEFAULT_ICON = "category"; 
+    public const string QUIZ_CATEGORY_DEFAULT_ICON = "category";
     #endregion
 
     #region Quiz Management List
@@ -167,5 +167,10 @@ public static class Constants
     public const string EXCEL_INVALID_OR_EMPTY_ERROR = "Excel file is empty or has an invalid format.";
     public const string NO_VALID_QUESTIONS_FOUND_IN_FILE_ERROR = "No valid question data found in the uploaded {0} file.";
     public const string QUESTIONS_IMPORTED_SUCCESS_MESSAGE = "{0} questions imported successfully from {1}.";
+    public const string OPTIONS_CANNOT_BE_EMPTY = "Options cannot be empty or null.";
+    public const string DUPLICATE_OPTIONS_FOUND = "Duplicate option(s) found: {0}";
+    public const string CORRECT_ANSWER_NOT_IN_OPTIONS = "Correct answer '{0}' is not listed among the options.";
+    public const string CSV_PREVIEW_LOADED_SUCCESSFULLY = "CSV preview loaded successfully.";
+    public const string EXCEL_PREVIEW_LOADED_SUCCESSFULLY = "Excel preview loaded successfully.";
     #endregion
 }

@@ -79,10 +79,10 @@ public class QuestionPoolServiceTest
         CorrectAnswer = "Opt1"
     };
 
-    private List<QuestionImportDTO> CreateValidRecords()
+    private static List<QuestionImportDTO> CreateValidRecords()
     {
-        return new List<QuestionImportDTO>
-        {
+        return
+        [
             new QuestionImportDTO
             {
                 Question = "Q1",
@@ -93,7 +93,7 @@ public class QuestionPoolServiceTest
                 Option1 = "Option1",
                 Option2 = "Option2"
             }
-        };
+        ];
     }
 
     [Fact]
@@ -225,8 +225,9 @@ public class QuestionPoolServiceTest
 
         List<QuestionOptionsAnswer> existingOptions =
         [
-            new() { Id = 1, QuestionId = questionId },
-            new() { Id = 2, QuestionId = questionId }
+            new() { Id = 1, QuestionId = questionId, Key = Constants.QUESTION_KEY_OPTION, Value = "Opt1" },
+            new() { Id = 2, QuestionId = questionId, Key = Constants.QUESTION_KEY_OPTION, Value = "Opt2" },
+            new() { Id = 3, QuestionId = questionId, Key = Constants.QUESTION_KEY_ANSWER, Value = "OldAnswer" }
         ];
 
         _optionsRepoMock
@@ -245,16 +246,20 @@ public class QuestionPoolServiceTest
                 q.ModifiedDate != default)), Times.Once);
 
         _optionsRepoMock.Verify(r =>
-            r.UpdateRangeAsync(It.Is<List<QuestionOptionsAnswer>>(list =>
-                list.All(o => o.IsDeleted) &&
-                list.Count == existingOptions.Count
+            r.AddRangeAsync(It.Is<List<QuestionOptionsAnswer>>(list =>
+                list.Count == 2 &&
+                list.Any(o => o.Value == "Opt3") &&
+                list.Any(o => o.Value == "Opt4")
             )), Times.Once);
 
         _optionsRepoMock.Verify(r =>
-            r.AddRangeAsync(It.Is<List<QuestionOptionsAnswer>>(list =>
-                list.Count == dto.Options!.Count + 1 &&
-                list.Any(o => o.Value == dto.CorrectAnswer && o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase))
+            r.UpdateAsync(It.Is<QuestionOptionsAnswer>(o =>
+                o.Key == Constants.QUESTION_KEY_ANSWER &&
+                o.Value == dto.CorrectAnswer
             )), Times.Once);
+
+        _optionsRepoMock.Verify(r =>
+            r.UpdateRangeAsync(It.IsAny<List<QuestionOptionsAnswer>>()), Times.Never);
     }
 
     [Fact]
@@ -807,5 +812,138 @@ public class QuestionPoolServiceTest
         // Assert
         Assert.NotNull(result);
         Assert.Empty(result.Records);
+    }
+
+    [Fact]
+    public async Task PreviewQuestionsFromCsv_ValidCsv_ReturnsPreviewList()
+    {
+        string csvContent = "Question,Category,Difficulty,Type,CorrectAnswer,Option1,Option2,Option3,Option4\n" + "What is 2+2?,Math,Easy,MCQ,4,1,2,3,4";
+
+        using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(csvContent));
+
+        _categoryRepoMock.Setup(r => r.GetAllAsync())
+            .ReturnsAsync(
+            [
+                new() { Id = 1, CategoryName  = "Math" }
+            ]);
+
+        _difficultyRepoMock.Setup(r => r.GetAllAsync())
+            .ReturnsAsync(
+            [
+                new() { Id = 1, Name = "Easy" }
+            ]);
+
+        _typeRepoMock.Setup(r => r.GetAllAsync())
+            .ReturnsAsync(
+            [
+                new() { Id = 1, TypeName  = "MCQ" }
+            ]);
+
+        List<QuestionsListResponseDto> result = await _service.PreviewQuestionsFromCsv(stream);
+
+        Assert.NotNull(result);
+        Assert.Single(result);
+
+        QuestionsListResponseDto question = result[0];
+        Assert.Equal("What is 2+2?", question.QueText);
+        Assert.Equal(1, question.CategoryId);
+        Assert.Equal(1, question.QueDifficultyId);
+        Assert.Equal(1, question.QueTypeId);
+        Assert.Contains(question.QueOptionsAns, o => o.Value == "4" && o.Key == Constants.QUESTION_KEY_ANSWER);
+        Assert.Equal(4, question.QueOptionsAns.Count(o => o.Key == Constants.QUESTION_KEY_OPTION));
+    }
+
+    [Fact]
+    public async Task PreviewQuestionsFromCsv_EmptyCsv_ThrowsAppException()
+    {
+        string csvContent = "Question,Category,Difficulty,Type,CorrectAnswer\n";
+        using MemoryStream stream = new(Encoding.UTF8.GetBytes(csvContent));
+
+        AppException exception = await Assert.ThrowsAsync<AppException>(() =>
+            _service.PreviewQuestionsFromCsv(stream));
+
+        Assert.Equal(Constants.CSV_INVALID_OR_EMPTY_ERROR, exception.Message);
+    }
+
+    [Fact]
+    public async Task PreviewQuestionsFromExcel_ValidExcel_ReturnsPreviewList()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        using XLWorkbook workbook = new();
+        IXLWorksheet worksheet = workbook.Worksheets.Add("Sheet1");
+
+        worksheet.Cell(1, 1).Value = "Question";
+        worksheet.Cell(1, 2).Value = "Category";
+        worksheet.Cell(1, 3).Value = "Difficulty";
+        worksheet.Cell(1, 4).Value = "Type";
+        worksheet.Cell(1, 5).Value = "Option1";
+        worksheet.Cell(1, 6).Value = "Option2";
+        worksheet.Cell(1, 7).Value = "Option3";
+        worksheet.Cell(1, 8).Value = "Option4";
+        worksheet.Cell(1, 9).Value = "CorrectAnswer";
+
+        worksheet.Cell(2, 1).Value = "What is 2+2?";
+        worksheet.Cell(2, 2).Value = "Math";
+        worksheet.Cell(2, 3).Value = "Easy";
+        worksheet.Cell(2, 4).Value = "MCQ";
+        worksheet.Cell(2, 5).Value = "1";
+        worksheet.Cell(2, 6).Value = "2";
+        worksheet.Cell(2, 7).Value = "3";
+        worksheet.Cell(2, 8).Value = "4";
+        worksheet.Cell(2, 9).Value = "4";
+
+        using MemoryStream stream = new();
+        workbook.SaveAs(stream);
+        stream.Position = 0;
+
+        _categoryRepoMock.Setup(r => r.GetAllAsync())
+            .ReturnsAsync([new() { Id = 1, CategoryName = "Math" }]);
+        _difficultyRepoMock.Setup(r => r.GetAllAsync())
+            .ReturnsAsync([new() { Id = 1, Name = "Easy" }]);
+        _typeRepoMock.Setup(r => r.GetAllAsync())
+            .ReturnsAsync([new() { Id = 1, TypeName = "MCQ" }]);
+
+        List<QuestionsListResponseDto> result = await _service.PreviewQuestionsFromExcel(stream);
+
+        Assert.NotNull(result);
+        Assert.Single(result);
+
+        QuestionsListResponseDto question = result[0];
+        Assert.Equal("What is 2+2?", question.QueText);
+        Assert.Equal(1, question.CategoryId);
+        Assert.Equal(1, question.QueDifficultyId);
+        Assert.Equal(1, question.QueTypeId);
+
+        Assert.Contains(question.QueOptionsAns, o => o.Value == "4" && o.Key == Constants.QUESTION_KEY_ANSWER);
+        Assert.Equal(4, question.QueOptionsAns.Count(o => o.Key == Constants.QUESTION_KEY_OPTION));
+    }
+
+    [Fact]
+    public async Task PreviewQuestionsFromExcel_EmptyExcel_ThrowsAppException()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        using XLWorkbook workbook = new();
+        IXLWorksheet worksheet = workbook.Worksheets.Add("Sheet1");
+
+        worksheet.Cell(1, 1).Value = "Question";
+        worksheet.Cell(1, 2).Value = "Category";
+        worksheet.Cell(1, 3).Value = "Difficulty";
+        worksheet.Cell(1, 4).Value = "Type";
+        worksheet.Cell(1, 5).Value = "Option1";
+        worksheet.Cell(1, 6).Value = "Option2";
+        worksheet.Cell(1, 7).Value = "Option3";
+        worksheet.Cell(1, 8).Value = "Option4";
+        worksheet.Cell(1, 9).Value = "CorrectAnswer";
+
+        using MemoryStream ms = new();
+        workbook.SaveAs(ms);
+        ms.Position = 0;
+
+        AppException exception = await Assert.ThrowsAsync<AppException>(() =>
+            _service.PreviewQuestionsFromExcel(ms));
+
+        Assert.Equal(Constants.EXCEL_INVALID_OR_EMPTY_ERROR, exception.Message);
     }
 }
