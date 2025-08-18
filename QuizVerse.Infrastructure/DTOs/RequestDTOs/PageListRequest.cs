@@ -12,7 +12,7 @@ public class PageListRequest
     public int PageSize { get; set; } = SystemConstants.DEFAULT_PAGE_SIZE;
 
     public string? SearchTerm { get; set; }
-    public string? SortColumn { get; set; }
-    public bool SortDescending { get; set; } = true;
+    public string? SortColumn { get; set; } = "";
+    public bool SortDescending { get; set; } = false;
     public FilterDto? Filters { get; set; }
 }

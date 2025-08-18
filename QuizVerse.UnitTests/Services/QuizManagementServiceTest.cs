@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using Npgsql;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Data;
 using QuizVerse.Domain.Entities;
@@ -21,7 +22,7 @@ public class QuizManagementServiceTests
 {
     private readonly QuizVerseDbContext _context;
     private readonly QuizManagementService _quizService;
-    private readonly IMapper _mapper;
+    private readonly Mock<IMapper> _mockMapper;
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly Mock<ISqlQueryRepository> _sqlRepoMock;
 
@@ -34,11 +35,7 @@ public class QuizManagementServiceTests
         _context = new QuizVerseDbContext(options);
         SeedTestData();
 
-        var mapperConfig = new MapperConfiguration(cfg =>
-        {
-            cfg.AddProfile<MappingProfile>();
-        });
-        _mapper = mapperConfig.CreateMapper();
+        _mockMapper = new Mock<IMapper>();
 
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         _httpContextAccessorMock.Setup(x => x.HttpContext)
@@ -49,7 +46,7 @@ public class QuizManagementServiceTests
 
         _quizService = new QuizManagementService(
             quizRepo,
-            _mapper,
+            _mockMapper.Object,
             _httpContextAccessorMock.Object,
             _sqlRepoMock.Object
         );
@@ -132,132 +129,295 @@ public class QuizManagementServiceTests
         _context.SaveChanges();
     }
 
-    // #region Quiz Card Data
-    // [Fact]
-    // public async Task GetQuizCardData_ReturnsCorrectStats()
-    // {
-    //     var result = await _quizService.GetQuizCardData();
+    #region Get Card Data
+    [Fact]
+    public async Task GetQuizCardData_ReturnsExpectedCounts_FromSqlRepository()
+    {
+        // Arrange - mock the SQL repository result
+        var expectedDto = new QuizManagementPageDataDto
+        {
+            TotalQuiz = 2,
+            ActiveQuiz = 1,
+            TotalParticipants = 2,
+            TotalQuestions = 3
+        };
 
-    //     Assert.Equal(2, result.TotalQuiz);
-    //     Assert.Equal(1, result.ActiveQuiz);
-    //     Assert.Equal(2, result.TotalParticipants);
-    //     Assert.Equal(3, result.TotalQuestions);
-    // }
-    // #endregion
-    // #region Quiz Management List
-    // [Fact]
-    // public async Task GetQuizzesByPagination_WithSearchTerm_ReturnsFilteredResults()
-    // {
-    //     var request = new PageListRequest
-    //     {
-    //         PageNumber = 1,
-    //         PageSize = 10,
-    //         SearchTerm = "Quiz 1"
-    //     };
+        _sqlRepoMock
+            .Setup(r => r.SqlQuerySingleAsync<QuizManagementPageDataDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()
+            ))
+            .ReturnsAsync(expectedDto);
 
-    //     var result = await _quizService.GetQuizzesByPagination(request);
+        // Act
+        var result = await _quizService.GetQuizCardData();
 
-    //     Assert.Single(result.Records);
-    //     Assert.Equal("Quiz 1", result.Records.First().QuizTitle);
-    // }
+        // Assert
+        Assert.Equal(expectedDto.TotalQuiz, result.TotalQuiz);
+        Assert.Equal(expectedDto.ActiveQuiz, result.ActiveQuiz);
+        Assert.Equal(expectedDto.TotalParticipants, result.TotalParticipants);
+        Assert.Equal(expectedDto.TotalQuestions, result.TotalQuestions);
 
-    // [Fact]
-    // public async Task GetQuizzesByPagination_WithInvalidStatus_ThrowsAppException()
-    // {
-    //     var request = new PageListRequest
-    //     {
-    //         Filters = new FilterDto { QuizStatus = (QuizStatus)999 }
-    //     };
+        // Verify that the repository was called with the expected parameter
+        _sqlRepoMock.Verify(r => r.SqlQuerySingleAsync<QuizManagementPageDataDto>(
+            It.IsAny<string>(),
+            It.Is<NpgsqlParameter[]>(p =>
+                p.Length == 1 &&
+                p[0].ParameterName == "p_active_status" &&
+                Convert.ToInt32(p[0].Value) == (int)QuizStatus.Active
+            )
+        ), Times.Once);
+    }
+    
+    [Fact]
+    public async Task GetQuizCardData_ReturnsEmptyCounts_WhenNoRecordsExist()
+    {
+        // Arrange - repo returns "empty row" from SQL
+        var emptyDto = new QuizManagementPageDataDto
+        {
+            TotalQuiz = 0,
+            ActiveQuiz = 0,
+            TotalParticipants = 0,
+            TotalQuestions = 0
+        };
 
-    //     var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.GetQuizzesByPagination(request));
-    //     Assert.Equal(Constants.INVALID_QUIZ_STATUS_MESSAGE, ex.Message);
-    // }
+        _sqlRepoMock
+            .Setup(r => r.SqlQuerySingleAsync<QuizManagementPageDataDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()
+            ))
+            .ReturnsAsync(emptyDto);
 
-    // [Fact]
-    // public async Task GetQuizzesByPagination_WithCategoryFilter_WorksCorrectly()
-    // {
-    //     var request = new PageListRequest
-    //     {
-    //         Filters = new FilterDto { QuizCategoryId = 1 }
-    //     };
+        // Act
+        var result = await _quizService.GetQuizCardData();
 
-    //     var result = await _quizService.GetQuizzesByPagination(request);
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(0, result.TotalQuiz);
+        Assert.Equal(0, result.ActiveQuiz);
+        Assert.Equal(0, result.TotalParticipants);
+        Assert.Equal(0, result.TotalQuestions);
+    }
+    #endregion
 
-    //     Assert.Equal(2, result.Records.Count());
-    // }
+    #region Get Quiz List
+    [Fact]
+    public async Task GetQuizzesByPagination_ReturnsMappedResults()
+    {
+        var request = new PageListRequest
+        {
+            PageNumber = 1,
+            PageSize = 10,
+            SearchTerm = "math",
+            SortColumn = "TotalQuestion",
+            SortDescending = true,
+            Filters = new FilterDto
+            {
+                QuizStatus = QuizStatus.Active,
+                QuizCategoryId = 2,
+                QuizDifficultyId = 3
+            }
+        };
 
-    // [Fact]
-    // public async Task GetQuizzesByPagination_WithDifficultyFilter_WorksCorrectly()
-    // {
-    //     var request = new PageListRequest
-    //     {
-    //         Filters = new FilterDto { QuizDifficultyId = 1 }
-    //     };
+        var dbQuizzes = new List<QuizListDto>
+            {
+                new() { Id = 1, QuizTitle = "Math Quiz 1" },
+                new() { Id = 2, QuizTitle = "Math Quiz 2" }
+            };
 
-    //     var result = await _quizService.GetQuizzesByPagination(request);
+        _sqlRepoMock
+            .Setup(r => r.SqlQueryListAsync<QuizListDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(dbQuizzes);
 
-    //     Assert.Equal(2, result.Records.Count());
-    // }
+        _sqlRepoMock
+            .Setup(r => r.SqlQuerySingleAsync<TotalRecordsDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(new TotalRecordsDto { TotalRecords = 100 });
 
-    // [Fact]
-    // public async Task GetQuizzesByPagination_SortingDescending_WorksCorrectly()
-    // {
-    //     var request = new PageListRequest
-    //     {
-    //         SortColumn = "name",
-    //         SortDescending = true
-    //     };
+        _mockMapper
+            .Setup(m => m.Map<List<QuizListDto>>(dbQuizzes))
+            .Returns(dbQuizzes);
 
-    //     var result = await _quizService.GetQuizzesByPagination(request);
+        // Act
+        var result = await _quizService.GetQuizzesByPagination(request);
 
-    //     Assert.Equal(2, result.Records.Count());
-    //     Assert.Equal("Quiz 2", result.Records.First().QuizTitle);
-    // }
+        // Assert
+        Assert.Equal(100, result.TotalRecords);
+        Assert.Equal(2, result.Records.Count);
+        Assert.Equal("Math Quiz 1", result.Records[0].QuizTitle);
+    }
 
-    // [Fact]
-    // public async Task GetQuizzesByPagination_WithValidStatusFilter_ReturnsCorrectResults()
-    // {
-    //     var request = new PageListRequest
-    //     {
-    //         Filters = new FilterDto { QuizStatus = QuizStatus.Active }
-    //     };
+    [Fact]
+    public async Task GetQuizzesByPagination_EmptyResults_ReturnsZeroTotal()
+    {
+        var request = new PageListRequest
+        {
+            PageNumber = 1,
+            PageSize = 5
+        };
 
-    //     var result = await _quizService.GetQuizzesByPagination(request);
+        _sqlRepoMock
+            .Setup(r => r.SqlQueryListAsync<QuizListDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(new List<QuizListDto>());
 
-    //     Assert.Single(result.Records);
-    //     Assert.Equal((int)QuizStatus.Active, result.Records.First().Status);
-    // }
+        _sqlRepoMock
+            .Setup(r => r.SqlQuerySingleAsync<TotalRecordsDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(new TotalRecordsDto { TotalRecords = 0 });
 
-    // [Fact]
-    // public async Task GetQuizzesByPagination_SortByCategory_WorksCorrectly()
-    // {
-    //     var request = new PageListRequest
-    //     {
-    //         SortColumn = "category",
-    //         SortDescending = false
-    //     };
+        _mockMapper
+            .Setup(m => m.Map<List<QuizListDto>>(It.IsAny<List<QuizListDto>>()))
+            .Returns(new List<QuizListDto>());
 
-    //     var result = await _quizService.GetQuizzesByPagination(request);
+        // Act
+        var result = await _quizService.GetQuizzesByPagination(request);
 
-    //     Assert.Equal(2, result.Records.Count());
-    //     Assert.All(result.Records, r => Assert.Equal("General Knowledge", r.CategoryName));
-    // }
+        // Assert
+        Assert.Empty(result.Records);
+        Assert.Equal(0, result.TotalRecords);
+    }
 
-    // [Fact]
-    // public async Task GetQuizzesByPagination_SortByDifficulty_WorksCorrectly()
-    // {
-    //     var request = new PageListRequest
-    //     {
-    //         SortColumn = "difficulty",
-    //         SortDescending = false
-    //     };
+    [Fact]
+    public async Task GetQuizzesByPagination_Parameters_CorrectlyMapped()
+    {
+        var request = new PageListRequest
+        {
+            PageNumber = 3,
+            PageSize = 20,
+            SearchTerm = "history",
+            SortColumn = "QuizTitle",
+            SortDescending = true,
+            Filters = new FilterDto
+            {
+                QuizStatus = QuizStatus.Active,
+                QuizCategoryId = 2,
+                QuizDifficultyId = 5
+            }
+        };
 
-    //     var result = await _quizService.GetQuizzesByPagination(request);
+        _sqlRepoMock.Setup(r =>
+            r.SqlQueryListAsync<QuizListDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()
+            ))
+            .ReturnsAsync(new List<QuizListDto>());
 
-    //     Assert.Equal(2, result.Records.Count());
-    //     Assert.All(result.Records, r => Assert.Equal("Easy", r.QuizDifficultyLevel));
-    // }
-    // #endregion
+        _sqlRepoMock.Setup(r =>
+            r.SqlQuerySingleAsync<TotalRecordsDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()
+            ))
+            .ReturnsAsync(new TotalRecordsDto { TotalRecords = 0 });
+
+        // Act
+        await _quizService.GetQuizzesByPagination(request);
+
+        // Assert all parameters
+        _sqlRepoMock.Verify(r =>
+            r.SqlQueryListAsync<QuizListDto>(
+                It.IsAny<string>(),
+                It.Is<NpgsqlParameter[]>(p =>
+                    Convert.ToInt32(p.First(x => x.ParameterName == "p_page_number").Value) == 3 &&
+                    Convert.ToInt32(p.First(x => x.ParameterName == "p_page_size").Value) == 20 &&
+                    Convert.ToString(p.First(x => x.ParameterName == "p_search_term").Value) == "history" &&
+                    Convert.ToString(p.First(x => x.ParameterName == "p_sort_column").Value) == "QuizTitle" &&
+                    Convert.ToBoolean(p.First(x => x.ParameterName == "p_sort_descending").Value) == true &&
+                    Convert.ToInt32(p.First(x => x.ParameterName == "p_quiz_status").Value) == (int)QuizStatus.Active &&
+                    Convert.ToInt32(p.First(x => x.ParameterName == "p_category_id").Value) == 2 &&
+                    Convert.ToInt32(p.First(x => x.ParameterName == "p_difficulty_id").Value) == 5
+                )
+            ), Times.Once);
+
+    }
+
+    [Fact]
+    public async Task GetQuizzesByPagination_OptionalParametersNull_UsesDBNull()
+    {
+        var request = new PageListRequest
+        {
+            PageNumber = 1,
+            PageSize = 10,
+            SearchTerm = null,
+            SortColumn = null,
+            SortDescending = false,
+            Filters = null
+        };
+
+        _sqlRepoMock.Setup(r =>
+            r.SqlQueryListAsync<QuizListDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()
+            ))
+            .ReturnsAsync(new List<QuizListDto>());
+
+        _sqlRepoMock.Setup(r =>
+            r.SqlQuerySingleAsync<TotalRecordsDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()
+            ))
+            .ReturnsAsync(new TotalRecordsDto { TotalRecords = 0 });
+
+        // Act
+        await _quizService.GetQuizzesByPagination(request);
+
+        // Assert DBNull.Value for null parameters
+        _sqlRepoMock.Verify(r =>
+            r.SqlQueryListAsync<QuizListDto>(
+                It.IsAny<string>(),
+                It.Is<NpgsqlParameter[]>(p =>
+                    p.First(x => x.ParameterName == "p_search_term").Value == DBNull.Value &&
+                    p.First(x => x.ParameterName == "p_sort_column").Value == DBNull.Value &&
+                    p.First(x => x.ParameterName == "p_quiz_status").Value == DBNull.Value &&
+                    p.First(x => x.ParameterName == "p_category_id").Value == DBNull.Value &&
+                    p.First(x => x.ParameterName == "p_difficulty_id").Value == DBNull.Value
+                )
+            ), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetQuizzesByPagination_EmptyFilters_DefaultToDBNull()
+    {
+        var request = new PageListRequest
+        {
+            PageNumber = 1,
+            PageSize = 10,
+            Filters = new FilterDto() // all properties null / default
+        };
+
+        _sqlRepoMock.Setup(r =>
+            r.SqlQueryListAsync<QuizListDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()
+            ))
+            .ReturnsAsync(new List<QuizListDto>());
+
+        _sqlRepoMock.Setup(r =>
+            r.SqlQuerySingleAsync<TotalRecordsDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()
+            ))
+            .ReturnsAsync(new TotalRecordsDto { TotalRecords = 0 });
+
+        // Act
+        await _quizService.GetQuizzesByPagination(request);
+
+        _sqlRepoMock.Verify(r =>
+            r.SqlQueryListAsync<QuizListDto>(
+                It.IsAny<string>(),
+                It.Is<NpgsqlParameter[]>(p =>
+                    p.First(x => x.ParameterName == "p_quiz_status").Value == DBNull.Value &&
+                    p.First(x => x.ParameterName == "p_category_id").Value == DBNull.Value &&
+                    p.First(x => x.ParameterName == "p_difficulty_id").Value == DBNull.Value
+                )
+            ), Times.Once);
+    }
+    #endregion
 
     #region MoveQuizzesToCategoryAsync
     [Fact]
