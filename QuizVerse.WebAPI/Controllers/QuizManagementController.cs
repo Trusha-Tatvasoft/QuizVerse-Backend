@@ -14,33 +14,33 @@ namespace QuizVerse.WebAPI.Controllers;
 [Route("api/[controller]")]
 public class QuizManagementController(IQuizManagementService quizManagementService, IDropDownDataService dropDownDataService) : ControllerBase
 {
-    // #region Quiz Card Data 
-    // [HttpPost("get-quiz-card-data")]
-    // public async Task<IActionResult> GetQuizCardData()
-    // {
-    //     return Ok(new ApiResponse<QuizManagementPageDataDto>
-    //     {
-    //         Result = true,
-    //         Message = Constants.FETCH_SUCCESS,
-    //         StatusCode = 200,
-    //         Data = await quizManagementService.GetQuizCardData()
-    //     });
-    // }
-    // #endregion
+    #region Quiz Card Data 
+    [HttpPost("get-quiz-card-data")]
+    public async Task<IActionResult> GetQuizCardData()
+    {
+        return Ok(new ApiResponse<QuizManagementPageDataDto>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = 200,
+            Data = await quizManagementService.GetQuizCardData()
+        });
+    }
+    #endregion
 
-    // #region Get Paginated Quiz List
-    // [HttpPost("get-quizzes-by-pagination")]
-    // public async Task<IActionResult> GetQuizzesByPagination([FromBody] PageListRequest pageListRequest)
-    // {
-    //     return Ok(new ApiResponse<PageListResponse<QuizListDto>>
-    //     {
-    //         Result = true,
-    //         Message = Constants.FETCH_SUCCESS,
-    //         StatusCode = 200,
-    //         Data = await quizManagementService.GetQuizzesByPagination(pageListRequest)
-    //     });
-    // }
-    // #endregion
+    #region Get Paginated Quiz List
+    [HttpPost("get-quizzes-by-pagination")]
+    public async Task<IActionResult> GetQuizzesByPagination([FromBody] PageListRequest pageListRequest)
+    {
+        return Ok(new ApiResponse<PageListResponse<QuizListDto>>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = 200,
+            Data = await quizManagementService.GetQuizzesByPagination(pageListRequest)
+        });
+    }
+    #endregion
 
     #region Create/Update Quiz
     [HttpPost("create-update-quiz")]

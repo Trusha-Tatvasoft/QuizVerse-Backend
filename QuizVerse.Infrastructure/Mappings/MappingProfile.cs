@@ -99,15 +99,11 @@ public class MappingProfile : Profile
         #endregion
 
         #region QuizManagement
+        CreateMap<QuizListDto, QuizListDto>()
+            .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => ToTitleCase(src.QuizTitle)))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => ToTitleCase(src.CategoryName)))
+            .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => CapitalizeFirst(src.QuizDifficultyLevel)));
 
-        // CreateMap<Quiz, QuizListDto>()
-        //    .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Name))
-        //    .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName))
-        //    .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => src.DifficultyLevel.Name))
-        //    .ForMember(dest => dest.TotalQuestion, opt => opt.MapFrom(src => src.TotalQuestion))
-        //    .ForMember(dest => dest.NoOfPersonAttempted, opt => opt.MapFrom(src => src.NoOfPersonAttempted))
-        //    .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
-        //    .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
 
         #endregion
 
