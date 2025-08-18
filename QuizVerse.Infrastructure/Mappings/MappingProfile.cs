@@ -124,6 +124,15 @@ public class MappingProfile : Profile
 
         CreateMap<QuizCategory, QuizCategoryDTO>()
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
+
+        #region BattleManagement
+        CreateMap<BattleManagementData, BattleManagementData>()
+            .ForMember(dest => dest.BattleDifficulty, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleDifficulty)))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => CapitalizeFirst(src.CategoryName)))
+            .ForMember(dest => dest.BattleName, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleName)))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => ToTitleCase(src.Description)));
+
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>

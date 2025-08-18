@@ -40,10 +40,23 @@ namespace QuizVerse.Infrastructure.Enums
         Active = 1,
         Inactive = 0
     }
-    
+
     public enum QuizCategoryActionType
     {
         Delete = 1,
         ChangeStatus = 2
+    }
+
+    public enum BattleStatus
+    {
+        Completed = 1,
+        Draw = 2,
+        Running = 3
+    }
+
+    public enum BattleType
+    {
+        Permanent = 1,
+        TimeLimited = 2
     }
 }

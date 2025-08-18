@@ -35,4 +35,10 @@ public class SqlConstants
     public const string GET_QUIZ_DATA_BY_ID_QUERY_TEMPLATE =
         "SELECT * FROM {0}(@p_quiz_id)";
     #endregion
+
+    #region BattleManagement
+    public const string GET_BATTLE_LIST_TEMPLATE =
+       "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
+    public const string GET_BATTLE_LIST_FUNCTION = "get_battle_list_data";
+    #endregion
 }
