@@ -11,7 +11,7 @@ namespace QuizVerse.WebAPI.Controllers;
 public class BattleManagementController(IBattleManagementService battleManagementService) : ControllerBase
 {
     #region Battle List Data 
-    [HttpPost("get-battle-list")]
+    [HttpGet("get-battle-list")]
     public async Task<IActionResult> GetBattleList()
     {
         return Ok(new ApiResponse<List<BattleManagementData>>
