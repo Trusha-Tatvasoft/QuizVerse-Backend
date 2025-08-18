@@ -72,6 +72,8 @@ public partial class QuizVerseDbContext : DbContext
 
     public virtual DbSet<QuizToBaseQuestionMap> QuizToBaseQuestionMaps { get; set; }
 
+    public virtual DbSet<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMaps { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserBadgesEarned> UserBadgesEarneds { get; set; }
@@ -1189,6 +1191,28 @@ public partial class QuizVerseDbContext : DbContext
                 .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizToBaseQuestionMap_quiz_id_fkey");
+        });
+
+        modelBuilder.Entity<QuizToQuestionDifficultyMap>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("QuizToQuestionDifficultyMap_pkey");
+
+            entity.ToTable("QuizToQuestionDifficultyMap");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.NoOfQuestions).HasColumnName("no_of_questions");
+            entity.Property(e => e.QuestionTypeId).HasColumnName("question_type_id");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+
+            entity.HasOne(d => d.QuestionType).WithMany(p => p.QuizToQuestionDifficultyMaps)
+                .HasForeignKey(d => d.QuestionTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_question_type");
+
+            entity.HasOne(d => d.Quiz).WithMany(p => p.QuizToQuestionDifficultyMaps)
+                .HasForeignKey(d => d.QuizId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_quiz");
         });
 
         modelBuilder.Entity<User>(entity =>

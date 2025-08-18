@@ -65,5 +65,7 @@ public partial class Quiz
 
     public virtual ICollection<QuizToBaseQuestionMap> QuizToBaseQuestionMaps { get; set; } = new List<QuizToBaseQuestionMap>();
 
+    public virtual ICollection<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMaps { get; set; } = new List<QuizToQuestionDifficultyMap>();
+
     public virtual ICollection<UserFavoriteQuiz> UserFavoriteQuizzes { get; set; } = new List<UserFavoriteQuiz>();
 }
