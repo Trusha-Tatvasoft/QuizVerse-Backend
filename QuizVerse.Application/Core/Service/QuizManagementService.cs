@@ -1,7 +1,5 @@
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
@@ -13,7 +11,6 @@ using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
-using System.Linq.Dynamic.Core;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -28,90 +25,72 @@ public class QuizManagementService(
 {
     public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
 
-    // #region Get Card Data
-    // public async Task<QuizManagementPageDataDto> GetQuizCardData()
-    // {
-    //     var data = await quizRepository
-    //         .GetQueryableInclude(q => q.QuizAttempteds, q => q.QuizToBaseQuestionMaps)
-    //         .Where(q => !q.IsDeleted)
-    //         .Select(q => new
-    //         {
-    //             IsActive = q.Status == (int)QuizStatus.Active,
-    //             Participants = q.QuizAttempteds.Select(qa => qa.UserId),
-    //             Questions = q.QuizToBaseQuestionMaps.Select(qm => qm.QueId)
-    //         })
-    //         .ToListAsync();
+    #region Get Card Data
+    public async Task<QuizManagementPageDataDto> GetQuizCardData()
+    {
+        var parameters = new NpgsqlParameter[]
+        {
+            new("p_active_status", NpgsqlDbType.Integer) { Value = (int)QuizStatus.Active }
+        };
 
-    //     long totalQuiz = data.Count;
-    //     long activeQuiz = data.Count(q => q.IsActive);
-    //     long totalParticipants = data.SelectMany(q => q.Participants).Distinct().Count();
-    //     long totalQuestions = data.SelectMany(q => q.Questions).Distinct().Count();
+        string query = string.Format(
+            SqlConstants.GET_QUIZ_CARD_DATA_QUERY_TEMPLATE,
+            SqlConstants.GET_QUIZ_CARD_DATA_FUNCTION);
 
-    //     return new QuizManagementPageDataDto
-    //     {
-    //         TotalQuiz = totalQuiz,
-    //         ActiveQuiz = activeQuiz,
-    //         TotalParticipants = totalParticipants,
-    //         TotalQuestions = totalQuestions
-    //     };
-    // }
-    // #endregion
+        return await _sqlQueryRepository.SqlQuerySingleAsync<QuizManagementPageDataDto>(query, parameters);
+    }
+    #endregion
 
-    // #region Get Quiz List
-    // public async Task<PageListResponse<QuizListDto>> GetQuizzesByPagination(PageListRequest pageListRequest)
-    // {
-    //     var query = quizRepository
-    //         .GetQueryableInclude(q => q.Category, q => q.DifficultyLevel)
-    //         .Where(q => !q.IsDeleted);
+    #region Get Quiz List
+    public async Task<PageListResponse<QuizListDto>> GetQuizzesByPagination(PageListRequest pageListRequest)
+    {
+        // --- LIST QUERY ---
+        string listQuery = string.Format(
+            SqlConstants.GET_QUIZ_LIST_QUERY_TEMPLATE,
+            SqlConstants.GET_QUIZ_LIST_FUNCTION
+        );
 
-    //     // Search
-    //     if (!string.IsNullOrWhiteSpace(pageListRequest.SearchTerm))
-    //     {
-    //         var term = pageListRequest.SearchTerm.ToLower();
-    //         query = query.Where(q =>
-    //             q.Name.ToLower().Contains(term) ||
-    //             q.Category.CategoryName.ToLower().Contains(term));
-    //     }
+        var listParameters = new NpgsqlParameter[]
+        {
+            new("p_page_number", NpgsqlDbType.Integer) { Value = pageListRequest.PageNumber },
+            new("p_page_size", NpgsqlDbType.Integer) { Value = pageListRequest.PageSize },
+            new("p_search_term", NpgsqlDbType.Text) { Value = (object?)pageListRequest.SearchTerm ?? DBNull.Value },
+            new("p_sort_column", NpgsqlDbType.Text) { Value = (object?)pageListRequest.SortColumn ?? DBNull.Value },
+            new("p_sort_descending", NpgsqlDbType.Boolean) { Value = pageListRequest.SortDescending },
+            new("p_quiz_status", NpgsqlDbType.Integer) {  Value = pageListRequest.Filters?.QuizStatus != null? (int)pageListRequest.Filters.QuizStatus: DBNull.Value},
+            new("p_category_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizCategoryId ?? DBNull.Value },
+            new("p_difficulty_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizDifficultyId ?? DBNull.Value }
+        };
 
-    //     // Filters
-    //     var filters = pageListRequest.Filters;
-    //     if (filters != null)
-    //     {
-    //         if (filters.QuizStatus.HasValue)
-    //         {
-    //             if (!Enum.IsDefined(typeof(QuizStatus), filters.QuizStatus.Value))
-    //                 throw new AppException(Constants.INVALID_QUIZ_STATUS_MESSAGE);
+        List<QuizListDto> quizzes = await _sqlQueryRepository.SqlQueryListAsync<QuizListDto>(
+            listQuery, listParameters
+        );
 
-    //             query = query.Where(q => q.Status == (int)filters.QuizStatus.Value);
-    //         }
+        // --- COUNT QUERY ---
+        string countQuery = string.Format(
+            SqlConstants.GET_QUIZ_LIST_COUNT_QUERY_TEMPLATE, 
+            SqlConstants.GET_QUIZ_LIST_COUNT_FUNCTION
+        );
 
-    //         if (filters.QuizCategoryId.HasValue)
-    //             query = query.Where(q => q.CategoryId == filters.QuizCategoryId.Value);
+        var countParameters = new NpgsqlParameter[]
+        {
+            new("p_search_term", NpgsqlDbType.Text) { Value = (object?)pageListRequest.SearchTerm ?? DBNull.Value },
+            new("p_quiz_status", NpgsqlDbType.Integer) {  Value = pageListRequest.Filters?.QuizStatus != null? (int)pageListRequest.Filters.QuizStatus: DBNull.Value},
+            new("p_category_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizCategoryId ?? DBNull.Value },
+            new("p_difficulty_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizDifficultyId ?? DBNull.Value },
+        };
 
-    //         if (filters.QuizDifficultyId.HasValue)
-    //             query = query.Where(q => q.DifficultyLevelId == filters.QuizDifficultyId.Value);
-    //     }
+        TotalRecordsDto totalRecordsStr = await _sqlQueryRepository.SqlQuerySingleAsync<TotalRecordsDto>(
+            countQuery, countParameters
+        );
 
-    //     // Sorting (special mapping for category & difficulty)
-    //     if (!string.IsNullOrWhiteSpace(pageListRequest.SortColumn))
-    //     {
-    //         string sortColumn = pageListRequest.SortColumn;
-
-    //         if (sortColumn.Equals("category", StringComparison.OrdinalIgnoreCase))
-    //             sortColumn = "Category.CategoryName";
-    //         else if (sortColumn.Equals("difficulty", StringComparison.OrdinalIgnoreCase))
-    //             sortColumn = "DifficultyLevel.Name";
-
-    //         query = query.OrderBy($"{sortColumn} {(pageListRequest.SortDescending ? "desc" : "asc")}");
-    //     }
-    //     else
-    //     {
-    //         query = query.OrderBy("Id asc");
-    //     }
-
-    //     return await quizRepository.PaginatedList<QuizListDto>(query, pageListRequest, q => q.ProjectTo<QuizListDto>(mapper.ConfigurationProvider));
-    // }
-    // #endregion
+        return new PageListResponse<QuizListDto>
+        {
+            TotalRecords = totalRecordsStr.TotalRecords,
+            Records = mapper.Map<List<QuizListDto>>(quizzes)
+        };
+    }
+    #endregion
 
     #region update refrence
     public async Task MoveQuizzesToCategoryAsync(QuizCategory quizCategoryWithQuizzes, int toCategoryId)
