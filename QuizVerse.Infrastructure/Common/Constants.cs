@@ -119,13 +119,14 @@ public static class Constants
 
     #region Quiz Category Messages
     public const string INVALID_PAGE_NO = "Page number {0} exceeds maximum page number {1}.";
-    public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist."; 
-    public const string QUIZ_CATEGORY_NOT_FOUND = "Quiz category with ID {0} not found.";
-    public const string DUPLICATE_QUIZZ_CATEGORY = "Quiz with this category already exist";
-    public const string QUIZ_CATEGORY_DELETED = "Quiz with this category {0} is already deleted.";
-    public const string QUIZ_CATEGORY_STATUS_ALREADY_SET = "User is already {0}.";
-    public const string QUIZ_CATEGORY_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
-    public const string QUIZ_CATEGORY_DEFAULT_ICON = "category"; 
+    public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist.";
+    public const string QUIZ_CATEGORY_NOT_FOUND = "Quiz category with ID {0} was not found.";
+    public const string DUPLICATE_QUIZ_CATEGORY = "A quiz category with this name already exists.";
+    public const string QUIZ_CATEGORY_DELETED = "Quiz category with ID {0} is already deleted.";
+    public const string QUIZ_CATEGORY_STATUS_ALREADY_SET = "Quiz category status is already {0}.";
+    public const string QUIZ_CATEGORY_ACTIVATED_SUCCESS = "Quiz category activated successfully.";
+    public const string QUIZ_CATEGORY_INACTIVATED_SUCCESS = "Quiz category inactivated successfully.";
+    public const string QUIZ_CATEGORY_DELETED_SUCCESS = "Quiz category deleted successfully.";
     #endregion
 
     #region Quiz Management List
