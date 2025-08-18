@@ -16,6 +16,7 @@ using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using QuizVerse.Infrastructure.DTOs;
 
 namespace QuizVerse.UnitTests.Services;
 
@@ -574,140 +575,94 @@ public class QuestionPoolServiceTest
     }
 
     [Fact]
-    public async Task ImportQuestionsFromCsv_EmptyFile_ThrowsAppException()
+    public async Task SaveQuestions_WhenNullList_ReturnsNoQuestionsMessage()
     {
-        string csvHeaderOnly = "Question,Type,Difficulty,Category,Option1,Option2,Option3,Option4,CorrectAnswer\n";
+        string result = await _service.SaveQuestions(null);
 
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(csvHeaderOnly));
-
-        AppException ex = await Assert.ThrowsAsync<AppException>(() => _service.ImportQuestionsFromCsv(stream));
-
-        Assert.Equal(Constants.CSV_INVALID_OR_EMPTY_ERROR, ex.Message);
-        Assert.Equal(StatusCodes.Status400BadRequest, ex.StatusCode);
+        Assert.Equal(Constants.NO_QUESTIONS_TO_SAVE, result);
+        _baseQuestionRepoMock.Verify(r => r.AddAsync(It.IsAny<BaseQuestion>()), Times.Never);
     }
 
     [Fact]
-    public async Task ImportQuestionsFromExcel_EmptyFile_ThrowsAppException()
+    public async Task SaveQuestions_WhenEmptyList_ReturnsNoQuestionsMessage()
     {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        string result = await _service.SaveQuestions([]);
 
-        using XLWorkbook workbook = new();
-        IXLWorksheet worksheet = workbook.Worksheets.Add("Sheet1");
-
-        worksheet.Cell(1, 1).Value = "Question";
-        worksheet.Cell(1, 2).Value = "Category";
-        worksheet.Cell(1, 3).Value = "Difficulty";
-        worksheet.Cell(1, 4).Value = "Type";
-        worksheet.Cell(1, 5).Value = "Option1";
-        worksheet.Cell(1, 6).Value = "Option2";
-        worksheet.Cell(1, 7).Value = "Option3";
-        worksheet.Cell(1, 8).Value = "Option4";
-        worksheet.Cell(1, 9).Value = "CorrectAnswer";
-
-        using MemoryStream ms = new();
-        workbook.SaveAs(ms);
-        ms.Position = 0;
-
-        AppException ex = await Assert.ThrowsAsync<AppException>(() =>
-            _service.ImportQuestionsFromExcel(ms));
-
-        Assert.Equal(Constants.EXCEL_INVALID_OR_EMPTY_ERROR, ex.Message);
-        Assert.Equal(StatusCodes.Status400BadRequest, ex.StatusCode);
+        Assert.Equal(Constants.NO_QUESTIONS_TO_SAVE, result);
+        _baseQuestionRepoMock.Verify(r => r.AddAsync(It.IsAny<BaseQuestion>()), Times.Never);
     }
 
     [Fact]
-    public async Task ImportQuestionsFromCsv_ValidFile_ReturnsSuccessMessage()
+    public async Task SaveQuestions_SingleQuestionWithoutOptions_SavesQuestionOnly()
     {
-        string csvContent =
-            "Question,Category,Difficulty,Type,Option1,Option2,Option3,Option4,CorrectAnswer\n" +
-            "What is 2+2?,Math,Easy,MCQ,1,2,3,4,4\n";
+        QuestionsListRequestDto dto = new() { CategoryId = 1, QueDifficultyId = 1, QueText = "Q1", QueTypeId = 1 };
+        BaseQuestion baseQuestion = new() { Id = 100 };
 
-        using MemoryStream stream = new(Encoding.UTF8.GetBytes(csvContent));
+        _mapperMock.Setup(m => m.Map<BaseQuestion>(dto)).Returns(baseQuestion);
 
-        _categoryRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<QuizCategory>
-        {
-            new() { Id = 1, CategoryName = "math" }
-        });
+        string result = await _service.SaveQuestions([dto]);
 
-        _difficultyRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<QuestionDifficulty>
-        {
-            new() { Id = 1, Name = "easy" }
-        });
-
-        _typeRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<QuestionType>
-        {
-            new() { Id = 1, TypeName = "mcq" }
-        });
-
-        _baseQuestionRepoMock.Setup(r => r.AddRangeAsync(It.IsAny<List<BaseQuestion>>()))
-            .Returns(Task.CompletedTask);
-
-        _optionsRepoMock.Setup(r => r.AddRangeAsync(It.IsAny<List<QuestionOptionsAnswer>>()))
-            .Returns(Task.CompletedTask);
-
-        string result = await _service.ImportQuestionsFromCsv(stream);
-
-        Assert.Contains("imported successfully", result, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(Constants.CSV, result);
+        Assert.Equal(Constants.QUESTIONS_SAVED_SUCCESSFULLY, result);
+        _baseQuestionRepoMock.Verify(r => r.AddAsync(baseQuestion), Times.Once);
+        _optionsRepoMock.Verify(r => r.AddRangeAsync(It.IsAny<List<QuestionOptionsAnswer>>()), Times.Never);
     }
 
     [Fact]
-    public async Task ImportQuestionsFromExcel_ValidFile_ReturnsSuccessMessage()
+    public async Task SaveQuestions_SingleQuestionWithOptions_SavesQuestionAndOptions()
     {
-        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-
-        using XLWorkbook workbook = new();
-        IXLWorksheet worksheet = workbook.Worksheets.Add("Sheet1");
-
-        worksheet.Cell(1, 1).Value = "Question";
-        worksheet.Cell(1, 2).Value = "Category";
-        worksheet.Cell(1, 3).Value = "Difficulty";
-        worksheet.Cell(1, 4).Value = "Type";
-        worksheet.Cell(1, 5).Value = "Option1";
-        worksheet.Cell(1, 6).Value = "Option2";
-        worksheet.Cell(1, 7).Value = "Option3";
-        worksheet.Cell(1, 8).Value = "Option4";
-        worksheet.Cell(1, 9).Value = "CorrectAnswer";
-
-        worksheet.Cell(2, 1).Value = "What is 2+2?";
-        worksheet.Cell(2, 2).Value = "Math";
-        worksheet.Cell(2, 3).Value = "Easy";
-        worksheet.Cell(2, 4).Value = "MCQ";
-        worksheet.Cell(2, 5).Value = "1";
-        worksheet.Cell(2, 6).Value = "2";
-        worksheet.Cell(2, 7).Value = "3";
-        worksheet.Cell(2, 8).Value = "4";
-        worksheet.Cell(2, 9).Value = "4";
-
-        using MemoryStream stream = new();
-        workbook.SaveAs(stream);
-        stream.Position = 0;
-
-        _categoryRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<QuizCategory>
+        QuestionsListRequestDto dto = new()
         {
-            new() { Id = 1, CategoryName = "math" }
-        });
-
-        _difficultyRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<QuestionDifficulty>
+            CategoryId = 1,
+            QueDifficultyId = 1,
+            QueText = "Q1",
+            QueTypeId = 1,
+            QueOptionsAns = new List<QueOptionsAndAnswersDto>
         {
-            new() { Id = 1, Name = "easy" }
-        });
+            new() { Key = "option", Value = "A" },
+            new() { Key = "answer", Value = "B" }
+        }
+        };
 
-        _typeRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<QuestionType>
+        BaseQuestion baseQuestion = new() { Id = 200 };
+        List<QuestionOptionsAnswer> mappedOptions =
+        [
+            new QuestionOptionsAnswer { Key = "option", Value = "A" },
+            new QuestionOptionsAnswer { Key = "answer", Value = "B" }
+        ];
+
+        _mapperMock.Setup(m => m.Map<BaseQuestion>(dto)).Returns(baseQuestion);
+        _mapperMock.Setup(m => m.Map<List<QuestionOptionsAnswer>>(dto.QueOptionsAns)).Returns(mappedOptions);
+
+        string result = await _service.SaveQuestions([dto]);
+
+        Assert.Equal(Constants.QUESTIONS_SAVED_SUCCESSFULLY, result);
+        _baseQuestionRepoMock.Verify(r => r.AddAsync(baseQuestion), Times.Once);
+        _optionsRepoMock.Verify(r => r.AddRangeAsync(mappedOptions), Times.Once);
+
+        Assert.All(mappedOptions, opt =>
         {
-            new() { Id = 1, TypeName = "mcq" }
+            Assert.Equal(baseQuestion.Id, opt.QuestionId);
+            Assert.Equal(1, opt.CreatedBy);
+            Assert.False(opt.IsDeleted);
         });
+    }
 
-        _baseQuestionRepoMock.Setup(r => r.AddRangeAsync(It.IsAny<List<BaseQuestion>>()))
-            .Returns(Task.CompletedTask);
+    [Fact]
+    public async Task SaveQuestions_MultipleQuestions_SavesAll()
+    {
+        QuestionsListRequestDto dto1 = new() { CategoryId = 1, QueDifficultyId = 1, QueText = "Q1", QueTypeId = 1 };
+        QuestionsListRequestDto dto2 = new() { CategoryId = 2, QueDifficultyId = 2, QueText = "Q2", QueTypeId = 2 };
 
-        _optionsRepoMock.Setup(r => r.AddRangeAsync(It.IsAny<List<QuestionOptionsAnswer>>()))
-            .Returns(Task.CompletedTask);
+        BaseQuestion baseQ1 = new() { Id = 300 };
+        BaseQuestion baseQ2 = new() { Id = 400 };
 
-        string result = await _service.ImportQuestionsFromExcel(stream);
+        _mapperMock.Setup(m => m.Map<BaseQuestion>(dto1)).Returns(baseQ1);
+        _mapperMock.Setup(m => m.Map<BaseQuestion>(dto2)).Returns(baseQ2);
 
-        Assert.Contains("imported successfully", result, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(Constants.EXCEL, result);
+        string result = await _service.SaveQuestions([dto1, dto2]);
+
+        Assert.Equal(Constants.QUESTIONS_SAVED_SUCCESSFULLY, result);
+        _baseQuestionRepoMock.Verify(r => r.AddAsync(It.IsAny<BaseQuestion>()), Times.Exactly(2));
     }
 
     [Fact]

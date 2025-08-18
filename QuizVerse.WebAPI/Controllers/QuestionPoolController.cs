@@ -80,39 +80,15 @@ public class QuestionPoolController(IQuestionPoolService _questionPoolService) :
         return Ok(response);
     }
 
-    [HttpPost("import-questions-from-csv")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> ImportQuestionsFromCsv([FromForm] CsvUploadRequestDTO request)
+    [HttpPost("save-questions")]
+    public async Task<IActionResult> SaveQuestions([FromBody] List<QuestionsListRequestDto> questionList)
     {
-        IFormFile file = request.File;
-
-        using Stream stream = file.OpenReadStream();
-
-        ApiResponse<object> response = new()
+        ApiResponse<PageListResponse<QuestionPoolListDto>> response = new()
         {
             Result = true,
             StatusCode = StatusCodes.Status200OK,
-            Message = await _questionPoolService.ImportQuestionsFromCsv(stream),
-            Data = null,
-        };
-
-        return Ok(response);
-    }
-
-    [HttpPost("import-questions-from-excel")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> ImportQuestionsFromExcel([FromForm] ExcelUploadRequestDTO request)
-    {
-        IFormFile file = request.File;
-
-        using Stream stream = file.OpenReadStream();
-
-        ApiResponse<object> response = new()
-        {
-            Result = true,
-            StatusCode = StatusCodes.Status200OK,
-            Message = await _questionPoolService.ImportQuestionsFromExcel(stream),
-            Data = null,
+            Message = await _questionPoolService.SaveQuestions(questionList),
+            Data = null
         };
 
         return Ok(response);

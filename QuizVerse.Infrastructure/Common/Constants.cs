@@ -165,12 +165,12 @@ public static class Constants
     public const string QUESTION_NOT_FOUND_ERROR = "Question with id {0} not found or already deleted.";
     public const string CSV_INVALID_OR_EMPTY_ERROR = "CSV is empty or has an invalid format.";
     public const string EXCEL_INVALID_OR_EMPTY_ERROR = "Excel file is empty or has an invalid format.";
-    public const string NO_VALID_QUESTIONS_FOUND_IN_FILE_ERROR = "No valid question data found in the uploaded {0} file.";
-    public const string QUESTIONS_IMPORTED_SUCCESS_MESSAGE = "{0} questions imported successfully from {1}.";
     public const string OPTIONS_CANNOT_BE_EMPTY = "Options cannot be empty or null.";
     public const string DUPLICATE_OPTIONS_FOUND = "Duplicate option(s) found: {0}";
     public const string CORRECT_ANSWER_NOT_IN_OPTIONS = "Correct answer '{0}' is not listed among the options.";
     public const string CSV_PREVIEW_LOADED_SUCCESSFULLY = "CSV preview loaded successfully.";
     public const string EXCEL_PREVIEW_LOADED_SUCCESSFULLY = "Excel preview loaded successfully.";
+    public const string NO_QUESTIONS_TO_SAVE = "No questions to save.";
+    public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     #endregion
 }

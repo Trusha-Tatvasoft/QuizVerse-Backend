@@ -13,9 +13,7 @@ public interface IQuestionPoolService
 
     Task<QuestionDetailDTO?> GetQuestionPreview(int id);
 
-    Task<string> ImportQuestionsFromCsv(Stream fileStream);
-
-    Task<string> ImportQuestionsFromExcel(Stream fileStream);
+    Task<string> SaveQuestions(List<QuestionsListRequestDto> questionList);
 
     Task<List<QuestionsListResponseDto>> PreviewQuestionsFromCsv(Stream fileStream);
 

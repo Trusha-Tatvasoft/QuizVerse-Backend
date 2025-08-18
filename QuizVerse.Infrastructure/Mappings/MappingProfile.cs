@@ -2,6 +2,7 @@ using System.Globalization;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
@@ -158,6 +159,48 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Options,
                 opt => opt.Ignore())
             .ForMember(dest => dest.CorrectAnswer,
+                opt => opt.Ignore());
+
+        CreateMap<QuestionsListRequestDto, BaseQuestion>()
+            .ForMember(dest => dest.Id,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.QueText,
+                opt => opt.MapFrom(src => src.QueText))
+            .ForMember(dest => dest.CategoryId,
+                opt => opt.MapFrom(src => src.CategoryId))
+            .ForMember(dest => dest.QueDifficultyId,
+                opt => opt.MapFrom(src => src.QueDifficultyId))
+            .ForMember(dest => dest.QueTypeId,
+                opt => opt.MapFrom(src => src.QueTypeId))
+            .ForMember(dest => dest.CreatedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.Ignore());
+
+        CreateMap<QueOptionsAndAnswersDto, QuestionOptionsAnswer>()
+            .ForMember(dest => dest.Id,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.QuestionId,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.Key,
+                opt => opt.MapFrom(src => src.Key))
+            .ForMember(dest => dest.Value,
+                opt => opt.MapFrom(src => src.Value))
+            .ForMember(dest => dest.CreatedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.IsDeleted,
                 opt => opt.Ignore());
         #endregion
     }

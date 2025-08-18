@@ -233,22 +233,37 @@ public class QuestionPoolService(
         return response;
     }
 
-    public async Task<string> ImportQuestionsFromCsv(Stream fileStream)
+    public async Task<string> SaveQuestions(List<QuestionsListRequestDto> questionList)
     {
-        List<QuestionImportDTO> records = ReadCsv(fileStream);
-        if (records.Count == 0)
-            throw new AppException(Constants.CSV_INVALID_OR_EMPTY_ERROR, StatusCodes.Status400BadRequest);
+        if (questionList == null || questionList.Count == 0)
+            return Constants.NO_QUESTIONS_TO_SAVE;
 
-        return await ImportRecordsAsync(records, Constants.CSV);
-    }
+        foreach (QuestionsListRequestDto question in questionList)
+        {
+            BaseQuestion baseQuestion = _mapper.Map<BaseQuestion>(question);
+            baseQuestion.CreatedBy = UserId;
+            baseQuestion.CreatedDate = DateTime.UtcNow;
+            baseQuestion.IsDeleted = false;
 
-    public async Task<string> ImportQuestionsFromExcel(Stream fileStream)
-    {
-        List<QuestionImportDTO> records = ReadExcel(fileStream);
-        if (records.Count == 0)
-            throw new AppException(Constants.EXCEL_INVALID_OR_EMPTY_ERROR, StatusCodes.Status400BadRequest);
+            await _baseQuestionRepository.AddAsync(baseQuestion);
 
-        return await ImportRecordsAsync(records, Constants.EXCEL);
+            if (question.QueOptionsAns != null && question.QueOptionsAns.Count > 0)
+            {
+                List<QuestionOptionsAnswer> options = _mapper.Map<List<QuestionOptionsAnswer>>(question.QueOptionsAns);
+
+                options.ForEach(opt =>
+                {
+                    opt.QuestionId = baseQuestion.Id;
+                    opt.CreatedBy = UserId;
+                    opt.CreatedDate = DateTime.UtcNow;
+                    opt.IsDeleted = false;
+                });
+
+                await _questionOptionsAnswerRepository.AddRangeAsync(options);
+            }
+        }
+
+        return Constants.QUESTIONS_SAVED_SUCCESSFULLY;
     }
 
     public async Task<List<QuestionsListResponseDto>> PreviewQuestionsFromCsv(Stream fileStream)
@@ -274,35 +289,7 @@ public class QuestionPoolService(
     }
     #endregion
 
-    #region Import Core
-    private async Task<string> ImportRecordsAsync(
-        List<QuestionImportDTO> records, string sourceName)
-    {
-        (Dictionary<string, int> categoryMap, Dictionary<string, int> difficultyMap, Dictionary<string, int> typeMap) = await LoadMappingsAsync();
-
-        (List<BaseQuestion> questions, List<QuestionOptionsAnswer> options) = ProcessImportRecords(records, categoryMap, difficultyMap, typeMap);
-
-        if (questions.Count == 0)
-            throw new AppException(string.Format(Constants.NO_VALID_QUESTIONS_FOUND_IN_FILE_ERROR, sourceName), StatusCodes.Status400BadRequest);
-
-        foreach (BaseQuestion question in questions)
-        {
-            question.CreatedBy = UserId;
-            question.CreatedDate = DateTime.UtcNow;
-        }
-
-        foreach (QuestionOptionsAnswer option in options)
-        {
-            option.CreatedBy = UserId;
-            option.CreatedDate = DateTime.UtcNow;
-        }
-
-        await _baseQuestionRepository.AddRangeAsync(questions);
-        await _questionOptionsAnswerRepository.AddRangeAsync(options);
-
-        return string.Format(Constants.QUESTIONS_IMPORTED_SUCCESS_MESSAGE, questions.Count, sourceName);
-    }
-
+    #region Import Mappings
     private async Task<(Dictionary<string, int> CategoryMap, Dictionary<string, int> DifficultyMap, Dictionary<string, int> TypeMap)>
         LoadMappingsAsync()
     {
@@ -315,48 +302,6 @@ public class QuestionPoolService(
             difficulties.ToDictionary(d => d.Name.Trim().ToLowerInvariant(), d => d.Id),
             types.ToDictionary(t => t.TypeName.Trim().ToLowerInvariant(), t => t.Id)
         );
-    }
-
-    private static (List<BaseQuestion> Questions, List<QuestionOptionsAnswer> Options) ProcessImportRecords(
-        List<QuestionImportDTO> records,
-        Dictionary<string, int> categoryMap,
-        Dictionary<string, int> difficultyMap,
-        Dictionary<string, int> typeMap)
-    {
-        List<BaseQuestion> questions = [];
-        List<QuestionOptionsAnswer> options = [];
-
-        foreach (QuestionImportDTO record in records)
-        {
-            if (!IsValidRecord(record, categoryMap, difficultyMap, typeMap, out var categoryId, out var difficultyId, out var typeId))
-                continue;
-
-            BaseQuestion question = new()
-            {
-                QueText = record.Question!,
-                CategoryId = categoryId,
-                QueDifficultyId = difficultyId,
-                QueTypeId = typeId,
-            };
-            questions.Add(question);
-
-            IEnumerable<string> validOptions = record.GetOptions().Where(o => !string.IsNullOrWhiteSpace(o));
-            options.AddRange(validOptions.Select(o => new QuestionOptionsAnswer
-            {
-                Question = question,
-                Key = Constants.QUESTION_KEY_OPTION,
-                Value = o!,
-            }));
-
-            options.Add(new QuestionOptionsAnswer
-            {
-                Question = question,
-                Key = Constants.QUESTION_KEY_ANSWER,
-                Value = record.CorrectAnswer!,
-            });
-        }
-
-        return (questions, options);
     }
     #endregion
 
@@ -386,10 +331,11 @@ public class QuestionPoolService(
         });
 
         DataTable table = dataSet.Tables[0];
+        table.CaseSensitive = true;
 
         string[] required = ["Question", "Category", "Difficulty", "Type", "CorrectAnswer"];
 
-        if (!required.All(table.Columns.Contains))
+        if (!required.All(col => table.Columns.Cast<DataColumn>().Any(c => c.ColumnName == col)))
             return [];
 
         return [.. table.Rows.Cast<DataRow>()
@@ -542,8 +488,11 @@ public class QuestionPoolService(
                 {
                     QueText = record.Question?.Trim() ?? string.Empty,
                     CategoryId = categoryId,
+                    CategoryName = record.Category!,
                     QueDifficultyId = difficultyId,
+                    QueDifficultyName = record.Difficulty!,
                     QueTypeId = typeId,
+                    QueTypeName = record.Type!,
                     QueOptionsAns = optionsDto
                 });
             }
