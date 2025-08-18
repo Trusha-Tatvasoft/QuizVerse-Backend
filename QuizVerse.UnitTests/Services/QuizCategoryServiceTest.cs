@@ -420,7 +420,7 @@ namespace QuizVerse.UnitTests.Services
         public async Task UpdateQuizCategoryByAction_ShouldChangeStatusFromTrueToFalse()
         {
             // Arrange
-            QuizCategory category = new QuizCategory { Id = 1, Status = true, IsDeleted = false };
+            QuizCategory category = new() { Id = 1, Status = true, IsDeleted = false };
             _quizCategoryRepoMock
                 .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuizCategory, bool>>>(), null))
                 .ReturnsAsync(category);
@@ -441,7 +441,7 @@ namespace QuizVerse.UnitTests.Services
 
             // Assert
             Assert.False(category.Status);
-            Assert.Contains(category.Id.ToString(), result);
+            Assert.Contains("Inactive", result); 
             _quizCategoryRepoMock.Verify(r => r.UpdateAsync(category), Times.AtLeastOnce);
         }
 
@@ -468,7 +468,7 @@ namespace QuizVerse.UnitTests.Services
             string result = await _service.UpdateQuizCategoryByAction(request);
 
             Assert.True(category.Status);
-            Assert.Contains(category.Id.ToString(), result);
+            Assert.Contains("Active", result);
             _quizCategoryRepoMock.Verify(r => r.UpdateAsync(category), Times.AtLeastOnce);
         }
 
@@ -526,7 +526,7 @@ namespace QuizVerse.UnitTests.Services
         public async Task UpdateQuizCategoryByAction_ShouldClearCache_WhenStatusChanged()
         {
             // Arrange
-            var category = new QuizCategory
+            QuizCategory category = new ()
             {
                 Id = 1,
                 Status = true, // initial status
@@ -553,7 +553,7 @@ namespace QuizVerse.UnitTests.Services
 
             // Assert
             Assert.False(category.Status); // status should be updated
-            Assert.Contains(category.Id.ToString(), result);
+            Assert.Contains("Inactive", result);
 
             // Verify repo update called
             _quizCategoryRepoMock.Verify(r => r.UpdateAsync(category), Times.AtLeast(2));
@@ -584,5 +584,34 @@ namespace QuizVerse.UnitTests.Services
             // Cache clear should never happen
             _dropDownDataServiceMock.Verify(d => d.ClearCache(It.IsAny<DropDownType>()), Times.Never);
         }
+
+        [Fact]
+        public async Task IsCategoryNameAvailable_ShouldReturnTrue_WhenNameDoesNotExist()
+        {
+            // Arrange
+            _quizCategoryRepoMock
+                .Setup(r => r.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<QuizCategory, bool>>>()))
+                .ReturnsAsync(false);
+
+            // Act
+            var result = await _service.IsCategoryNameAvailable("Science");
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task IsCategoryNameAvailable_ShouldThrow_WhenNameAlreadyExists()
+        {
+            // Arrange
+            _quizCategoryRepoMock
+                .Setup(r => r.Exists(It.IsAny<Expression<Func<QuizCategory, bool>>>()))
+                .ReturnsAsync(true);
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.IsCategoryNameAvailable("Science"));
+            Assert.Equal(Constants.DUPLICATE_QUIZZ_CATEGORY, ex.Message);
+        }
+
     }
 }

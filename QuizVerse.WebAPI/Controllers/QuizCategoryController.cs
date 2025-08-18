@@ -1,4 +1,3 @@
-using System.Reflection.Metadata;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
@@ -75,4 +74,22 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
         });
     }
     #endregion
+
+    #region Category Name Available
+    [HttpGet("is-category-name-available/{name}/{id?}")]
+    public async Task<IActionResult> IsCategoryNameAvailable(string name, int? id = null)
+    {
+        var result = await _quizCategoryService.IsCategoryNameAvailable(name, id);
+
+        return Ok(new ApiResponse<string>
+        {
+            Result = result,
+            Message = Constants.VALID_DATA,
+            StatusCode = StatusCodes.Status200OK,
+            Data = null
+        });
+    }
+    #endregion
+
+
 }

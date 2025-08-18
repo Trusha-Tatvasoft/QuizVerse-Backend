@@ -8,4 +8,5 @@ public interface IQuizCategoryService
     public Task<QuizCategoryDTO> GetQuizCategoryById(int id);
     public Task<(bool Success, string Message)> CreateOrUpdateQuizCategory(QuizCategoryDTO quizCategoryDto);
     public Task<string> UpdateQuizCategoryByAction(QuizCategoryActionRequestDto quizCategoryAction);
+    public Task<bool> IsCategoryNameAvailable(string name, int? id = null);
 }
