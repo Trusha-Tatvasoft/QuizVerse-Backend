@@ -17,7 +17,7 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
     [HttpPost("get-quiz-categories")]
     public async Task<IActionResult> GetQuizCategories(PageListRequest pageListRequest)
     {
-        ApiResponse<PageListResponse<QuizCategoryDTO>> response = new ApiResponse<PageListResponse<QuizCategoryDTO>>
+        ApiResponse<PageListResponse<QuizCategoryDTO>> response = new()
         {
             Result = true,
             StatusCode = StatusCodes.Status200OK,
@@ -79,17 +79,13 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
     [HttpGet("is-category-name-available/{name}/{id?}")]
     public async Task<IActionResult> IsCategoryNameAvailable(string name, int? id = null)
     {
-        var result = await _quizCategoryService.IsCategoryNameAvailable(name, id);
-
         return Ok(new ApiResponse<string>
         {
-            Result = result,
+            Result =  await _quizCategoryService.IsCategoryNameAvailable(name, id),
             Message = Constants.VALID_DATA,
             StatusCode = StatusCodes.Status200OK,
             Data = null
         });
     }
     #endregion
-
-
 }
