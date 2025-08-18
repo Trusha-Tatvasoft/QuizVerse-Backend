@@ -12,4 +12,6 @@ public partial class QuestionType
     public string? Description { get; set; }
 
     public virtual ICollection<BaseQuestion> BaseQuestions { get; set; } = new List<BaseQuestion>();
+
+    public virtual ICollection<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMaps { get; set; } = new List<QuizToQuestionDifficultyMap>();
 }
