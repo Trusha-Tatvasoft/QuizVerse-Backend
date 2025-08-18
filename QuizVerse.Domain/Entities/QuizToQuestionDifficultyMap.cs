@@ -12,7 +12,6 @@ public partial class QuizToQuestionDifficultyMap
     public int QuestionTypeId { get; set; }
 
     public int NoOfQuestions { get; set; }
-
     public bool IsDeleted { get; set; }
 
     public int CreatedBy { get; set; }
