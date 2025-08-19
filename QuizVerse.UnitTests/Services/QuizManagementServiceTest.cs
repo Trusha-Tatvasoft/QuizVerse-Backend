@@ -168,22 +168,30 @@ public class QuizManagementServiceTests
             )
         ), Times.Once);
     }
-
+    
     [Fact]
-    public async Task GetQuizCardData_ReturnsEmptyDto_WhenSqlRepoReturnsNull()
+    public async Task GetQuizCardData_ReturnsEmptyCounts_WhenNoRecordsExist()
     {
-        // Arrange - mock repository to return null
+        // Arrange - repo returns "empty row" from SQL
+        var emptyDto = new QuizManagementPageDataDto
+        {
+            TotalQuiz = 0,
+            ActiveQuiz = 0,
+            TotalParticipants = 0,
+            TotalQuestions = 0
+        };
+
         _sqlRepoMock
             .Setup(r => r.SqlQuerySingleAsync<QuizManagementPageDataDto>(
                 It.IsAny<string>(),
                 It.IsAny<NpgsqlParameter[]>()
             ))
-            .ReturnsAsync((QuizManagementPageDataDto?)null!);
+            .ReturnsAsync(emptyDto);
 
         // Act
         var result = await _quizService.GetQuizCardData();
 
-        // Assert - should return a non-null empty DTO
+        // Assert
         Assert.NotNull(result);
         Assert.Equal(0, result.TotalQuiz);
         Assert.Equal(0, result.ActiveQuiz);

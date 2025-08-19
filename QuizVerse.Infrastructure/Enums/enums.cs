@@ -46,4 +46,17 @@ namespace QuizVerse.Infrastructure.Enums
         Delete = 1,
         ChangeStatus = 2
     }
+
+    public enum BattleStatus
+    {
+        Completed = 1,
+        Draw = 2,
+        Running = 3
+    }
+
+    public enum BattleType
+    {
+        Permanent = 1,
+        TimeLimited = 2
+    }
 }
