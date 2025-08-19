@@ -40,7 +40,7 @@ namespace QuizVerse.Infrastructure.Enums
         Active = 1,
         Inactive = 0
     }
-    
+
     public enum QuizCategoryActionType
     {
         Delete = 1,
