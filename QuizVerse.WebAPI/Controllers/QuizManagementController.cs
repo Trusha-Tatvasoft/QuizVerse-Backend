@@ -15,7 +15,7 @@ namespace QuizVerse.WebAPI.Controllers;
 public class QuizManagementController(IQuizManagementService quizManagementService) : ControllerBase
 {
     #region Quiz Card Data 
-    [HttpPost("get-quiz-card-data")]
+    [HttpGet("get-quiz-card-data")]
     public async Task<IActionResult> GetQuizCardData()
     {
         return Ok(new ApiResponse<QuizManagementPageDataDto>

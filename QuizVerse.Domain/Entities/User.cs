@@ -153,6 +153,10 @@ public partial class User
 
     public virtual ICollection<QuizToBaseQuestionMap> QuizToBaseQuestionMapModifiedByNavigations { get; set; } = new List<QuizToBaseQuestionMap>();
 
+    public virtual ICollection<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMapCreatedByNavigations { get; set; } = new List<QuizToQuestionDifficultyMap>();
+
+    public virtual ICollection<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMapModifiedByNavigations { get; set; } = new List<QuizToQuestionDifficultyMap>();
+
     public virtual UserRole Role { get; set; } = null!;
 
     public virtual ICollection<UserBadgesEarned> UserBadgesEarneds { get; set; } = new List<UserBadgesEarned>();

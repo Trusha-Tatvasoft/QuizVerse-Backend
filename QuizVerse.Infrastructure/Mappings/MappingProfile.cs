@@ -199,6 +199,14 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.IsDeleted,
                 opt => opt.Ignore());
         #endregion
+
+        #region BattleManagement
+        CreateMap<BattleManagementData, BattleManagementData>()
+            .ForMember(dest => dest.BattleDifficulty, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleDifficulty)))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => CapitalizeFirst(src.CategoryName)))
+            .ForMember(dest => dest.BattleName, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleName)))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => ToTitleCase(src.Description)));
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>

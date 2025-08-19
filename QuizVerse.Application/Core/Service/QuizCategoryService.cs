@@ -17,7 +17,7 @@ using AutoMapper;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryRepository, IMapper _mapper, IHttpContextAccessor _httpContextAccessor, ISqlQueryRepository _sqlQueryRepository,IDropDownDataService dropDownDataService) : IQuizCategoryService
+public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryRepository, IMapper _mapper, IHttpContextAccessor _httpContextAccessor, ISqlQueryRepository _sqlQueryRepository, IDropDownDataService dropDownDataService) : IQuizCategoryService
 {
 
     private int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new Exception(Constants.USER_NOT_FOUND);
@@ -81,10 +81,7 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
             quizCategories = quizCategories.OrderBy(q => q.Id);
         }
 
-        // Paginate entities first
         PageListResponse<QuizCategory> pagedResult = await _quizCategoryRepository.PaginatedList<QuizCategory>(quizCategories, pageListRequest);
-
-        // Map paginated entities to DTOs
         List<QuizCategoryDTO> quizCategoryDtos = _mapper.Map<List<QuizCategoryDTO>>(pagedResult.Records);
 
         // Set QuizCount for each category
@@ -124,13 +121,13 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
         {
             new NpgsqlParameter("@p_id", dto.Id ?? (object)DBNull.Value),
             new NpgsqlParameter("@p_category_name", dto.CategoryName),
-            new NpgsqlParameter("@p_icon", dto.Icon ?? Constants.QUIZ_CATEGORY_DEFAULT_ICON),
+            new NpgsqlParameter("@p_icon", dto.Icon),
             new NpgsqlParameter("@p_description",dto.Description),
             new NpgsqlParameter("@p_user_id", UserId)
         };
 
         CreateUpdateResponseDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-            SqlConstants.FN_CREATE_OR_UPDATE_QUIZ_CATEGORY,
+            SqlConstants.CREATE_OR_UPDATE_QUIZ_CATEGORY,
             parameters
         );
 
@@ -146,10 +143,14 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
     #region Update By Action
     public async Task<string> UpdateQuizCategoryByAction(QuizCategoryActionRequestDto quizCategoryAction)
     {
-        QuizCategory quizCategory = await _quizCategoryRepository.GetAsync(q => q.Id == quizCategoryAction.Id && !q.IsDeleted) ?? throw new AppException(string.Format(Constants.QUIZ_CATEGORY_NOT_FOUND, quizCategoryAction.Id));
+        QuizCategory quizCategory = await _quizCategoryRepository
+            .GetAsync(q => q.Id == quizCategoryAction.Id && !q.IsDeleted)
+            ?? throw new AppException(string.Format(Constants.QUIZ_CATEGORY_NOT_FOUND, quizCategoryAction.Id));
 
         string resultMessage;
-        bool existingStatus = quizCategory.Status;
+
+        // Map the existing bool status to a readable string
+        string existingStatus = quizCategory.Status ? "Active" : "Inactive";
 
         switch (quizCategoryAction.Action)
         {
@@ -174,21 +175,25 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
                     throw new AppException(Constants.STATUS_REQUIRED);
                 }
 
-                bool requestedStatus = quizCategoryAction.NewStatus != 0;
+                bool requestedStatusBool = quizCategoryAction.NewStatus != 0;
 
-                if (existingStatus == requestedStatus)
+                if (quizCategory.Status == requestedStatusBool)
                 {
-                    throw new AppException(string.Format(Constants.QUIZ_CATEGORY_STATUS_ALREADY_SET, quizCategoryAction.NewStatus));
+                    string alreadyStatus = requestedStatusBool ? "active" : "inactive";
+                    throw new AppException(string.Format(Constants.QUIZ_CATEGORY_STATUS_ALREADY_SET, alreadyStatus));
                 }
 
-                quizCategory.Status = requestedStatus;
+                quizCategory.Status = requestedStatusBool;
                 quizCategory.ModifiedBy = UserId;
                 quizCategory.ModifiedDate = DateTime.UtcNow;
 
                 await _quizCategoryRepository.UpdateAsync(quizCategory);
 
-                resultMessage = string.Format(Constants.QUIZ_CATEGORY_STATUS_CHANGED_SUCCESS, quizCategory.Id, quizCategoryAction.NewStatus);
+                resultMessage = requestedStatusBool
+                    ? Constants.QUIZ_CATEGORY_ACTIVATED_SUCCESS
+                    : Constants.QUIZ_CATEGORY_INACTIVATED_SUCCESS;
                 break;
+
 
             default:
                 throw new AppException(Constants.INVALID_DATA_MESSAGE);
@@ -196,7 +201,7 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
 
         await _quizCategoryRepository.UpdateAsync(quizCategory);
 
-        if (resultMessage == Constants.DELETE_SUCCESS || resultMessage == Constants.QUIZ_CATEGORY_STATUS_CHANGED_SUCCESS)
+        if (resultMessage == Constants.QUIZ_CATEGORY_DELETED_SUCCESS || resultMessage == Constants.QUIZ_CATEGORY_ACTIVATED_SUCCESS || resultMessage == Constants.QUIZ_CATEGORY_INACTIVATED_SUCCESS)
         {
             dropDownDataService.ClearCache(DropDownType.QuizCategory);
         }
@@ -205,6 +210,17 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
     }
     #endregion
 
+    #region Difficulty Name Available
+    public async Task<bool> IsCategoryNameAvailable(string name, int? id = null)
+    {
+        bool exists = await _quizCategoryRepository.Exists(u => u.CategoryName.ToLower().Trim() == name.ToLower().Trim() && !u.IsDeleted && (id == null || u.Id != id.Value));
 
+        if (exists)
+            throw new AppException(Constants.DUPLICATE_QUIZ_CATEGORY);
+
+        return true;
+    }
+
+    #endregion
 }
 

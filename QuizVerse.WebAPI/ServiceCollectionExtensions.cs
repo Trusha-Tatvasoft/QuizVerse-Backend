@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMemoryCacheService, MemoryCacheService>();
         services.AddScoped<IDropDownDataService, DropDownDataService>();
         services.AddScoped<IQuestionPoolService, QuestionPoolService>();
+        services.AddScoped<IBattleManagementService, BattleManagementService>();
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));

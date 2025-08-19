@@ -19,7 +19,7 @@ public class SqlConstants
     #endregion
 
     #region QuizCategory
-    public const string FN_CREATE_OR_UPDATE_QUIZ_CATEGORY = "SELECT * FROM fn_create_or_update_quiz_category(@p_id, @p_category_name, @p_description, @p_icon, @p_user_id)";
+    public const string CREATE_OR_UPDATE_QUIZ_CATEGORY = "SELECT * FROM create_or_update_quiz_category(@p_id, @p_category_name, @p_description, @p_icon, @p_user_id)";
     #endregion
 
     #region QuizManagement
@@ -42,5 +42,11 @@ public class SqlConstants
         "SELECT * FROM {0}(@p_quiz_id)";
     public const string DELETE_QUIZ_QUERY_TEMPLATE =
         "SELECT * FROM {0}(@p_quiz_id, @p_modified_by)";
+    #endregion
+
+    #region BattleManagement
+    public const string GET_BATTLE_LIST_TEMPLATE =
+       "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
+    public const string GET_BATTLE_LIST_FUNCTION = "get_battle_list_data";
     #endregion
 }
