@@ -1212,7 +1212,7 @@ public partial class QuizVerseDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("modified_date");
             entity.Property(e => e.NoOfQuestions).HasColumnName("no_of_questions");
-            entity.Property(e => e.QuestionTypeId).HasColumnName("question_type_id");
+            entity.Property(e => e.QuestionDifficultyId).HasColumnName("question_difficulty_id");
             entity.Property(e => e.QuizId).HasColumnName("quiz_id");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuizToQuestionDifficultyMapCreatedByNavigations)
@@ -1224,10 +1224,10 @@ public partial class QuizVerseDbContext : DbContext
                 .HasForeignKey(d => d.ModifiedBy)
                 .HasConstraintName("QuizToQuestionDifficultyMap_modified_by_fkey");
 
-            entity.HasOne(d => d.QuestionType).WithMany(p => p.QuizToQuestionDifficultyMaps)
-                .HasForeignKey(d => d.QuestionTypeId)
+            entity.HasOne(d => d.QuestionDifficulty).WithMany(p => p.QuizToQuestionDifficultyMaps)
+                .HasForeignKey(d => d.QuestionDifficultyId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_question_type");
+                .HasConstraintName("QuizToQuestionDifficultyMap_question_difficulty_id_fkey");
 
             entity.HasOne(d => d.Quiz).WithMany(p => p.QuizToQuestionDifficultyMaps)
                 .HasForeignKey(d => d.QuizId)

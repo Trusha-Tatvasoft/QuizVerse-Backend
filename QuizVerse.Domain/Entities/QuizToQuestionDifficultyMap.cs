@@ -9,9 +9,8 @@ public partial class QuizToQuestionDifficultyMap
 
     public int QuizId { get; set; }
 
-    public int QuestionTypeId { get; set; }
-
     public int NoOfQuestions { get; set; }
+
     public bool IsDeleted { get; set; }
 
     public int CreatedBy { get; set; }
@@ -22,11 +21,13 @@ public partial class QuizToQuestionDifficultyMap
 
     public DateTime? ModifiedDate { get; set; }
 
+    public int QuestionDifficultyId { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual User? ModifiedByNavigation { get; set; }
 
-    public virtual QuestionType QuestionType { get; set; } = null!;
+    public virtual QuestionDifficulty QuestionDifficulty { get; set; } = null!;
 
     public virtual Quiz Quiz { get; set; } = null!;
 }
