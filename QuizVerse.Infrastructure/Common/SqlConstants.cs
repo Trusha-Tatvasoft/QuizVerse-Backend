@@ -19,7 +19,7 @@ public class SqlConstants
     #endregion
 
     #region QuizCategory
-    public const string FN_CREATE_OR_UPDATE_QUIZ_CATEGORY = "SELECT * FROM fn_create_or_update_quiz_category(@p_id, @p_category_name, @p_description, @p_icon, @p_user_id)";
+    public const string CREATE_OR_UPDATE_QUIZ_CATEGORY = "SELECT * FROM create_or_update_quiz_category(@p_id, @p_category_name, @p_description, @p_icon, @p_user_id)";
     #endregion
 
     #region QuizManagement

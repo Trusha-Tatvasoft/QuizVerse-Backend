@@ -1,4 +1,3 @@
-using System.Reflection.Metadata;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
@@ -18,7 +17,7 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
     [HttpPost("get-quiz-categories")]
     public async Task<IActionResult> GetQuizCategories(PageListRequest pageListRequest)
     {
-        ApiResponse<PageListResponse<QuizCategoryDTO>> response = new ApiResponse<PageListResponse<QuizCategoryDTO>>
+        ApiResponse<PageListResponse<QuizCategoryDTO>> response = new()
         {
             Result = true,
             StatusCode = StatusCodes.Status200OK,
@@ -71,6 +70,20 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
             Result = true,
             Message = await _quizCategoryService.UpdateQuizCategoryByAction(quizCategoryAction),
             StatusCode = 200,
+            Data = null
+        });
+    }
+    #endregion
+
+    #region Category Name Available
+    [HttpGet("is-category-name-available/{name}/{id?}")]
+    public async Task<IActionResult> IsCategoryNameAvailable(string name, int? id = null)
+    {
+        return Ok(new ApiResponse<string>
+        {
+            Result =  await _quizCategoryService.IsCategoryNameAvailable(name, id),
+            Message = Constants.VALID_DATA,
+            StatusCode = StatusCodes.Status200OK,
             Data = null
         });
     }
