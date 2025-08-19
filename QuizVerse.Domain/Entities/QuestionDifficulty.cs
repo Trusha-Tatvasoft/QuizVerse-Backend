@@ -30,4 +30,6 @@ public partial class QuestionDifficulty
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual User? ModifiedByNavigation { get; set; }
+
+    public virtual ICollection<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMaps { get; set; } = new List<QuizToQuestionDifficultyMap>();
 }
