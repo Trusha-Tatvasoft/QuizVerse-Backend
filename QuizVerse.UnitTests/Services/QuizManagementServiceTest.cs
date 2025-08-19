@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Npgsql;
+using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Data;
 using QuizVerse.Domain.Entities;
@@ -26,6 +27,8 @@ public class QuizManagementServiceTests
     private readonly Mock<IMapper> _mockMapper;
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly Mock<ISqlQueryRepository> _sqlRepoMock;
+    private readonly Mock<IDropDownDataService> _dropDownDataServiceMock;
+
 
     public QuizManagementServiceTests()
     {
@@ -42,6 +45,7 @@ public class QuizManagementServiceTests
         _httpContextAccessorMock.Setup(x => x.HttpContext)
             .Returns(new DefaultHttpContext()); // can add claims if needed
         _sqlRepoMock = new Mock<ISqlQueryRepository>();
+        _dropDownDataServiceMock = new Mock<IDropDownDataService>();
 
         var quizRepo = new GenericRepository<Quiz>(_context);
         var questionTypeRepo = new GenericRepository<QuestionType>(_context);
@@ -55,7 +59,8 @@ public class QuizManagementServiceTests
             quizCategoryRepo,
             _mockMapper.Object,
             _httpContextAccessorMock.Object,
-            _sqlRepoMock.Object
+            _sqlRepoMock.Object,
+            _dropDownDataServiceMock.Object
         );
     }
 
@@ -441,9 +446,9 @@ public class QuizManagementServiceTests
     }
     #endregion
 
-    #region CreateUpdateQuiz
+    #region CreateUpdateQuiz Tests
     [Fact]
-    public async Task CreateUpdateQuiz_ValidRequest_ReturnsResponse()
+    public async Task CreateUpdateQuiz_ValidRequest_ReturnsResponse_AndClearsCache()
     {
         var request = new SaveQuizRequestDto
         {
@@ -464,17 +469,73 @@ public class QuizManagementServiceTests
             .ReturnsAsync(expectedResponse);
 
         var result = await _quizService.CreateUpdateQuiz(request);
+
+        Assert.True(result.Success);
         Assert.Equal("Success", result.Message);
+
+        // Verify cache is cleared when successful
+        _dropDownDataServiceMock.Verify(s => s.ClearCache(DropDownType.QuizTag), Times.Once);
     }
 
     [Fact]
-    public async Task CreateUpdateQuiz_NullRequest_Throws()
+    public async Task CreateUpdateQuiz_NullRequest_ThrowsAppException()
     {
-        var ex = await Assert.ThrowsAsync<AppException>(() =>
-            _quizService.CreateUpdateQuiz(null!));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.CreateUpdateQuiz(null!));
         Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
     }
+
+    [Fact]
+    public async Task CreateUpdateQuiz_SqlReturnsNull_ThrowsAppException()
+    {
+        var request = new SaveQuizRequestDto
+        {
+            Name = "New Quiz",
+            CategoryId = 1,
+            Description = "Desc",
+            TotalTime = 10,
+            DifficultyLevelId = 1,
+            TotalQuestion = 5,
+            IsPaid = false,
+            Status = (int)QuizStatus.Active
+        };
+
+        _sqlRepoMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .ReturnsAsync((CreateUpdateResponseDto)null!);
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.CreateUpdateQuiz(request));
+
+        Assert.Equal(Constants.CREATE_OR_UPDATE_QUIZ_FAILED, ex.Message);
+        Assert.Equal(500, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateUpdateQuiz_SqlReturnsFailure_ThrowsAppException()
+    {
+        var request = new SaveQuizRequestDto
+        {
+            Name = "New Quiz",
+            CategoryId = 1,
+            Description = "Desc",
+            TotalTime = 10,
+            DifficultyLevelId = 1,
+            TotalQuestion = 5,
+            IsPaid = false,
+            Status = (int)QuizStatus.Active
+        };
+
+        var failureResponse = new CreateUpdateResponseDto { Success = false, Message = "Validation failed" };
+        _sqlRepoMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .ReturnsAsync(failureResponse);
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.CreateUpdateQuiz(request));
+
+        Assert.Equal("Validation failed", ex.Message);
+        Assert.Equal(400, ex.StatusCode);
+    }
     #endregion
+
 
     #region GetQuizDataById
     [Fact]
@@ -498,7 +559,7 @@ public class QuizManagementServiceTests
     }
     #endregion
 
-    #region DeleteQuiz
+    #region DeleteQuiz Tests
     [Fact]
     public async Task DeleteQuiz_ValidId_CallsSqlRepoAndReturnsResponse()
     {
@@ -524,232 +585,340 @@ public class QuizManagementServiceTests
         var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.DeleteQuiz(0));
         Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
     }
+
+    [Fact]
+    public async Task DeleteQuiz_SqlReturnsNull_ThrowsAppException()
+    {
+        _sqlRepoMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .ReturnsAsync((CreateUpdateResponseDto)null!);
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.DeleteQuiz(1));
+
+        Assert.Equal(Constants.DELETE_QUIZ_FAILED, ex.Message);
+        Assert.Equal(500, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteQuiz_SqlReturnsFailureResponse_ThrowsAppException()
+    {
+        var failureResponse = new CreateUpdateResponseDto { Success = false, Message = "Quiz cannot be deleted" };
+        _sqlRepoMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .ReturnsAsync(failureResponse);
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.DeleteQuiz(1));
+
+        Assert.Equal("Quiz cannot be deleted", ex.Message);
+        Assert.Equal(400, ex.StatusCode);
+    }
     #endregion
+
 
     #region ExportQuestionsToCsv Tests
     [Fact]
+    public async Task ExportQuestionsToCsv_EmptyQuizName_ThrowsAppException()
+    {
+        var request = new ExportQuizQuestionsRequestDto
+        {
+            QuizName = "", // empty name
+            Questions = new List<QuestionsListRequestDto> { new QuestionsListRequestDto { QueText = "Q1" } }
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.Equal(Constants.INVALID_EXPORT_REQUEST_QUIZNAME, ex.Message);
+        Assert.Equal(400, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExportQuestionsToCsv_WhitespaceQuizName_ThrowsAppException()
+    {
+        var request = new ExportQuizQuestionsRequestDto
+        {
+            QuizName = "   ", // only whitespace
+            Questions = new List<QuestionsListRequestDto> { new QuestionsListRequestDto { QueText = "Q1" } }
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.Equal(Constants.INVALID_EXPORT_REQUEST_QUIZNAME, ex.Message);
+        Assert.Equal(400, ex.StatusCode);
+    }
+
+    [Fact]
     public async Task ExportQuestionsToCsv_NullQuestions_ThrowsAppException()
     {
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(null));
-        Assert.Equal("No questions provided", ex.Message);
+        var request = new ExportQuizQuestionsRequestDto
+        {
+            QuizName = "Sample Quiz",
+            Questions = null!
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.Equal(Constants.INVALID_EXPORT_REQUEST_QUESTIONS, ex.Message);
         Assert.Equal(400, ex.StatusCode);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_EmptyQuestions_ThrowsAppException()
     {
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(new List<QuestionsListRequestDto>()));
-        Assert.Equal("No questions provided", ex.Message);
+        var request = new ExportQuizQuestionsRequestDto
+        {
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>()
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.Equal(Constants.INVALID_EXPORT_REQUEST_QUESTIONS, ex.Message);
+        Assert.Equal(400, ex.StatusCode);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_MissingQuestionText_ThrowsAppException()
     {
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "   ",
-            QueTypeId = 1,
-            QueDifficultyId = 1,
-            CategoryId = 1
-        }
-    };
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
+            {
+                new QuestionsListRequestDto
+                {
+                    QueText = "   ",
+                    QueTypeId = 1,
+                    QueDifficultyId = 1,
+                    CategoryId = 1
+                }
+            }
+        };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(questions));
-        Assert.Equal("Question text is missing", ex.Message);
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.Equal(Constants.MISSING_QUESTION_TEXT, ex.Message);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_InvalidTypeId_ThrowsAppException()
     {
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "Q1",
-            QueTypeId = 999,
-            QueDifficultyId = 1,
-            CategoryId = 1
-        }
-    };
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
+            {
+                new QuestionsListRequestDto
+                {
+                    QueText = "Q1",
+                    QueTypeId = 999,
+                    QueDifficultyId = 1,
+                    CategoryId = 1
+                }
+            }
+        };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(questions));
-        Assert.StartsWith("Invalid Question Type ID", ex.Message);
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.StartsWith(string.Format(Constants.INVALID_QUESTION_TYPE_ID, request.Questions[0].QueTypeId), ex.Message);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_InvalidDifficultyId_ThrowsAppException()
     {
-        // Add valid QuestionType
-        _context.QuestionTypes.Add(new QuestionType { Id = 1, TypeName = "Multiple Choice" });
+        _context.QuestionTypes.Add(new QuestionType { Id = 1, TypeName = Constants.QUESTION_TYPE_MULTIPLE_CHOICE });
         _context.SaveChanges();
 
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "Q1",
-            QueTypeId = 1,
-            QueDifficultyId = 999,
-            CategoryId = 1
-        }
-    };
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
+            {
+                new QuestionsListRequestDto
+                {
+                    QueText = "Q1",
+                    QueTypeId = 1,
+                    QueDifficultyId = 999,
+                    CategoryId = 1
+                }
+            }
+        };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(questions));
-        Assert.StartsWith("Invalid Difficulty ID", ex.Message);
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.StartsWith(string.Format(Constants.INVALID_QUESTION_DIFFICULTY_ID, request.Questions[0].QueDifficultyId), ex.Message);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_InvalidCategoryId_ThrowsAppException()
     {
-        _context.QuestionTypes.Add(new QuestionType { Id = 1, TypeName = "Multiple Choice" });
+        _context.QuestionTypes.Add(new QuestionType { Id = 1, TypeName = Constants.QUESTION_TYPE_MULTIPLE_CHOICE });
         _context.QuestionDifficulties.Add(new QuestionDifficulty { Id = 1, Name = "Easy", Description = "Easy difficulty" });
         _context.SaveChanges();
 
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "Q1",
-            QueTypeId = 1,
-            QueDifficultyId = 1,
-            CategoryId = 999
-        }
-    };
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
+            {
+                new QuestionsListRequestDto
+                {
+                    QueText = "Q1",
+                    QueTypeId = 1,
+                    QueDifficultyId = 1,
+                    CategoryId = 999
+                }
+            }
+        };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(questions));
-        Assert.StartsWith("Invalid Category ID", ex.Message);
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.StartsWith(string.Format(Constants.INVALID_CATEGORY_ID, request.Questions[0].CategoryId), ex.Message);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_MultipleChoiceTooFewOptions_ThrowsAppException()
     {
-        _context.QuestionTypes.Add(new QuestionType { Id = 2, TypeName = "Multiple Choice" });
+        _context.QuestionTypes.Add(new QuestionType { Id = 2, TypeName = Constants.QUESTION_TYPE_MULTIPLE_CHOICE });
         _context.QuestionDifficulties.Add(new QuestionDifficulty { Id = 2, Name = "Easy", Description = "Easy difficulty" });
         _context.QuizCategories.Add(new QuizCategory { Id = 2, CategoryName = "Science", Description = "General science trivia" });
         _context.SaveChanges();
 
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "Q1",
-            QueTypeId = 2,
-            QueDifficultyId = 2,
-            CategoryId = 2,
-            QueOptionsAns = new List<QueOptionsAndAnswersDto>
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
             {
-                new() { Key = "option", Value = "One" }
+                new QuestionsListRequestDto
+                {
+                    QueText = "Q1",
+                    QueTypeId = 2,
+                    QueDifficultyId = 2,
+                    CategoryId = 2,
+                    QueOptionsAns = new List<QueOptionsAndAnswersDto>
+                    {
+                        new() { Key = "option1", Value = "One" }
+                    }
+                }
             }
-        }
-    };
+        };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(questions));
-        Assert.Equal("Multiple choice question must have at least 2 options", ex.Message);
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.Equal(Constants.INVALID_MCQ_OPTIONS, ex.Message);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_MultipleChoiceMissingAnswer_ThrowsAppException()
     {
-        _context.QuestionTypes.Add(new QuestionType { Id = 3, TypeName = "Multiple Choice" });
+        var type = new QuestionType { Id = 3, TypeName = Constants.QUESTION_TYPE_MULTIPLE_CHOICE };
+        _context.QuestionTypes.Add(type);
         _context.QuestionDifficulties.Add(new QuestionDifficulty { Id = 3, Name = "Easy", Description = "Easy difficulty" });
         _context.QuizCategories.Add(new QuizCategory { Id = 3, CategoryName = "Science", Description = "General science trivia" });
         _context.SaveChanges();
 
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "Q1",
-            QueTypeId = 3,
-            QueDifficultyId = 3,
-            CategoryId = 3,
-            QueOptionsAns = new List<QueOptionsAndAnswersDto>
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
+        {
+            new QuestionsListRequestDto
             {
-                new() { Key = "option", Value = "One" },
-                new() { Key = "option", Value = "Two" }
+                QueText = "Q1",
+                QueTypeId = 3,
+                QueDifficultyId = 3,
+                CategoryId = 3,
+                QueOptionsAns = new List<QueOptionsAndAnswersDto>
+                {
+                    new() { Key = "option1", Value = "One" },
+                    new() { Key = "option2", Value = "Two" }
+                }
             }
         }
-    };
+        };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(questions));
-        Assert.Equal("Correct answer is missing for multiple choice question", ex.Message);
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+
+        Assert.Equal(string.Format(Constants.NO_CORRECT_ANSWER, type.TypeName.ToLower()), ex.Message);
     }
+
 
     [Fact]
     public async Task ExportQuestionsToCsv_TrueFalseMissingAnswer_ThrowsAppException()
     {
-        _context.QuestionTypes.Add(new QuestionType { Id = 4, TypeName = "True/False" });
+        var type = new QuestionType { Id = 4, TypeName = Constants.QUESTION_TYPE_TRUE_FALSE };
+        _context.QuestionTypes.Add(type);
         _context.QuestionDifficulties.Add(new QuestionDifficulty { Id = 4, Name = "Easy", Description = "Easy difficulty" });
         _context.QuizCategories.Add(new QuizCategory { Id = 4, CategoryName = "Science", Description = "General science trivia" });
         _context.SaveChanges();
 
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "Q1",
-            QueTypeId = 4,
-            QueDifficultyId = 4,
-            CategoryId = 4
-        }
-    };
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
+            {
+                new QuestionsListRequestDto
+                {
+                    QueText = "Q1",
+                    QueTypeId = 4,
+                    QueDifficultyId = 4,
+                    CategoryId = 4
+                }
+            }
+        };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(questions));
-        Assert.Equal("Correct answer is missing for true/false question", ex.Message);
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.Equal(string.Format(Constants.NO_CORRECT_ANSWER, type.TypeName.ToLower()), ex.Message);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_ShortAnswerMissingAnswer_ThrowsAppException()
     {
-        _context.QuestionTypes.Add(new QuestionType { Id = 5, TypeName = "Short Answer" });
+        var type = new QuestionType { Id = 5, TypeName = Constants.QUESTION_TYPE_SHORT_ANSWER };
+        _context.QuestionTypes.Add(type);
         _context.QuestionDifficulties.Add(new QuestionDifficulty { Id = 5, Name = "Easy", Description = "Easy difficulty" });
         _context.QuizCategories.Add(new QuizCategory { Id = 5, CategoryName = "Science", Description = "General science trivia" });
         _context.SaveChanges();
 
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "Q1",
-            QueTypeId = 5,
-            QueDifficultyId = 5,
-            CategoryId = 5
-        }
-    };
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
+            {
+                new QuestionsListRequestDto
+                {
+                    QueText = "Q1",
+                    QueTypeId = 5,
+                    QueDifficultyId = 5,
+                    CategoryId = 5
+                }
+            }
+        };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(questions));
-        Assert.Equal("Correct answer is missing for short answer question", ex.Message);
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.ExportQuestionsToCsv(request));
+        Assert.Equal(string.Format(Constants.NO_CORRECT_ANSWER, type.TypeName.ToLower()), ex.Message);
     }
 
     [Fact]
     public async Task ExportQuestionsToCsv_MultipleChoicePadsOptions_ReturnsCsv()
     {
-        _context.QuestionTypes.Add(new QuestionType { Id = 6, TypeName = "Multiple Choice" });
+        _context.QuestionTypes.Add(new QuestionType { Id = 6, TypeName = Constants.QUESTION_TYPE_MULTIPLE_CHOICE });
         _context.QuestionDifficulties.Add(new QuestionDifficulty { Id = 6, Name = "Easy", Description = "Easy difficulty" });
         _context.QuizCategories.Add(new QuizCategory { Id = 6, CategoryName = "Science", Description = "General science trivia" });
         _context.SaveChanges();
 
-        var questions = new List<QuestionsListRequestDto>
-    {
-        new QuestionsListRequestDto
+        var request = new ExportQuizQuestionsRequestDto
         {
-            QueText = "Capital of France?",
-            QueTypeId = 6,
-            QueDifficultyId = 6,
-            CategoryId = 6,
-            QueOptionsAns = new List<QueOptionsAndAnswersDto>
+            QuizName = "Sample Quiz",
+            Questions = new List<QuestionsListRequestDto>
             {
-                new() { Key = "option", Value = "Paris" },
-                new() { Key = "option", Value = "Lyon" },
-                new() { Key = "answer", Value = "Paris" }
+                new QuestionsListRequestDto
+                {
+                    QueText = "Capital of France?",
+                    QueTypeId = 6,
+                    QueDifficultyId = 6,
+                    CategoryId = 6,
+                    QueOptionsAns = new List<QueOptionsAndAnswersDto>
+                    {
+                        new() { Key = "option1", Value = "Paris" },
+                        new() { Key = "option2", Value = "Lyon" },
+                        new() { Key = Constants.QUESTION_KEY_ANSWER, Value = "Paris" }
+                    }
+                }
             }
-        }
-    };
+        };
 
-        var csv = await _quizService.ExportQuestionsToCsv(questions);
+        var csv = await _quizService.ExportQuestionsToCsv(request);
         Assert.Contains("Capital of France?", csv);
         Assert.Contains("Paris", csv);
         Assert.Contains("Lyon", csv);

@@ -12,5 +12,5 @@ public interface IQuizManagementService
     Task<CreateUpdateResponseDto> CreateUpdateQuiz(SaveQuizRequestDto quizCreateUpdateRequestDto);
     Task<QuizResponseDto> GetQuizDataById(int quizId);
     Task<CreateUpdateResponseDto> DeleteQuiz(int quizId);
-    Task<string> ExportQuestionsToCsv(List<QuestionsListRequestDto> questions);
+    Task<string> ExportQuestionsToCsv(ExportQuizQuestionsRequestDto exportRequest);
 }

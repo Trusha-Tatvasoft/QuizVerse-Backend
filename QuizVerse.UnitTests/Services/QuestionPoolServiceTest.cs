@@ -16,6 +16,7 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Domain.Entities;
 
 namespace QuizVerse.UnitTests.Services;
 

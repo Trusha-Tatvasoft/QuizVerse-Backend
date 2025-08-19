@@ -12,7 +12,7 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 [Authorize(Roles = nameof(UserRoles.Admin))]
 [Route("api/[controller]")]
-public class QuizManagementController(IQuizManagementService quizManagementService, IDropDownDataService dropDownDataService) : ControllerBase
+public class QuizManagementController(IQuizManagementService quizManagementService) : ControllerBase
 {
     #region Quiz Card Data 
     [HttpPost("get-quiz-card-data")]
@@ -46,16 +46,12 @@ public class QuizManagementController(IQuizManagementService quizManagementServi
     [HttpPost("create-update-quiz")]
     public async Task<IActionResult> CreateUpdateQuiz([FromBody] SaveQuizRequestDto quizCreateUpdateRequestDto)
     {
-        var response = await quizManagementService.CreateUpdateQuiz(quizCreateUpdateRequestDto);
-        if (response.Success)
-        {
-            dropDownDataService.ClearCache(DropDownType.QuizTag);
-        }
+        CreateUpdateResponseDto response = await quizManagementService.CreateUpdateQuiz(quizCreateUpdateRequestDto);
         return Ok(new ApiResponse<CreateUpdateResponseDto>
         {
             Result = response.Success,
             Message = response.Message,
-            StatusCode = response.Success ? 200 : 400,
+            StatusCode = StatusCodes.Status200OK,
             Data = null
         });
     }
@@ -69,7 +65,7 @@ public class QuizManagementController(IQuizManagementService quizManagementServi
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
-            StatusCode = 200,
+            StatusCode = StatusCodes.Status200OK,
             Data = await quizManagementService.GetQuizDataById(quizId)
         });
     }
@@ -79,12 +75,12 @@ public class QuizManagementController(IQuizManagementService quizManagementServi
     [HttpDelete("delete-quiz/{quizId}")]
     public async Task<IActionResult> DeleteQuiz(int quizId)
     {
-        var response = await quizManagementService.DeleteQuiz(quizId);
+        CreateUpdateResponseDto response = await quizManagementService.DeleteQuiz(quizId);
         return Ok(new ApiResponse<CreateUpdateResponseDto>
         {
             Result = response.Success,
             Message = response.Message,
-            StatusCode = response.Success ? 200 : 400,
+            StatusCode = StatusCodes.Status200OK,
             Data = null
         });
     }
@@ -94,18 +90,7 @@ public class QuizManagementController(IQuizManagementService quizManagementServi
     [HttpPost("export-questions-to-csv")]
     public async Task<IActionResult> ExportQuestionsToCsv([FromBody] ExportQuizQuestionsRequestDto exportRequest)
     {
-        if (exportRequest == null || exportRequest.Questions == null || !exportRequest.Questions.Any())
-        {
-            return BadRequest(new ApiResponse<string>
-            {
-                Result = false,
-                Message = "No questions to export.",
-                StatusCode = 400,
-                Data = null
-            });
-        }
-
-        var csvContent = await quizManagementService.ExportQuestionsToCsv(exportRequest.Questions);
+        var csvContent = await quizManagementService.ExportQuestionsToCsv(exportRequest);
         return File(System.Text.Encoding.UTF8.GetBytes(csvContent), "text/csv", $"{exportRequest.QuizName}_questions.csv");
     }
     #endregion

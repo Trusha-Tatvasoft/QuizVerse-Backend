@@ -129,8 +129,19 @@ public static class Constants
     public const string QUIZ_CATEGORY_DEFAULT_ICON = "category";
     #endregion
 
-    #region Quiz Management List
+    #region Quiz Management
     public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
+    public const string CREATE_OR_UPDATE_QUIZ_FAILED = "Failed to create or update quiz.";
+    public const string DELETE_QUIZ_FAILED = "Failed to delete quiz.";
+    public const string INVALID_EXPORT_REQUEST_QUIZNAME = "Invalid export request. Quiz name is required.";
+    public const string INVALID_EXPORT_REQUEST_QUESTIONS = "Invalid export request. No questions provided";
+    public const string EXPORT_QUESTIONS_CSV_HEADER = "Question,Type,Difficulty,Category,Option1,Option2,Option3,Option4,CorrectAnswer";
+    public const string MISSING_QUESTION_TEXT = "Question text is missing";
+    public const string INVALID_QUESTION_TYPE_ID = "Invalid Question Type ID: {0}";
+    public const string INVALID_QUESTION_DIFFICULTY_ID = "Invalid Difficulty ID: {0}";
+    public const string INVALID_CATEGORY_ID = "Invalid Category ID: {0}";
+    public const string INVALID_MCQ_OPTIONS = "Multiple choice question must have at least 2 options";
+    public const string NO_CORRECT_ANSWER = "Correct answer is missing for {0} question";
     #endregion
 
     #region Quiz Difficulty Level Message
@@ -152,6 +163,8 @@ public static class Constants
     public const string EXCEL = "Excel";
     public const string CSV = "CSV";
     public const string QUESTION_TYPE_MULTIPLE_CHOICE = "Multiple Choice";
+    public const string QUESTION_TYPE_TRUE_FALSE = "True/False";
+    public const string QUESTION_TYPE_SHORT_ANSWER = "Short Answer";
     public const string QUESTION_KEY_OPTION = "option";
     public const string QUESTION_KEY_ANSWER = "answer";
     public const string INVALID_QUESTION_ID_MESSAGE = "ID must be greater than zero.";

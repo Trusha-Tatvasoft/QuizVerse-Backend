@@ -10,13 +10,10 @@ using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
-using System.Globalization;
 using System.Linq.Dynamic.Core;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CsvHelper;
-using CsvHelper.Configuration;
-using System.Net;
+using System.Text;
 using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Application.Core.Service;
@@ -28,7 +25,8 @@ public class QuizManagementService(
         IGenericRepository<QuizCategory> quizCatgoryRepository,
         IMapper mapper,
         IHttpContextAccessor httpContextAccessor,
-        ISqlQueryRepository _sqlQueryRepository
+        ISqlQueryRepository _sqlQueryRepository,
+        IDropDownDataService dropDownDataService
 ) : IQuizManagementService
 {
     public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
@@ -158,7 +156,19 @@ public class QuizManagementService(
             new("p_created_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value },
         };
 
-        return await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
+        CreateUpdateResponseDto response = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
+
+        if (response == null)
+            throw new AppException(Constants.CREATE_OR_UPDATE_QUIZ_FAILED, 500);
+
+        if (!response.Success)
+            throw new AppException(response.Message, 400);
+
+        if (response.Success)
+            dropDownDataService.ClearCache(DropDownType.QuizTag);
+
+
+        return response;
     }
     #endregion
 
@@ -198,121 +208,149 @@ public class QuizManagementService(
             new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizId },
             new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value },
         };
-        return await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
+
+        CreateUpdateResponseDto response = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
+
+        if (response == null)
+            throw new AppException(Constants.DELETE_QUIZ_FAILED, 500);
+
+        if (!response.Success)
+            throw new AppException(response.Message, 400);
+
+        return response;
     }
     #endregion
 
     #region Export Quiz Questions to CSV
-    public async Task<string> ExportQuestionsToCsv(List<QuestionsListRequestDto> questions)
+    public async Task<string> ExportQuestionsToCsv(ExportQuizQuestionsRequestDto exportRequest)
     {
-        if (questions == null || !questions.Any())
-            throw new AppException("No questions provided", 400);
-
-        var csvRows = new List<QuestionCsvRow>();
-
-        foreach (var q in questions)
+        if (string.IsNullOrWhiteSpace(exportRequest.QuizName))
         {
-            // Validate Question Text
-            if (string.IsNullOrWhiteSpace(q.QueText))
-                throw new AppException("Question text is missing", 400);
+            throw new AppException(Constants.INVALID_EXPORT_REQUEST_QUIZNAME, 400);
+        }
 
-            // Get type/difficulty/category names
-            var typeName = await GetQuestionTypeName(q.QueTypeId);
-            var difficultyName = await GetDifficultyName(q.QueDifficultyId);
-            var categoryName = await GetCategoryName(q.CategoryId);
+        List<QuestionsListRequestDto>? questions = exportRequest.Questions;
 
-            if (string.IsNullOrWhiteSpace(typeName))
-                throw new AppException($"Invalid Question Type ID: {q.QueTypeId}", 400);
+        if (questions == null || !questions.Any())
+        {
+            throw new AppException(Constants.INVALID_EXPORT_REQUEST_QUESTIONS, 400);
+        }
 
-            if (string.IsNullOrWhiteSpace(difficultyName))
-                throw new AppException($"Invalid Difficulty ID: {q.QueDifficultyId}", 400);
+        List<int> questionTypeIds = questions.Select(q => q.QueTypeId).Distinct().ToList();
+        List<int> questionDifficultyIds = questions.Select(q => q.QueDifficultyId).Distinct().ToList();
+        List<int> categoryIds = questions.Select(q => q.CategoryId).Distinct().ToList();
 
-            if (string.IsNullOrWhiteSpace(categoryName))
-                throw new AppException($"Invalid Category ID: {q.CategoryId}", 400);
+        // Fetch question types, difficulties, and categories
+        List<QuestionType> questionTypes = questionTypeRepository.GetQueryableInclude()
+            .Where(qt => questionTypeIds.Contains(qt.Id))
+            .ToList();
 
-            // Validate options and answer for Multiple Choice & True/False
-            if (typeName.Equals("Multiple Choice", StringComparison.OrdinalIgnoreCase))
+        List<QuestionDifficulty> questionDifficulties = questionDifficultyRepository.GetQueryableInclude()
+            .Where(qd => questionDifficultyIds.Contains(qd.Id) && !qd.IsDeleted)
+            .ToList();
+
+        List<QuizCategory> quizCategories = quizCatgoryRepository.GetQueryableInclude()
+            .Where(qc => categoryIds.Contains(qc.Id) && !qc.IsDeleted)
+            .ToList();
+
+        // Create a memory stream for CSV output
+        using (var memoryStream = new MemoryStream())
+        using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8))
+        {
+            // Write CSV headers
+            await streamWriter.WriteLineAsync(Constants.EXPORT_QUESTIONS_CSV_HEADER);
+
+            foreach (var q in questions)
             {
-                if (q.QueOptionsAns == null || q.QueOptionsAns.Count(o => o.Key.StartsWith("option", StringComparison.OrdinalIgnoreCase)) < 2)
-                    throw new AppException("Multiple choice question must have at least 2 options", 400);
+                // Validate Question Text
+                if (string.IsNullOrWhiteSpace(q.QueText))
+                    throw new AppException(Constants.MISSING_QUESTION_TEXT, 400);
 
-                if (!q.QueOptionsAns.Any(o => o.Key.Equals("answer", StringComparison.OrdinalIgnoreCase)))
-                    throw new AppException("Correct answer is missing for multiple choice question", 400);
-            }
-            else if (typeName.Equals("True/False", StringComparison.OrdinalIgnoreCase))
-            {
-                if (!q.QueOptionsAns?.Any(o => o.Key.Equals("answer", StringComparison.OrdinalIgnoreCase)) ?? true)
-                    throw new AppException("Correct answer is missing for true/false question", 400);
-            }
-            else if (typeName.Equals("Short Answer", StringComparison.OrdinalIgnoreCase))
-            {
-                if (!q.QueOptionsAns?.Any(o => o.Key.Equals("answer", StringComparison.OrdinalIgnoreCase)) ?? true)
-                    throw new AppException("Correct answer is missing for short answer question", 400);
-            }
+                // Get type/difficulty/category names
+                var typeName = questionTypes.Find(t => t.Id == q.QueTypeId)?.TypeName;
+                var difficultyName = questionDifficulties.Find(d => d.Id == q.QueDifficultyId)?.Name;
+                var categoryName = quizCategories.Find(c => c.Id == q.CategoryId)?.CategoryName;
 
-            // Build CSV row
-            var row = new QuestionCsvRow
-            {
-                Question = q.QueText,
-                Type = typeName,
-                Difficulty = difficultyName,
-                Category = categoryName
-            };
+                if (string.IsNullOrWhiteSpace(typeName))
+                    throw new AppException(string.Format(Constants.INVALID_QUESTION_TYPE_ID, q.QueTypeId), 400);
 
-            // Extract options & correct answer (fills missing with "")
-            if (q.QueOptionsAns != null && q.QueOptionsAns.Any())
-            {
-                var options = q.QueOptionsAns
-                    .Where(o => o.Key.StartsWith("option", StringComparison.OrdinalIgnoreCase))
-                    .Select(o => o.Value)
+                if (string.IsNullOrWhiteSpace(difficultyName))
+                    throw new AppException(string.Format(Constants.INVALID_QUESTION_DIFFICULTY_ID, q.QueDifficultyId), 400);
+
+                if (string.IsNullOrWhiteSpace(categoryName))
+                    throw new AppException(string.Format(Constants.INVALID_CATEGORY_ID, q.CategoryId), 400);
+
+                // Validate options and answer
+                if (typeName.Equals(Constants.QUESTION_TYPE_MULTIPLE_CHOICE, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (q.QueOptionsAns == null || q.QueOptionsAns.Count(o => o.Key.StartsWith(Constants.QUESTION_KEY_OPTION, StringComparison.OrdinalIgnoreCase)) < 2)
+                        throw new AppException(Constants.INVALID_MCQ_OPTIONS, 400);
+
+                    if (!q.QueOptionsAns.Any(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase)))
+                        throw new AppException(string.Format(Constants.NO_CORRECT_ANSWER, typeName.ToLower()), 400);
+                }
+                else if (typeName.Equals(Constants.QUESTION_TYPE_TRUE_FALSE, StringComparison.OrdinalIgnoreCase) ||
+                        typeName.Equals(Constants.QUESTION_TYPE_SHORT_ANSWER, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!q.QueOptionsAns?.Any(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase)) ?? true)
+                        throw new AppException(string.Format(Constants.NO_CORRECT_ANSWER, typeName.ToLower()), 400);
+                }
+
+                // Build CSV line
+                var csvLine = new StringBuilder();
+
+                // Add core fields
+                csvLine.Append(EscapeCsv(q.QueText)).Append(",");
+                csvLine.Append(EscapeCsv(typeName)).Append(",");
+                csvLine.Append(EscapeCsv(difficultyName)).Append(",");
+                csvLine.Append(EscapeCsv(categoryName)).Append(",");
+
+                // Add options (up to 4)
+                var options = q.QueOptionsAns?
+                    .Where(o => o.Key.StartsWith(Constants.QUESTION_KEY_OPTION, StringComparison.OrdinalIgnoreCase))
+                    .Select(o => EscapeCsv(o.Value))
                     .Take(4)
-                    .ToList();
+                    .ToList() ?? new List<string>();
 
+                // Pad with empty strings if needed
                 while (options.Count < 4)
                     options.Add(string.Empty);
 
-                row.Option1 = options.ElementAtOrDefault(0) ?? string.Empty;
-                row.Option2 = options.ElementAtOrDefault(1) ?? string.Empty;
-                row.Option3 = options.ElementAtOrDefault(2) ?? string.Empty;
-                row.Option4 = options.ElementAtOrDefault(3) ?? string.Empty;
+                csvLine.Append(string.Join(",", options)).Append(",");
 
-                row.CorrectAnswer = q.QueOptionsAns
-                    .FirstOrDefault(o => o.Key.Equals("answer", StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty;
+                // Add correct answer
+                var correctAnswer = q.QueOptionsAns?
+                    .FirstOrDefault(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty;
+                csvLine.Append(EscapeCsv(correctAnswer));
+
+                // Write the line
+                await streamWriter.WriteLineAsync(csvLine.ToString());
             }
 
-            csvRows.Add(row);
+            // Return the CSV content
+            streamWriter.Flush();
+            memoryStream.Position = 0;
+            using (var reader = new StreamReader(memoryStream))
+            {
+                return await reader.ReadToEndAsync();
+            }
+        }
+    }
+
+    // Helper method to escape CSV values
+    private string EscapeCsv(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return string.Empty;
+
+        bool mustQuote = input.Contains(",") || input.Contains("\"") || input.Contains("\n");
+        if (mustQuote)
+        {
+            // Escape quotes by doubling them
+            input = input.Replace("\"", "\"\"");
+            return $"\"{input}\"";
         }
 
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            HasHeaderRecord = true
-        };
-
-        using var writer = new StringWriter();
-        using var csv = new CsvWriter(writer, config);
-        csv.WriteHeader<QuestionCsvRow>();
-        csv.NextRecord();
-        csv.WriteRecords(csvRows);
-
-        return writer.ToString();
-    }
-
-    private async Task<string> GetQuestionTypeName(int typeId)
-    {
-        QuestionType? type = await questionTypeRepository.GetAsync(qt => qt.Id == typeId);
-        return type?.TypeName ?? string.Empty;
-    }
-
-    private async Task<string> GetDifficultyName(int difficultyId)
-    {
-        QuestionDifficulty? questionDifficulty = await questionDifficultyRepository.GetAsync(qd => qd.Id == difficultyId);
-        return questionDifficulty?.Name ?? string.Empty;
-    }
-
-    private async Task<string> GetCategoryName(int categoryId)
-    {
-        QuizCategory? quizCategory = await quizCatgoryRepository.GetAsync(qc => qc.Id == categoryId);
-        return quizCategory?.CategoryName ?? string.Empty;
+        return input;
     }
     #endregion
 }
