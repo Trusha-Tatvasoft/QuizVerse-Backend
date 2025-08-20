@@ -26,7 +26,8 @@ public class QuizManagementService(
         IMapper mapper,
         IHttpContextAccessor httpContextAccessor,
         ISqlQueryRepository _sqlQueryRepository,
-        IDropDownDataService dropDownDataService
+        IDropDownDataService dropDownDataService,
+        ICommonService commonService
 ) : IQuizManagementService
 {
     public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
@@ -163,8 +164,7 @@ public class QuizManagementService(
 
         if (!response.Success)
             throw new AppException(response.Message, 400);
-
-        if (response.Success)
+        else
             dropDownDataService.ClearCache(DropDownType.QuizTag);
 
 
@@ -229,12 +229,13 @@ public class QuizManagementService(
             throw new AppException(Constants.INVALID_EXPORT_REQUEST_QUIZNAME, 400);
         }
 
-        List<QuestionsListRequestDto>? questions = exportRequest.Questions;
 
-        if (questions == null || !questions.Any())
+        if (exportRequest.Questions == null || !exportRequest.Questions.Any())
         {
             throw new AppException(Constants.INVALID_EXPORT_REQUEST_QUESTIONS, 400);
         }
+
+        List<QuestionsListRequestDto>? questions = exportRequest.Questions;
 
         List<int> questionTypeIds = questions.Select(q => q.QueTypeId).Distinct().ToList();
         List<int> questionDifficultyIds = questions.Select(q => q.QueDifficultyId).Distinct().ToList();
@@ -300,15 +301,15 @@ public class QuizManagementService(
                 var csvLine = new StringBuilder();
 
                 // Add core fields
-                csvLine.Append(EscapeCsv(q.QueText)).Append(",");
-                csvLine.Append(EscapeCsv(typeName)).Append(",");
-                csvLine.Append(EscapeCsv(difficultyName)).Append(",");
-                csvLine.Append(EscapeCsv(categoryName)).Append(",");
+                csvLine.Append(commonService.EscapeCsv(q.QueText)).Append(",");
+                csvLine.Append(commonService.EscapeCsv(typeName)).Append(",");
+                csvLine.Append(commonService.EscapeCsv(difficultyName)).Append(",");
+                csvLine.Append(commonService.EscapeCsv(categoryName)).Append(",");
 
                 // Add options (up to 4)
                 var options = q.QueOptionsAns?
                     .Where(o => o.Key.StartsWith(Constants.QUESTION_KEY_OPTION, StringComparison.OrdinalIgnoreCase))
-                    .Select(o => EscapeCsv(o.Value))
+                    .Select(o => commonService.EscapeCsv(o.Value))
                     .Take(4)
                     .ToList() ?? new List<string>();
 
@@ -321,7 +322,7 @@ public class QuizManagementService(
                 // Add correct answer
                 var correctAnswer = q.QueOptionsAns?
                     .FirstOrDefault(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty;
-                csvLine.Append(EscapeCsv(correctAnswer));
+                csvLine.Append(commonService.EscapeCsv(correctAnswer));
 
                 // Write the line
                 await streamWriter.WriteLineAsync(csvLine.ToString());
@@ -335,22 +336,6 @@ public class QuizManagementService(
                 return await reader.ReadToEndAsync();
             }
         }
-    }
-
-    // Helper method to escape CSV values
-    private string EscapeCsv(string input)
-    {
-        if (string.IsNullOrEmpty(input)) return string.Empty;
-
-        bool mustQuote = input.Contains(",") || input.Contains("\"") || input.Contains("\n");
-        if (mustQuote)
-        {
-            // Escape quotes by doubling them
-            input = input.Replace("\"", "\"\"");
-            return $"\"{input}\"";
-        }
-
-        return input;
     }
     #endregion
 }

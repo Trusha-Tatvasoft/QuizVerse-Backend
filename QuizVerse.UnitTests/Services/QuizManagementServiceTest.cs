@@ -28,7 +28,7 @@ public class QuizManagementServiceTests
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly Mock<ISqlQueryRepository> _sqlRepoMock;
     private readonly Mock<IDropDownDataService> _dropDownDataServiceMock;
-
+    private readonly Mock<ICommonService> _commonServiceMock;
 
     public QuizManagementServiceTests()
     {
@@ -46,6 +46,7 @@ public class QuizManagementServiceTests
             .Returns(new DefaultHttpContext()); // can add claims if needed
         _sqlRepoMock = new Mock<ISqlQueryRepository>();
         _dropDownDataServiceMock = new Mock<IDropDownDataService>();
+        _commonServiceMock = new Mock<ICommonService>();
 
         var quizRepo = new GenericRepository<Quiz>(_context);
         var questionTypeRepo = new GenericRepository<QuestionType>(_context);
@@ -60,7 +61,8 @@ public class QuizManagementServiceTests
             _mockMapper.Object,
             _httpContextAccessorMock.Object,
             _sqlRepoMock.Object,
-            _dropDownDataServiceMock.Object
+            _dropDownDataServiceMock.Object,
+            _commonServiceMock.Object
         );
     }
 
@@ -900,36 +902,69 @@ public class QuizManagementServiceTests
     [Fact]
     public async Task ExportQuestionsToCsv_MultipleChoicePadsOptions_ReturnsCsv()
     {
+        // Arrange
+        // Configure ICommonService.EscapeCsv mock
+        _commonServiceMock.Setup(x => x.EscapeCsv(It.IsAny<string>()))
+            .Returns<string>(input =>
+            {
+                if (string.IsNullOrEmpty(input)) return string.Empty;
+                bool mustQuote = input.Contains(",") || input.Contains("\"") || input.Contains("\n");
+                if (mustQuote)
+                {
+                    input = input.Replace("\"", "\"\"");
+                    return $"\"{input}\"";
+                }
+                return input;
+            });
+
         _context.QuestionTypes.Add(new QuestionType { Id = 6, TypeName = Constants.QUESTION_TYPE_MULTIPLE_CHOICE });
         _context.QuestionDifficulties.Add(new QuestionDifficulty { Id = 6, Name = "Easy", Description = "Easy difficulty" });
         _context.QuizCategories.Add(new QuizCategory { Id = 6, CategoryName = "Science", Description = "General science trivia" });
-        _context.SaveChanges();
+        await _context.SaveChangesAsync();
+
+        // Verify data was added to context
+        var questionType = _context.QuestionTypes.FirstOrDefault(qt => qt.Id == 6);
+        var questionDifficulty = _context.QuestionDifficulties.FirstOrDefault(qd => qd.Id == 6);
+        var quizCategory = _context.QuizCategories.FirstOrDefault(qc => qc.Id == 6);
 
         var request = new ExportQuizQuestionsRequestDto
         {
             QuizName = "Sample Quiz",
             Questions = new List<QuestionsListRequestDto>
+        {
+            new QuestionsListRequestDto
             {
-                new QuestionsListRequestDto
+                QueText = "Capital of France?",
+                QueTypeId = 6,
+                QueDifficultyId = 6,
+                CategoryId = 6,
+                QueOptionsAns = new List<QueOptionsAndAnswersDto>
                 {
-                    QueText = "Capital of France?",
-                    QueTypeId = 6,
-                    QueDifficultyId = 6,
-                    CategoryId = 6,
-                    QueOptionsAns = new List<QueOptionsAndAnswersDto>
-                    {
-                        new() { Key = "option1", Value = "Paris" },
-                        new() { Key = "option2", Value = "Lyon" },
-                        new() { Key = Constants.QUESTION_KEY_ANSWER, Value = "Paris" }
-                    }
+                    new() { Key = "option1", Value = "Paris" },
+                    new() { Key = "option2", Value = "Lyon" },
+                    new() { Key = Constants.QUESTION_KEY_ANSWER, Value = "Paris" }
                 }
             }
+        }
         };
 
+        // Act
         var csv = await _quizService.ExportQuestionsToCsv(request);
-        Assert.Contains("Capital of France?", csv);
-        Assert.Contains("Paris", csv);
-        Assert.Contains("Lyon", csv);
+
+        // Log the CSV output for debugging
+        Console.WriteLine($"CSV Output:\n{csv}");
+
+        // Assert
+        var csvLines = csv.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        Assert.True(csvLines.Length >= 2, "CSV should contain at least header and one data row");
+
+        var dataRow = csvLines[1];
+        var expectedRow = "Capital of France?,Multiple Choice,Easy,Science,Paris,Lyon,,,Paris";
+        Assert.Equal(expectedRow, dataRow.Trim(), StringComparer.Ordinal);
+
+        Assert.Contains("Capital of France?", dataRow);
+        Assert.Contains("Paris", dataRow);
+        Assert.Contains("Lyon", dataRow);
     }
     #endregion
 }

@@ -227,7 +227,7 @@ namespace QuizVerse.UnitTests.Services
         [Fact]
         public async Task SaveFile_ShouldReturnNull_WhenFileIsNull()
         {
-            var result = await _service.SaveFile(null, "test");
+            var result = await _service.SaveFile(null!, "test");
             result.Should().BeNull();
         }
 
@@ -265,6 +265,125 @@ namespace QuizVerse.UnitTests.Services
 
             if (File.Exists(savedFilePath))
                 File.Delete(savedFilePath);
+        }
+        #endregion
+
+        #region Create CSV Helper
+        [Fact]
+        public void EscapeCsv_NullInput_ReturnsEmptyString()
+        {
+            // Arrange
+            string? input = null;
+
+            // Act
+            var result = _service.EscapeCsv(input!);
+
+            // Assert
+            result.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void EscapeCsv_EmptyInput_ReturnsEmptyString()
+        {
+            // Arrange
+            string input = "";
+
+            // Act
+            var result = _service.EscapeCsv(input);
+
+            // Assert
+            result.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void EscapeCsv_NoSpecialCharacters_ReturnsInputUnchanged()
+        {
+            // Arrange
+            string input = "Hello World";
+
+            // Act
+            var result = _service.EscapeCsv(input);
+
+            // Assert
+            result.Should().Be("Hello World");
+        }
+
+        [Fact]
+        public void EscapeCsv_WithComma_WrapsInQuotes()
+        {
+            // Arrange
+            string input = "Hello,World";
+
+            // Act
+            var result = _service.EscapeCsv(input);
+
+            // Assert
+            result.Should().Be("\"Hello,World\"");
+        }
+
+        [Fact]
+        public void EscapeCsv_WithQuote_EscapesQuoteAndWrapsInQuotes()
+        {
+            // Arrange
+            string input = "He said \"Hello\"";
+
+            // Act
+            var result = _service.EscapeCsv(input);
+
+            // Assert
+            result.Should().Be("\"He said \"\"Hello\"\"\"");
+        }
+
+        [Fact]
+        public void EscapeCsv_WithNewline_WrapsInQuotes()
+        {
+            // Arrange
+            string input = "Hello\nWorld";
+
+            // Act
+            var result = _service.EscapeCsv(input);
+
+            // Assert
+            result.Should().Be("\"Hello\nWorld\"");
+        }
+
+        [Fact]
+        public void EscapeCsv_WithMultipleQuotes_EscapesAllQuotesAndWrapsInQuotes()
+        {
+            // Arrange
+            string input = "Quote\"Test\"Quote";
+
+            // Act
+            var result = _service.EscapeCsv(input);
+
+            // Assert
+            result.Should().Be("\"Quote\"\"Test\"\"Quote\"");
+        }
+
+        [Fact]
+        public void EscapeCsv_WithCommaAndQuote_EscapesQuoteAndWrapsInQuotes()
+        {
+            // Arrange
+            string input = "Hello,\"World\"";
+
+            // Act
+            var result = _service.EscapeCsv(input);
+
+            // Assert
+            result.Should().Be("\"Hello,\"\"World\"\"\"");
+        }
+
+        [Fact]
+        public void EscapeCsv_WithAllSpecialCharacters_EscapesQuoteAndWrapsInQuotes()
+        {
+            // Arrange
+            string input = "Hello,\n\"World\"";
+
+            // Act
+            var result = _service.EscapeCsv(input);
+
+            // Assert
+            result.Should().Be("\"Hello,\n\"\"World\"\"\"");
         }
         #endregion
     }
