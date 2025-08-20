@@ -125,7 +125,7 @@ public class MappingProfile : Profile
 
         CreateMap<QuestionRequestDTO, BaseQuestion>()
             .ForMember(dest => dest.QueText,
-                opt => opt.MapFrom(src => src.QuestionText))
+                opt => opt.MapFrom(src => src.QuestionText.Trim()))
             .ForMember(dest => dest.CategoryId,
                 opt => opt.MapFrom(src => src.CategoryId))
             .ForMember(dest => dest.QueDifficultyId,

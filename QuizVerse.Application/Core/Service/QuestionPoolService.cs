@@ -1,10 +1,7 @@
 using Npgsql;
 using NpgsqlTypes;
 using System.Data;
-using System.Globalization;
 using AutoMapper;
-using CsvHelper;
-using ExcelDataReader;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
@@ -16,6 +13,7 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using Microsoft.EntityFrameworkCore;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs;
+using ClosedXML.Excel;
 
 namespace QuizVerse.Application.Core.Service;
 
@@ -268,7 +266,7 @@ public class QuestionPoolService(
 
     public async Task<List<QuestionsListResponseDto>> PreviewQuestionsFromCsv(Stream fileStream)
     {
-        List<QuestionImportDTO> records = ReadCsv(fileStream);
+        List<QuestionImportDTO> records = ReadQuestions(fileStream, ".csv");
         if (records.Count == 0)
             throw new AppException(Constants.CSV_INVALID_OR_EMPTY_ERROR, StatusCodes.Status400BadRequest);
 
@@ -279,7 +277,7 @@ public class QuestionPoolService(
 
     public async Task<List<QuestionsListResponseDto>> PreviewQuestionsFromExcel(Stream fileStream)
     {
-        List<QuestionImportDTO> records = ReadExcel(fileStream);
+        List<QuestionImportDTO> records = ReadQuestions(fileStream, ".xlsx");
         if (records.Count == 0)
             throw new AppException(Constants.EXCEL_INVALID_OR_EMPTY_ERROR, StatusCodes.Status400BadRequest);
 
@@ -306,51 +304,79 @@ public class QuestionPoolService(
     #endregion
 
     #region File Reading
-    private static List<QuestionImportDTO> ReadCsv(Stream fileStream)
+    private static List<QuestionImportDTO> ReadQuestions(Stream fileStream, string fileType)
     {
-        using StreamReader reader = new(fileStream);
-        using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
+        List<QuestionImportDTO> result = [];
+        IXLWorksheet worksheet;
 
-        csv.Read();
-        csv.ReadHeader();
+        if (fileType.Equals(".csv", StringComparison.OrdinalIgnoreCase))
+        {
+            using StreamReader reader = new(fileStream);
+            using XLWorkbook workbook = new();
+            worksheet = workbook.AddWorksheet("CSV");
 
-        string[] required = ["Question", "Category", "Difficulty", "Type", "CorrectAnswer"];
+            int rowIndex = 1;
+            while (!reader.EndOfStream)
+            {
+                string? line = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
 
-        if (csv.HeaderRecord == null || !required.All(col => csv.HeaderRecord.Contains(col)))
-            return [];
+                string[] values = line.Split(',');
 
-        return [.. csv.GetRecords<QuestionImportDTO>()];
+                for (int colIndex = 0; colIndex < values.Length; colIndex++)
+                    worksheet.Cell(rowIndex, colIndex + 1).Value = values[colIndex].Trim();
+
+                rowIndex++;
+            }
+
+            result = ParseWorksheet(worksheet);
+        }
+        else
+        {
+            using XLWorkbook workbook = new(fileStream);
+            worksheet = workbook.Worksheets.First();
+
+            result = ParseWorksheet(worksheet);
+        }
+
+        return result;
     }
 
-    private static List<QuestionImportDTO> ReadExcel(Stream fileStream)
+    private static List<QuestionImportDTO> ParseWorksheet(IXLWorksheet worksheet)
     {
-        using IExcelDataReader reader = ExcelReaderFactory.CreateReader(fileStream);
-        DataSet dataSet = reader.AsDataSet(new ExcelDataSetConfiguration
-        {
-            ConfigureDataTable = _ => new ExcelDataTableConfiguration { UseHeaderRow = true }
-        });
+        List<QuestionImportDTO> result = [];
 
-        DataTable table = dataSet.Tables[0];
-        table.CaseSensitive = true;
+        IXLRow headerRow = worksheet.Row(1);
+        Dictionary<string, int> headers = headerRow.Cells()
+            .Where(c => !string.IsNullOrWhiteSpace(c.GetString()))
+            .Select((c, index) => new { Name = c.GetString().Trim(), Index = index + 1 })
+            .ToDictionary(x => x.Name, x => x.Index);
 
         string[] required = ["Question", "Category", "Difficulty", "Type", "CorrectAnswer"];
 
-        if (!required.All(col => table.Columns.Cast<DataColumn>().Any(c => c.ColumnName == col)))
+        if (!required.All(headers.ContainsKey))
             return [];
 
-        return [.. table.Rows.Cast<DataRow>()
-            .Select(row => new QuestionImportDTO
+        foreach (IXLRow row in worksheet.RowsUsed().Skip(1))
+        {
+            QuestionImportDTO dto = new()
             {
-                Question = row["Question"]?.ToString(),
-                Category = row["Category"]?.ToString(),
-                Difficulty = row["Difficulty"]?.ToString(),
-                Type = row["Type"]?.ToString(),
-                CorrectAnswer = row["CorrectAnswer"]?.ToString(),
-                Option1 = table.Columns.Contains("Option1") ? row["Option1"]?.ToString() : null,
-                Option2 = table.Columns.Contains("Option2") ? row["Option2"]?.ToString() : null,
-                Option3 = table.Columns.Contains("Option3") ? row["Option3"]?.ToString() : null,
-                Option4 = table.Columns.Contains("Option4") ? row["Option4"]?.ToString() : null
-            })];
+                Question = row.Cell(headers["Question"]).GetString(),
+                Category = row.Cell(headers["Category"]).GetString(),
+                Difficulty = row.Cell(headers["Difficulty"]).GetString(),
+                Type = row.Cell(headers["Type"]).GetString(),
+                CorrectAnswer = row.Cell(headers["CorrectAnswer"]).GetString(),
+                Option1 = headers.TryGetValue("Option1", out int op1) ? row.Cell(op1).GetString() : null,
+                Option2 = headers.TryGetValue("Option2", out int op2) ? row.Cell(op2).GetString() : null,
+                Option3 = headers.TryGetValue("Option3", out int op3) ? row.Cell(op3).GetString() : null,
+                Option4 = headers.TryGetValue("Option4", out int op4) ? row.Cell(op4).GetString() : null
+            };
+
+            result.Add(dto);
+        }
+
+        return result;
     }
     #endregion
 
@@ -360,7 +386,7 @@ public class QuestionPoolService(
         {
             QuestionId = questionId,
             Key = Constants.QUESTION_KEY_OPTION,
-            Value = value,
+            Value = value.Trim(),
             CreatedBy = UserId,
             CreatedDate = DateTime.UtcNow
         };
@@ -370,7 +396,7 @@ public class QuestionPoolService(
         {
             QuestionId = questionId,
             Key = Constants.QUESTION_KEY_ANSWER,
-            Value = value,
+            Value = value.Trim(),
             CreatedBy = UserId,
             CreatedDate = DateTime.UtcNow
         };
