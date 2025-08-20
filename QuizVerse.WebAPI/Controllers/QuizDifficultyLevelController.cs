@@ -58,7 +58,7 @@ public class QuizDifficultyLevelController(IQuizDifficultyLevelService quizDiffi
 
     #region Create Difficulty Level
     [HttpPost("create-difficulty-level")]
-    public async Task<IActionResult> CreateDifficultyLevel([FromForm] QuizDifficultyRequestDto difficultyRequestDto)
+    public async Task<IActionResult> CreateDifficultyLevel([FromBody] QuizDifficultyRequestDto difficultyRequestDto)
     {
         return Ok(new ApiResponse<object>
         {
