@@ -37,7 +37,7 @@ public class SqlConstants
         "SELECT * FROM {0}(" +
         "@p_quiz_id, @p_name, @p_category_id, @p_description, @p_total_time, " +
         "@p_difficulty_level_id, @p_total_question, @p_is_paid, @p_price, " +
-        "@p_status, @p_tags, @p_questions, @p_created_by)";
+        "@p_status, @p_tags, @p_questions, @p_no_of_questions_per_difficulty, @p_created_by)";
     public const string GET_QUIZ_DATA_BY_ID_QUERY_TEMPLATE =
         "SELECT * FROM {0}(@p_quiz_id)";
     public const string DELETE_QUIZ_QUERY_TEMPLATE =

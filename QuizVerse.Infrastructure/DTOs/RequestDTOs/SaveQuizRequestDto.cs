@@ -36,5 +36,6 @@ public class SaveQuizRequestDto
     public decimal? Price { get; set; }
     public int Status { get; set; } = (int)QuizStatus.Draft;
     public List<TagsListDto>? Tags { get; set; } = [];
-    public List<QuestionsListRequestDto>? Questions { get; set; } = new();
+    public List<QuestionsListRequestDto>? Questions { get; set; } = [];
+    public List<NoOfQuestionPerDifficultyDto>? NoOfQuestionsPerDifficulty { get; set; } = [];
 }

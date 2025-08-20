@@ -16,16 +16,17 @@ CREATE OR REPLACE FUNCTION get_quiz_data_by_id(p_quiz_id INT)
 RETURNS TABLE (
     id INT,
     name VARCHAR,
-    quiz_category_id INT,
+    "quizCategoryId" INT,
     description VARCHAR,
-    total_time INT,
-    difficulty_level_id INT,
-    total_question INT,
-    is_paid BOOLEAN,
+    "totalTime" INT,
+    "difficultyLevelId" INT,
+    "totalQuestion" INT,
+    "isPaid" BOOLEAN,
     price NUMERIC,
     status INT,
     tags JSONB,
-    questions JSONB
+    questions JSONB,
+    "noOfQuestionsPerDifficulty" JSONB
 ) AS
 $$
 BEGIN
@@ -33,12 +34,12 @@ BEGIN
     SELECT
         q.id,
         q.name,
-        q.category_id AS quiz_category_id,
+        q.category_id AS "quizCategoryId",
         q.description,
-        q.total_time,
-        q.difficulty_level_id,
-        q.total_question,
-        q.is_paid,
+        q.total_time AS "totalTime",
+        q.difficulty_level_id AS "difficultyLevelId",
+        q.total_question AS "totalQuestion",
+        q.is_paid AS "isPaid",
         q.price,
         q.status,
         COALESCE(
@@ -59,16 +60,16 @@ BEGIN
                 SELECT jsonb_agg(
                     jsonb_build_object(
                         'id', bq.id,
-                        'category_id', bq.category_id,
-                        'que_difficulty_id', bq.que_difficulty_id,
-                        'que_text', bq.que_text,
-                        'que_type_id', bq.que_type_id,
-                        'que_options_ans', COALESCE(
+                        'categoryId', bq.category_id,
+                        'queDifficultyId', bq.que_difficulty_id,
+                        'queText', bq.que_text,
+                        'queTypeId', bq.que_type_id,
+                        'queOptionsAns', COALESCE(
                             (
                                 SELECT jsonb_agg(
                                     jsonb_build_object(
                                         'id', qo.id,
-                                        'question_id', qo.question_id,
+                                        'questionId', qo.question_id,
                                         'key', qo.key,
                                         'value', qo.value
                                     )
@@ -85,7 +86,24 @@ BEGIN
                 WHERE qbm.quiz_id = q.id
                   AND bq.is_deleted = FALSE
             ), '[]'::jsonb
-        ) AS questions
+        ) AS questions,
+        COALESCE(
+            (
+                SELECT jsonb_agg(
+                    jsonb_build_object(
+                        'queDifficultyName', qd.name,
+                        'noOfQuestions', qmap.no_of_questions
+                    )
+                )
+                FROM "QuizToQuestionDifficultyMap" qmap
+                JOIN "QuestionDifficulty" qd 
+                    ON qd.id = qmap.question_difficulty_id
+                WHERE qmap.quiz_id = q.id
+                AND qmap.is_deleted = FALSE
+                AND qd.is_deleted = FALSE
+            ),
+            '[]'::jsonb
+        ) AS "noOfQuestionsPerDifficulty"
     FROM "Quiz" q
     WHERE q.id = p_quiz_id
       AND q.is_deleted = FALSE;

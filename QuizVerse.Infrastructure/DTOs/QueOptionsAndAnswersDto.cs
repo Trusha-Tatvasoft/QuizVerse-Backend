@@ -8,7 +8,7 @@ public class QueOptionsAndAnswersDto
     [JsonPropertyName("id")]
     public int? Id { get; set; }
  
-    [JsonPropertyName("question_id")]
+    [JsonPropertyName("questionId")]
     public int? QuestionId { get; set; }
  
     [JsonPropertyName("key")]

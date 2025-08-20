@@ -7,21 +7,21 @@ public class QuestionPoolListDto
 {
     public int Id { get; set; }
 
-    [Column("category_id")]
+    [Column("categoryId")]
     public int CategoryId { get; set; }
-    [Column("category_name")]
+    [Column("categoryName")]
     public string CategoryName { get; set; } = null!;
-    [Column("que_difficulty_id")]
+    [Column("queDifficultyId")]
     public int QueDifficultyId { get; set; }
-    [Column("que_difficulty_name")]
+    [Column("queDifficultyName")]
     public string QueDifficultyName { get; set; } = null!;
-    [Column("que_text")]
+    [Column("queText")]
     public string QueText { get; set; } = null!;
-    [Column("que_type_id")]
+    [Column("queTypeId")]
     public int QueTypeId { get; set; }
-    [Column("que_type_name")]
+    [Column("queTypeName")]
     public string QueTypeName { get; set; } = null!;
-    [Column("que_options_ans")]
+    [Column("queOptionsAns")]
     public string? QueOptionsAnsJson { get; set; }
 
     [NotMapped]

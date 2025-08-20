@@ -32,14 +32,14 @@ CREATE OR REPLACE FUNCTION get_question_pool_list(
 )
 RETURNS TABLE (
     id INT,
-    category_id INT,
-    category_name VARCHAR,
-    que_difficulty_id INT,
-    que_difficulty_name VARCHAR,
-    que_text VARCHAR,
-    que_type_id INT,
-    que_type_name VARCHAR,
-    que_options_ans JSONB
+    categoryId INT,
+    categoryName VARCHAR,
+    queDifficultyId INT,
+    queDifficultyName VARCHAR,
+    queText VARCHAR,
+    queTypeId INT,
+    queTypeName VARCHAR,
+    queOptionsAns JSONB
 )
 AS $$
 BEGIN
