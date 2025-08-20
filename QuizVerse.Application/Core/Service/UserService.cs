@@ -2,7 +2,6 @@ using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
