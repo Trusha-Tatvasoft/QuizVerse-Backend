@@ -9,18 +9,25 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
-using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
+using System.Linq.Dynamic.Core;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Application.Core.Service;
 
 public class QuizManagementService(
         IGenericRepository<Quiz> quizRepository,
+        IGenericRepository<QuestionType> questionTypeRepository,
+        IGenericRepository<QuestionDifficulty> questionDifficultyRepository,
+        IGenericRepository<QuizCategory> quizCatgoryRepository,
         IMapper mapper,
         IHttpContextAccessor httpContextAccessor,
-        ISqlQueryRepository _sqlQueryRepository
+        ISqlQueryRepository _sqlQueryRepository,
+        IDropDownDataService dropDownDataService,
+        ICommonService commonService
 ) : IQuizManagementService
 {
     public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
@@ -68,7 +75,7 @@ public class QuizManagementService(
 
         // --- COUNT QUERY ---
         string countQuery = string.Format(
-            SqlConstants.GET_QUIZ_LIST_COUNT_QUERY_TEMPLATE, 
+            SqlConstants.GET_QUIZ_LIST_COUNT_QUERY_TEMPLATE,
             SqlConstants.GET_QUIZ_LIST_COUNT_FUNCTION
         );
 
@@ -150,7 +157,18 @@ public class QuizManagementService(
             new("p_created_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value },
         };
 
-        return await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
+        CreateUpdateResponseDto response = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
+
+        if (response == null)
+            throw new AppException(Constants.CREATE_OR_UPDATE_QUIZ_FAILED, 500);
+
+        if (!response.Success)
+            throw new AppException(response.Message, 400);
+        else
+            dropDownDataService.ClearCache(DropDownType.QuizTag);
+
+
+        return response;
     }
     #endregion
 
@@ -171,6 +189,153 @@ public class QuizManagementService(
         };
 
         return await _sqlQueryRepository.SqlQuerySingleAsync<QuizResponseDto>(query, parameters);
+    }
+    #endregion
+
+    #region Delete Quiz
+    public async Task<CreateUpdateResponseDto> DeleteQuiz(int quizId)
+    {
+        if (quizId <= 0)
+            throw new AppException(Constants.INVALID_DATA_MESSAGE);
+
+        string query = string.Format(
+            SqlConstants.DELETE_QUIZ_QUERY_TEMPLATE,
+            SqlConstants.DELETE_QUIZ_FUNCTION
+        );
+
+        var parameters = new NpgsqlParameter[]
+        {
+            new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizId },
+            new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value },
+        };
+
+        CreateUpdateResponseDto response = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
+
+        if (response == null)
+            throw new AppException(Constants.DELETE_QUIZ_FAILED, 500);
+
+        if (!response.Success)
+            throw new AppException(response.Message, 400);
+
+        return response;
+    }
+    #endregion
+
+    #region Export Quiz Questions to CSV
+    public async Task<string> ExportQuestionsToCsv(ExportQuizQuestionsRequestDto exportRequest)
+    {
+        if (string.IsNullOrWhiteSpace(exportRequest.QuizName))
+        {
+            throw new AppException(Constants.INVALID_EXPORT_REQUEST_QUIZNAME, 400);
+        }
+
+
+        if (exportRequest.Questions == null || !exportRequest.Questions.Any())
+        {
+            throw new AppException(Constants.INVALID_EXPORT_REQUEST_QUESTIONS, 400);
+        }
+
+        List<QuestionsListRequestDto>? questions = exportRequest.Questions;
+
+        List<int> questionTypeIds = questions.Select(q => q.QueTypeId).Distinct().ToList();
+        List<int> questionDifficultyIds = questions.Select(q => q.QueDifficultyId).Distinct().ToList();
+        List<int> categoryIds = questions.Select(q => q.CategoryId).Distinct().ToList();
+
+        // Fetch question types, difficulties, and categories
+        List<QuestionType> questionTypes = questionTypeRepository.GetQueryableInclude()
+            .Where(qt => questionTypeIds.Contains(qt.Id))
+            .ToList();
+
+        List<QuestionDifficulty> questionDifficulties = questionDifficultyRepository.GetQueryableInclude()
+            .Where(qd => questionDifficultyIds.Contains(qd.Id) && !qd.IsDeleted)
+            .ToList();
+
+        List<QuizCategory> quizCategories = quizCatgoryRepository.GetQueryableInclude()
+            .Where(qc => categoryIds.Contains(qc.Id) && !qc.IsDeleted)
+            .ToList();
+
+        // Create a memory stream for CSV output
+        using (var memoryStream = new MemoryStream())
+        using (var streamWriter = new StreamWriter(memoryStream, Encoding.UTF8))
+        {
+            // Write CSV headers
+            await streamWriter.WriteLineAsync(Constants.EXPORT_QUESTIONS_CSV_HEADER);
+
+            foreach (var q in questions)
+            {
+                // Validate Question Text
+                if (string.IsNullOrWhiteSpace(q.QueText))
+                    throw new AppException(Constants.MISSING_QUESTION_TEXT, 400);
+
+                // Get type/difficulty/category names
+                var typeName = questionTypes.Find(t => t.Id == q.QueTypeId)?.TypeName;
+                var difficultyName = questionDifficulties.Find(d => d.Id == q.QueDifficultyId)?.Name;
+                var categoryName = quizCategories.Find(c => c.Id == q.CategoryId)?.CategoryName;
+
+                if (string.IsNullOrWhiteSpace(typeName))
+                    throw new AppException(string.Format(Constants.INVALID_QUESTION_TYPE_ID, q.QueTypeId), 400);
+
+                if (string.IsNullOrWhiteSpace(difficultyName))
+                    throw new AppException(string.Format(Constants.INVALID_QUESTION_DIFFICULTY_ID, q.QueDifficultyId), 400);
+
+                if (string.IsNullOrWhiteSpace(categoryName))
+                    throw new AppException(string.Format(Constants.INVALID_CATEGORY_ID, q.CategoryId), 400);
+
+                // Validate options and answer
+                if (typeName.Equals(Constants.QUESTION_TYPE_MULTIPLE_CHOICE, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (q.QueOptionsAns == null || q.QueOptionsAns.Count(o => o.Key.StartsWith(Constants.QUESTION_KEY_OPTION, StringComparison.OrdinalIgnoreCase)) < 2)
+                        throw new AppException(Constants.INVALID_MCQ_OPTIONS, 400);
+
+                    if (!q.QueOptionsAns.Any(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase)))
+                        throw new AppException(string.Format(Constants.NO_CORRECT_ANSWER, typeName.ToLower()), 400);
+                }
+                else if (typeName.Equals(Constants.QUESTION_TYPE_TRUE_FALSE, StringComparison.OrdinalIgnoreCase) ||
+                        typeName.Equals(Constants.QUESTION_TYPE_SHORT_ANSWER, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!q.QueOptionsAns?.Any(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase)) ?? true)
+                        throw new AppException(string.Format(Constants.NO_CORRECT_ANSWER, typeName.ToLower()), 400);
+                }
+
+                // Build CSV line
+                var csvLine = new StringBuilder();
+
+                // Add core fields
+                csvLine.Append(commonService.EscapeCsv(q.QueText)).Append(",");
+                csvLine.Append(commonService.EscapeCsv(typeName)).Append(",");
+                csvLine.Append(commonService.EscapeCsv(difficultyName)).Append(",");
+                csvLine.Append(commonService.EscapeCsv(categoryName)).Append(",");
+
+                // Add options (up to 4)
+                var options = q.QueOptionsAns?
+                    .Where(o => o.Key.StartsWith(Constants.QUESTION_KEY_OPTION, StringComparison.OrdinalIgnoreCase))
+                    .Select(o => commonService.EscapeCsv(o.Value))
+                    .Take(4)
+                    .ToList() ?? new List<string>();
+
+                // Pad with empty strings if needed
+                while (options.Count < 4)
+                    options.Add(string.Empty);
+
+                csvLine.Append(string.Join(",", options)).Append(",");
+
+                // Add correct answer
+                var correctAnswer = q.QueOptionsAns?
+                    .FirstOrDefault(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase))?.Value ?? string.Empty;
+                csvLine.Append(commonService.EscapeCsv(correctAnswer));
+
+                // Write the line
+                await streamWriter.WriteLineAsync(csvLine.ToString());
+            }
+
+            // Return the CSV content
+            streamWriter.Flush();
+            memoryStream.Position = 0;
+            using (var reader = new StreamReader(memoryStream))
+            {
+                return await reader.ReadToEndAsync();
+            }
+        }
     }
     #endregion
 }

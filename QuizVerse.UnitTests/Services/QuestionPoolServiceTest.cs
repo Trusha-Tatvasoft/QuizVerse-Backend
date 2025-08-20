@@ -1,6 +1,5 @@
 using Xunit;
 using Moq;
-using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Application.Core.Service;
@@ -17,6 +16,7 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Domain.Entities;
 
 namespace QuizVerse.UnitTests.Services;
 
