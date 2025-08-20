@@ -59,4 +59,11 @@ namespace QuizVerse.Infrastructure.Enums
         Permanent = 1,
         TimeLimited = 2
     }
+
+    public enum QuizType
+    {
+        Normal = 1,
+        Battle = 2,
+        TimeLimited = 3
+    }
 }

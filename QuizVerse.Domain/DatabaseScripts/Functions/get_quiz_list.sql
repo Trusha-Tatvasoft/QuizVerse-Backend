@@ -16,7 +16,8 @@
 --                              p_sort_descending := TRUE,
 --                              p_quiz_status := NULL,
 --                              p_category_id := 2,
---                              p_difficulty_id := NULL
+--                              p_difficulty_id := NULL,
+--                              p_quiz_type := 1
 --                          );
 -- Notes:        Valid p_sort_column values: quiz_title, category_name, quiz_difficulty_level, 
 --               no_of_person_attempted, total_question, status, created_date
@@ -30,7 +31,8 @@ CREATE OR REPLACE FUNCTION get_quiz_list(
     p_sort_descending    BOOLEAN DEFAULT FALSE,
     p_quiz_status        INT DEFAULT NULL,
     p_category_id        INT DEFAULT NULL,
-    p_difficulty_id      INT DEFAULT NULL
+    p_difficulty_id      INT DEFAULT NULL,
+	p_quiz_type     INT DEFAULT 1 
 )
 RETURNS TABLE (
     "Id"                   INT,
@@ -74,7 +76,7 @@ BEGIN
             FROM "Quiz" q
             JOIN "QuizCategory" c ON c.id = q.category_id AND c.is_deleted = FALSE
             JOIN "QuizDifficulty" d ON d.id = q.difficulty_level_id
-            WHERE q.is_deleted = FALSE
+            WHERE q.is_deleted = FALSE AND ($7 IS NULL OR q.quiz_type = $7)
         )
         SELECT
             b.id,
@@ -98,6 +100,6 @@ BEGIN
         LIMIT $5
         OFFSET ($6 - 1) * $5
     $f$, sort_col, sort_dir)
-    USING p_search_term, p_quiz_status, p_category_id, p_difficulty_id, p_page_size, p_page_number;
+    USING p_search_term, p_quiz_status, p_category_id, p_difficulty_id, p_page_size, p_page_number, p_quiz_type;
 END;
 $$;

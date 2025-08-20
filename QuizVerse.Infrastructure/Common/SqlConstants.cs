@@ -24,11 +24,11 @@ public class SqlConstants
 
     #region QuizManagement
     public const string GET_QUIZ_CARD_DATA_FUNCTION = "get_quiz_card_data";
-    public const string GET_QUIZ_CARD_DATA_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}})";
+    public const string GET_QUIZ_CARD_DATA_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}},{{1}})";
     public const string GET_QUIZ_LIST_FUNCTION = "get_quiz_list";
-    public const string GET_QUIZ_LIST_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}})";
+    public const string GET_QUIZ_LIST_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}}, {{8}})";
     public const string GET_QUIZ_LIST_COUNT_FUNCTION = "get_quiz_list_count";
-    public const string GET_QUIZ_LIST_COUNT_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}})";
+    public const string GET_QUIZ_LIST_COUNT_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})";
     public const string CREATE_UPDATE_QUIZ_FUNCTION = "create_update_quiz";
     public const string GET_QUIZ_DATA_BY_ID_FUNCTION = "get_quiz_data_by_id";
     public const string DELETE_QUIZ_FUNCTION = "delete_quiz";
