@@ -11,14 +11,12 @@ namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = nameof(UserRoles.Admin))]
-public class EmailTemplatesController() : ControllerBase
+// [Authorize(Roles = nameof(UserRoles.Admin))]
+public class EmailTemplatesController(IEmailTemplatesService emailTemplatesService) : ControllerBase
 {
-    [HttpGet("get-all-email-templates")]
-    public IActionResult GetAllEmailTemplates([FromServices] IEmailTemplatesService emailTemplatesService, [FromQuery] PageListRequest pageListRequest)
+    [HttpPost("get-all-email-templates")]
+    public IActionResult GetAllEmailTemplates(PageListRequest pageListRequest)
     {
-        var response = emailTemplatesService.GetAllEmailTemplates(pageListRequest);
-        
         return Ok(new ApiResponse<PageListResponse<EmailTemplatesResponseDto>>
         {
             Result = true,

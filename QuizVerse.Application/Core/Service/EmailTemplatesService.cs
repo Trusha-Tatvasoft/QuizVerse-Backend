@@ -22,16 +22,11 @@ public class EmailTemplatesService(IGenericRepository<EmailTemplete> emailTempla
             var propertyInfo = typeof(EmailTemplete).GetProperty(
                 pageListRequest.SortColumn,
                 BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance
-            );
-
-            if (propertyInfo == null)
-            {
-                throw new AppException(
+            ) ?? throw new AppException(
                     string.Format(Constants.INVALID_COLUMN_NAME, pageListRequest.SortColumn),400);
-            }
 
             // If the property is boolean, invert the sort direction
-            if (propertyInfo?.PropertyType == typeof(bool))
+            if (propertyInfo.PropertyType == typeof(bool))
             {
                 pageListRequest.SortDescending = !pageListRequest.SortDescending;
             }
@@ -42,15 +37,13 @@ public class EmailTemplatesService(IGenericRepository<EmailTemplete> emailTempla
             emailTempletes = emailTempletes.OrderBy(q => q.Id);
         }
 
-        List<EmailTemplete> emailTempletesList = emailTempletes.ToList();
-
-        List<EmailTemplatesResponseDto> emailTemplatesResponse = _mapper.Map<List<EmailTemplatesResponseDto>>(emailTempletesList);
+        List<EmailTemplatesResponseDto> emailTemplatesResponse = _mapper.Map<List<EmailTemplatesResponseDto>>(emailTempletes.ToList());
 
 
         return new PageListResponse<EmailTemplatesResponseDto>
         {
             Records = emailTemplatesResponse,
-            TotalRecords = emailTempletesList.Count(),
+            TotalRecords = emailTemplatesResponse.Count(),
         };
     }
 }
