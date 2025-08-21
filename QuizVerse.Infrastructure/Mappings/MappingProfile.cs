@@ -207,6 +207,10 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.BattleName, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleName)))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => ToTitleCase(src.Description)));
         #endregion
+
+        #region Email Templates
+        CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>
