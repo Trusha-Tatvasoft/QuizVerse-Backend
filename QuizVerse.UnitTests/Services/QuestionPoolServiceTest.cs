@@ -789,7 +789,7 @@ public class QuestionPoolServiceTest
     {
         string csvContent = "Question,Category,Difficulty,Type,CorrectAnswer,Option1,Option2,Option3,Option4\n" + "What is 2+2?,Math,Easy,MCQ,4,1,2,3,4";
 
-        using MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(csvContent));
+        using MemoryStream stream = new(Encoding.UTF8.GetBytes(csvContent));
 
         _categoryRepoMock.Setup(r => r.GetAllAsync())
             .ReturnsAsync(
