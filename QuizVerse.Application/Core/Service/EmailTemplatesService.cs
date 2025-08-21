@@ -39,7 +39,6 @@ public class EmailTemplatesService(IGenericRepository<EmailTemplete> emailTempla
 
         List<EmailTemplatesResponseDto> emailTemplatesResponse = _mapper.Map<List<EmailTemplatesResponseDto>>(emailTempletes.ToList());
 
-
         return new PageListResponse<EmailTemplatesResponseDto>
         {
             Records = emailTemplatesResponse,
