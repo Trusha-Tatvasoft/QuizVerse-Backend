@@ -154,6 +154,12 @@ public class QuizManagementService(
                     ? JsonSerializer.Serialize(quizCreateUpdateRequestDto.Questions, jsonOptions)
                     : "[]"
             },
+            new("p_no_of_questions_per_difficulty", NpgsqlDbType.Jsonb)
+            {
+                Value = quizCreateUpdateRequestDto.NoOfQuestionsPerDifficulty != null
+                    ? JsonSerializer.Serialize(quizCreateUpdateRequestDto.NoOfQuestionsPerDifficulty, jsonOptions)
+                    : "[]"
+            },
             new("p_created_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value },
         };
 

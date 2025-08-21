@@ -35,8 +35,8 @@
 --                 );
 --
 -- Usage (UPDATE): SELECT * FROM create_update_quiz(
---                     p_quiz_id             := 18,      -- Existing quiz ID
---                     p_name                := 'Update draft Quiz 3',
+--                     p_quiz_id             := 11,      -- Existing quiz ID
+--                     p_name                := 'Draft Quizes',
 --                     p_category_id         := 1,
 --                     p_description         := 'An updated description.',
 --                     p_total_time          := 30,
@@ -46,18 +46,8 @@
 --                     p_price               := 9.99,
 --                     p_status              := 2,
 --                     p_tags                := '[{ "id": null, "name": "Geography" }]'::jsonb,
---                     p_questions           := '[
--- 													{
--- 												     "id": null,
--- 												     "categoryId": 5,
--- 												     "queDifficultyId": 2,
--- 												     "queText": "What is the capital city of Australia?",
--- 												     "queTypeId": 3,
--- 												     "queOptionsAns": [
--- 												         { "id": null, "questionId": null, "key": "answer", "value": "Canberra" }
--- 												     ]
--- 												 	}
--- 												  ]'::jsonb,
+--                     p_questions           := '[]'::jsonb,
+--                     p_no_of_questions_per_difficulty := '[{"queDifficultyName": "easy", "noOfQuestions": 4}]'::jsonb,
 --                     p_created_by          := 1
 --                 );
 -- =============================================
@@ -75,6 +65,7 @@ CREATE OR REPLACE FUNCTION create_update_quiz(
     p_status INT,
     p_tags JSONB,         -- [{ id?, name }]
     p_questions JSONB,    -- [{ id?, categoryId, queDifficultyId, queText, queTypeId, queOptionsAns }]
+    p_no_of_questions_per_difficulty JSONB, -- [{ queQifficultyName, noOfQuestions }]
     p_created_by INT
 )
 RETURNS TABLE (
@@ -90,6 +81,7 @@ DECLARE
     v_tag_id INT;
     v_quiz_id INT;
     v_question_id INT;
+    v_difficulty_id INT;
     v_total_xp INT := 0;
     v_xp INT;
     v_is_recent_category INT := 0;
@@ -208,7 +200,70 @@ BEGIN
         );
     END IF;
 
-    -- 5. Handle Tags
+    -- 5. Handle Mapping No of Questions Per Difficulty
+    IF p_no_of_questions_per_difficulty IS NOT NULL
+    AND jsonb_array_length(p_no_of_questions_per_difficulty) > 0
+    THEN
+        -- Upsert (update/insert) for JSON entries
+        FOR v_q IN
+            SELECT * 
+            FROM jsonb_to_recordset(p_no_of_questions_per_difficulty)
+            AS q("queDifficultyName" TEXT, "noOfQuestions" INT)
+        LOOP
+            RAISE NOTICE 'Difficulty Name: "%", No Of Questions: %', 
+                        v_q."queDifficultyName", v_q."noOfQuestions";
+
+            -- Look up difficultyId by name
+            SELECT id 
+            INTO v_difficulty_id
+            FROM "QuestionDifficulty"
+            WHERE LOWER(name) = LOWER(TRIM(v_q."queDifficultyName"))
+            AND is_deleted = FALSE
+            LIMIT 1;
+
+            -- If not found → throw error (business rule)
+            IF v_difficulty_id IS NULL THEN
+                RAISE NOTICE 'Difficulty "%" not found.', v_q."queDifficultyName";
+                RETURN QUERY SELECT FALSE, 'Invalid difficulty name provided.';
+                RETURN;
+            END IF;
+
+            -- Try to update existing record
+            UPDATE "QuizToQuestionDifficultyMap"
+            SET no_of_questions = v_q."noOfQuestions",
+                modified_by     = p_created_by,
+                modified_date   = NOW(),
+                is_deleted      = FALSE
+            WHERE quiz_id = v_quiz_id
+            AND question_difficulty_id = v_difficulty_id;
+
+            -- If nothing updated, insert new record
+            IF NOT FOUND THEN
+                INSERT INTO "QuizToQuestionDifficultyMap"
+                    (quiz_id, question_difficulty_id, no_of_questions, is_deleted, created_by, created_date)
+                VALUES
+                    (v_quiz_id, v_difficulty_id, v_q."noOfQuestions", FALSE, p_created_by, NOW());
+            END IF;
+        END LOOP;
+
+        -- Soft delete rows that are NOT in JSON
+        UPDATE "QuizToQuestionDifficultyMap"
+        SET is_deleted    = TRUE,
+            modified_by   = p_created_by,
+            modified_date = NOW()
+        WHERE quiz_id = v_quiz_id
+        AND question_difficulty_id NOT IN (
+            SELECT qd.id
+            FROM jsonb_to_recordset(p_no_of_questions_per_difficulty)
+                AS q("queDifficultyName" TEXT, "noOfQuestions" INT)
+            JOIN "QuestionDifficulty" qd 
+                ON LOWER(qd.name) = LOWER(TRIM(q."queDifficultyName"))
+            AND qd.is_deleted = FALSE
+        )
+        AND is_deleted = FALSE;
+    END IF;
+
+    -- 6. Handle Tags
     FOR v_tag IN
         SELECT * FROM jsonb_to_recordset(p_tags) AS t(id INT, name TEXT)
     LOOP
@@ -227,7 +282,12 @@ BEGIN
             v_tag_id := v_tag.id;
         END IF;
 
-        -- Add mapping if not exists
+       -- Update existing records where is_deleted = TRUE to set is_deleted = FALSE
+        UPDATE "QuizTagMapping"
+        SET is_deleted = FALSE, modified_by = p_created_by, modified_date = CURRENT_TIMESTAMP
+        WHERE quiz_id = v_quiz_id AND tag_id = v_tag_id AND is_deleted = TRUE;
+
+        -- Insert new records only if no matching record exists (active or deleted)
         INSERT INTO "QuizTagMapping" (quiz_id, tag_id, created_by)
         SELECT v_quiz_id, v_tag_id, p_created_by
         WHERE NOT EXISTS (
@@ -236,7 +296,7 @@ BEGIN
         );
     END LOOP;
 
-    -- 6. Handle Questions
+    -- 7. Handle Questions
     FOR v_q IN
         SELECT * FROM jsonb_to_recordset(p_questions)
         AS q(id INT, "categoryId" INT, "queDifficultyId" INT, "queText" TEXT, "queTypeId" INT, "queOptionsAns" JSONB)
@@ -266,7 +326,7 @@ BEGIN
         );
     END LOOP;
 
-    -- 7. Return success message
+    -- 8. Return success message
     RETURN QUERY
     SELECT TRUE,
            CASE WHEN p_quiz_id IS NULL THEN 'Quiz created successfully.'

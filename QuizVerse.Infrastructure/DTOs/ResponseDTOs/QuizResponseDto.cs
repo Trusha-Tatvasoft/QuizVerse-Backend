@@ -10,17 +10,17 @@ public class QuizResponseDto
     public int? Id { get; set; }
     [Column("name")]
     public string Name { get; set; } = string.Empty;
-    [Column("quiz_category_id")]
+    [Column("quizCategoryId")]
     public int CategoryId { get; set; }
     [Column("description")]
     public string Description { get; set; } = string.Empty;
-    [Column("total_time")]
+    [Column("totalTime")]
     public int TotalTime { get; set; }
-    [Column("difficulty_level_id")]
+    [Column("difficultyLevelId")]
     public int DifficultyLevelId { get; set; }
-    [Column("total_question")]
+    [Column("totalQuestion")]
     public int TotalQuestion { get; set; }
-    [Column("is_paid")]
+    [Column("isPaid")]
     public bool IsPaid { get; set; }
     [Column("price")]
     public decimal? Price { get; set; }
@@ -49,6 +49,17 @@ public class QuizResponseDto
          ? new()
          : JsonSerializer.Deserialize<List<QuestionsListResponseDto>>(
              QuestionsJson,
+             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+           )!;
+
+    [Column("noOfQuestionsPerDifficulty")]
+    public string? NoOfQuestionsPerDifficultyJson { get; set; }
+    [NotMapped]
+    public List<NoOfQuestionPerDifficultyDto> NoOfQuestionsPerDifficulty =>
+     string.IsNullOrWhiteSpace(NoOfQuestionsPerDifficultyJson)
+         ? new()
+         : JsonSerializer.Deserialize<List<NoOfQuestionPerDifficultyDto>>(
+             NoOfQuestionsPerDifficultyJson,
              new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
            )!;
 }

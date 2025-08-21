@@ -76,12 +76,12 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
     #endregion
 
     #region Category Name Available
-    [HttpGet("is-category-name-available/{name}/{id?}")]
-    public async Task<IActionResult> IsCategoryNameAvailable(string name, int? id = null)
+    [HttpGet("is-category-name-available")]
+    public async Task<IActionResult> IsCategoryNameAvailable([FromQuery] string categoryName, [FromQuery] int? id = null)
     {
         return Ok(new ApiResponse<string>
         {
-            Result =  await _quizCategoryService.IsCategoryNameAvailable(name, id),
+            Result =  await _quizCategoryService.IsCategoryNameAvailable(categoryName, id),
             Message = Constants.VALID_DATA,
             StatusCode = StatusCodes.Status200OK,
             Data = null
