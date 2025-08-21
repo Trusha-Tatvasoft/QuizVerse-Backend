@@ -37,7 +37,8 @@ public class QuizManagementService(
     {
         var parameters = new NpgsqlParameter[]
         {
-            new("p_active_status", NpgsqlDbType.Integer) { Value = (int)QuizStatus.Active }
+            new("p_active_status", NpgsqlDbType.Integer) { Value = (int)QuizStatus.Active },
+            new("p_quiz_type", NpgsqlDbType.Integer) { Value = (int)QuizType.Normal }
         };
 
         string query = string.Format(
@@ -66,7 +67,8 @@ public class QuizManagementService(
             new("p_sort_descending", NpgsqlDbType.Boolean) { Value = pageListRequest.SortDescending },
             new("p_quiz_status", NpgsqlDbType.Integer) {  Value = pageListRequest.Filters?.QuizStatus != null? (int)pageListRequest.Filters.QuizStatus: DBNull.Value},
             new("p_category_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizCategoryId ?? DBNull.Value },
-            new("p_difficulty_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizDifficultyId ?? DBNull.Value }
+            new("p_difficulty_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizDifficultyId ?? DBNull.Value },
+            new("p_quiz_type", NpgsqlDbType.Integer) { Value = (int)QuizType.Normal }
         };
 
         List<QuizListDto> quizzes = await _sqlQueryRepository.SqlQueryListAsync<QuizListDto>(
@@ -85,6 +87,7 @@ public class QuizManagementService(
             new("p_quiz_status", NpgsqlDbType.Integer) {  Value = pageListRequest.Filters?.QuizStatus != null? (int)pageListRequest.Filters.QuizStatus: DBNull.Value},
             new("p_category_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizCategoryId ?? DBNull.Value },
             new("p_difficulty_id", NpgsqlDbType.Integer) { Value = (object?)pageListRequest.Filters?.QuizDifficultyId ?? DBNull.Value },
+            new("p_quiz_type", NpgsqlDbType.Integer) { Value = (int)QuizType.Normal }
         };
 
         TotalRecordsDto totalRecordsStr = await _sqlQueryRepository.SqlQuerySingleAsync<TotalRecordsDto>(

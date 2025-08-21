@@ -10,7 +10,8 @@
 --                              p_search_term := 'math',
 --                              p_quiz_status := NULL,
 --                              p_category_id := 2,
---                              p_difficulty_id := NULL
+--                              p_difficulty_id := NULL,
+--                              p_quiz_type := 1
 --                          );
 -- =============================================
 
@@ -18,7 +19,8 @@ CREATE OR REPLACE FUNCTION get_quiz_list_count(
     p_search_term        TEXT DEFAULT NULL,
     p_quiz_status        INT DEFAULT NULL,
     p_category_id        INT DEFAULT NULL,
-    p_difficulty_id      INT DEFAULT NULL
+    p_difficulty_id      INT DEFAULT NULL,
+    p_quiz_type          INT DEFAULT 1
 )
 RETURNS TABLE (
     total_records INT
@@ -32,6 +34,7 @@ BEGIN
     JOIN "QuizCategory" c       ON c.id = q.category_id
     JOIN "QuizDifficulty" d     ON d.id = q.difficulty_level_id
     WHERE q.is_deleted = FALSE
+      AND q.quiz_type = p_quiz_type
       AND c.is_deleted = FALSE
       AND (
             p_search_term IS NULL

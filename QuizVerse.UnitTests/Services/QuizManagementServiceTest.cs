@@ -174,15 +174,17 @@ public class QuizManagementServiceTests
 
         // Verify that the repository was called with the expected parameter
         _sqlRepoMock.Verify(r => r.SqlQuerySingleAsync<QuizManagementPageDataDto>(
-            It.IsAny<string>(),
-            It.Is<NpgsqlParameter[]>(p =>
-                p.Length == 1 &&
-                p[0].ParameterName == "p_active_status" &&
-                Convert.ToInt32(p[0].Value) == (int)QuizStatus.Active
-            )
-        ), Times.Once);
+               It.IsAny<string>(),
+               It.Is<NpgsqlParameter[]>(p =>
+                   p.Length == 2 &&
+                   p.Any(x => x.ParameterName == "p_active_status" &&
+                              Convert.ToInt32(x.Value) == (int)QuizStatus.Active) &&
+                   p.Any(x => x.ParameterName == "p_quiz_type" &&
+                              Convert.ToInt32(x.Value) == (int)QuizType.Normal)
+               )
+           ), Times.Once);
     }
-    
+
     [Fact]
     public async Task GetQuizCardData_ReturnsEmptyCounts_WhenNoRecordsExist()
     {
@@ -211,6 +213,16 @@ public class QuizManagementServiceTests
         Assert.Equal(0, result.ActiveQuiz);
         Assert.Equal(0, result.TotalParticipants);
         Assert.Equal(0, result.TotalQuestions);
+
+        // Verify repository called with both parameters
+        _sqlRepoMock.Verify(r => r.SqlQuerySingleAsync<QuizManagementPageDataDto>(
+            It.IsAny<string>(),
+            It.Is<NpgsqlParameter[]>(p =>
+                p.Length == 2 &&
+                p.Any(x => x.ParameterName == "p_active_status") &&
+                p.Any(x => x.ParameterName == "p_quiz_type")
+            )
+        ), Times.Once);
     }
     #endregion
 

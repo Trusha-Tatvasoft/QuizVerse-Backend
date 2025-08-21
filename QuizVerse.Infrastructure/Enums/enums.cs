@@ -60,6 +60,13 @@ namespace QuizVerse.Infrastructure.Enums
         TimeLimited = 2
     }
 
+    public enum QuizType
+    {
+        Normal = 1,
+        Battle = 2,
+        Tournament = 3
+    }
+
     public enum EmailTemplateType
     {
         AccountSuspension = 1,
