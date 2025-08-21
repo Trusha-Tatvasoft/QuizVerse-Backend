@@ -19,9 +19,15 @@ public partial class BattleStatus
 
     public DateTime? ModifiedDate { get; set; }
 
+    public bool IsDeleted { get; set; }
+
+    public int? ModifiedBy { get; set; }
+
     public virtual BattleList Battle { get; set; } = null!;
 
     public virtual ICollection<BattleResult> BattleResults { get; set; } = new List<BattleResult>();
+
+    public virtual User? ModifiedByNavigation { get; set; }
 
     public virtual User User1 { get; set; } = null!;
 

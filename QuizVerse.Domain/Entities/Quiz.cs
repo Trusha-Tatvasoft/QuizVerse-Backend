@@ -15,8 +15,6 @@ public partial class Quiz
 
     public int TotalQuestion { get; set; }
 
-    public int NoOfPersonAttempted { get; set; }
-
     public bool IsPaid { get; set; }
 
     public decimal Price { get; set; }
@@ -43,6 +41,8 @@ public partial class Quiz
 
     public bool IsDeleted { get; set; }
 
+    public int QuizType { get; set; }
+
     public virtual ICollection<BattleList> BattleLists { get; set; } = new List<BattleList>();
 
     public virtual QuizCategory Category { get; set; } = null!;
@@ -64,6 +64,8 @@ public partial class Quiz
     public virtual ICollection<QuizTagMapping> QuizTagMappings { get; set; } = new List<QuizTagMapping>();
 
     public virtual ICollection<QuizToBaseQuestionMap> QuizToBaseQuestionMaps { get; set; } = new List<QuizToBaseQuestionMap>();
+
+    public virtual ICollection<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMaps { get; set; } = new List<QuizToQuestionDifficultyMap>();
 
     public virtual ICollection<UserFavoriteQuiz> UserFavoriteQuizzes { get; set; } = new List<UserFavoriteQuiz>();
 }

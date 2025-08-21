@@ -1,6 +1,8 @@
 using System.Globalization;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
@@ -74,51 +76,136 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => ToTitleCase(src.Name)))
             .ForMember(dest => dest.Description,
                 opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
-                
+
         CreateMap<QuizDifficultyRequestDto, QuizDifficulty>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name.Trim()))
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description.Trim()));
 
         CreateMap<QuizDifficulty, CommonListDropDownDto>()
-                    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
+                    .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)));
         #endregion
 
         #region Quiz Category
         // quiz category to quiz category DTO
         CreateMap<QuizCategory, QuizCategoryDTO>()
-            .ForMember(dest => dest.QuizCount, opt => opt.Ignore())
+            .ForMember(dest => dest.QuizCount, opt => opt.MapFrom(src => src.Quizzes != null ? src.Quizzes.Count : 0))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
 
         CreateMap<QuizCategory, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.CategoryName));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.CategoryName)));
         #endregion
 
         #region Quiz Tag
         CreateMap<QuizTag, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TagName));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.TagName)));
         #endregion
 
         #region QuizManagement
+        CreateMap<QuizListDto, QuizListDto>()
+            .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => ToTitleCase(src.QuizTitle)))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => ToTitleCase(src.CategoryName)))
+            .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => CapitalizeFirst(src.QuizDifficultyLevel)));
 
-        CreateMap<Quiz, QuizListDto>()
-           .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Name))
-           .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.CategoryName))
-           .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => src.DifficultyLevel.Name))
-           .ForMember(dest => dest.TotalQuestion, opt => opt.MapFrom(src => src.TotalQuestion))
-           .ForMember(dest => dest.NoOfPersonAttempted, opt => opt.MapFrom(src => src.NoOfPersonAttempted))
-           .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
-           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
 
         #endregion
 
         #region Question Type
         CreateMap<QuestionType, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.TypeName));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.TypeName)));
         #endregion
 
         #region Question Difficulty
         CreateMap<QuestionDifficulty, CommonListDropDownDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)));
+        #endregion
+
+        #region Question Mapping
+        CreateMap<QuizCategory, QuizCategoryDTO>()
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status));
+
+        CreateMap<QuestionRequestDTO, BaseQuestion>()
+            .ForMember(dest => dest.QueText,
+                opt => opt.MapFrom(src => src.QuestionText.Trim()))
+            .ForMember(dest => dest.CategoryId,
+                opt => opt.MapFrom(src => src.CategoryId))
+            .ForMember(dest => dest.QueDifficultyId,
+                opt => opt.MapFrom(src => src.DifficultyId))
+            .ForMember(dest => dest.QueTypeId,
+                opt => opt.MapFrom(src => src.QuestionTypeId))
+            .ForMember(dest => dest.CreatedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.Ignore());
+
+        CreateMap<BaseQuestion, QuestionDetailDTO>()
+            .ForMember(dest => dest.QuestionText,
+                opt => opt.MapFrom(src => src.QueText))
+            .ForMember(dest => dest.QuestionType,
+                opt => opt.MapFrom(src => src.QueType.TypeName))
+            .ForMember(dest => dest.Difficulty,
+                opt => opt.MapFrom(src => src.QueDifficulty.Name))
+            .ForMember(dest => dest.Category,
+                opt => opt.MapFrom(src => src.Category.CategoryName))
+            .ForMember(dest => dest.Options,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.CorrectAnswer,
+                opt => opt.Ignore());
+
+        CreateMap<QuestionsListRequestDto, BaseQuestion>()
+            .ForMember(dest => dest.Id,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.QueText,
+                opt => opt.MapFrom(src => src.QueText))
+            .ForMember(dest => dest.CategoryId,
+                opt => opt.MapFrom(src => src.CategoryId))
+            .ForMember(dest => dest.QueDifficultyId,
+                opt => opt.MapFrom(src => src.QueDifficultyId))
+            .ForMember(dest => dest.QueTypeId,
+                opt => opt.MapFrom(src => src.QueTypeId))
+            .ForMember(dest => dest.CreatedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.Ignore());
+
+        CreateMap<QueOptionsAndAnswersDto, QuestionOptionsAnswer>()
+            .ForMember(dest => dest.Id,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.QuestionId,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.Key,
+                opt => opt.MapFrom(src => src.Key))
+            .ForMember(dest => dest.Value,
+                opt => opt.MapFrom(src => src.Value))
+            .ForMember(dest => dest.CreatedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedBy,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedDate,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.Ignore());
+        #endregion
+
+        #region BattleManagement
+        CreateMap<BattleManagementData, BattleManagementData>()
+            .ForMember(dest => dest.BattleDifficulty, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleDifficulty)))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => CapitalizeFirst(src.CategoryName)))
+            .ForMember(dest => dest.BattleName, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleName)))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => ToTitleCase(src.Description)));
         #endregion
     }
 

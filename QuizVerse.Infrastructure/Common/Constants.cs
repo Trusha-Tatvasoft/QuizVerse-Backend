@@ -29,6 +29,7 @@ public static class Constants
     public const string REFRESH_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE = "RefreshTokenExpiryDays is not configured.";
     public const string USER_NOT_FOUND_MESSAGE = "User Not Found";
     public const string USER_SUSPENDED_MESSAGE = "You have been suspended. Remaining suspension time: {0} days and {1} hours.";
+    public const string USER_NOT_AUTHENTICATED_MESSAGE = "User is not authenticated.";
     #endregion
 
     #region AdminDashboard
@@ -120,10 +121,28 @@ public static class Constants
     #region Quiz Category Messages
     public const string INVALID_PAGE_NO = "Page number {0} exceeds maximum page number {1}.";
     public const string INVALID_COLUMN_NAME = "Invalid sort column '{0}'. The property does not exist.";
+    public const string QUIZ_CATEGORY_NOT_FOUND = "Quiz category with ID {0} was not found.";
+    public const string DUPLICATE_QUIZ_CATEGORY = "A quiz category with this name already exists.";
+    public const string QUIZ_CATEGORY_DELETED = "Quiz category with ID {0} is already deleted.";
+    public const string QUIZ_CATEGORY_STATUS_ALREADY_SET = "Quiz category status is already {0}.";
+    public const string QUIZ_CATEGORY_ACTIVATED_SUCCESS = "Quiz category activated successfully.";
+    public const string QUIZ_CATEGORY_INACTIVATED_SUCCESS = "Quiz category inactivated successfully.";
+    public const string QUIZ_CATEGORY_DELETED_SUCCESS = "Quiz category deleted successfully.";
     #endregion
-
-    #region Quiz Management List
+    
+    #region Quiz Management
     public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
+    public const string CREATE_OR_UPDATE_QUIZ_FAILED = "Failed to create or update quiz.";
+    public const string DELETE_QUIZ_FAILED = "Failed to delete quiz.";
+    public const string INVALID_EXPORT_REQUEST_QUIZNAME = "Invalid export request. Quiz name is required.";
+    public const string INVALID_EXPORT_REQUEST_QUESTIONS = "Invalid export request. No questions provided";
+    public const string EXPORT_QUESTIONS_CSV_HEADER = "Question,Type,Difficulty,Category,Option1,Option2,Option3,Option4,CorrectAnswer";
+    public const string MISSING_QUESTION_TEXT = "Question text is missing";
+    public const string INVALID_QUESTION_TYPE_ID = "Invalid Question Type ID: {0}";
+    public const string INVALID_QUESTION_DIFFICULTY_ID = "Invalid Difficulty ID: {0}";
+    public const string INVALID_CATEGORY_ID = "Invalid Category ID: {0}";
+    public const string INVALID_MCQ_OPTIONS = "Multiple choice question must have at least 2 options";
+    public const string NO_CORRECT_ANSWER = "Correct answer is missing for {0} question";
     #endregion
 
     #region Quiz Difficulty Level Message
@@ -139,5 +158,33 @@ public static class Constants
     #region Linq Function Names
     public const string WHERE = "Where";
     public const string ORDER_BY = "OrderBy";
+    #endregion
+
+    #region Question Pool
+    public const string EXCEL = "Excel";
+    public const string CSV = "CSV";
+    public const string QUESTION_TYPE_MULTIPLE_CHOICE = "Multiple Choice";
+    public const string QUESTION_TYPE_TRUE_FALSE = "True/False";
+    public const string QUESTION_TYPE_SHORT_ANSWER = "Short Answer";
+    public const string QUESTION_KEY_OPTION = "option";
+    public const string QUESTION_KEY_ANSWER = "answer";
+    public const string INVALID_QUESTION_ID_MESSAGE = "ID must be greater than zero.";
+    public const string QUESTION_PREVIEW_FETCH_SUCCESS_MESSAGE = "Question preview fetched successfully.";
+    public const string CATEGORY_NOT_FOUND = "Category with id {0} not found.";
+    public const string QUESTION_TYPE_NOT_FOUND = "Question type with id {0} not found.";
+    public const string DIFFICULTY_NOT_FOUND = "Difficulty with id {0} not found.";
+    public const string QUESTION_CREATION_SUCCESS_MESSAGE = "Question created successfully.";
+    public const string QUESTION_UPDATE_SUCCESS_MESSAGE = "Question updated successfully.";
+    public const string QUESTION_DELETE_SUCCESS_MESSAGE = "Question deleted successfully.";
+    public const string QUESTION_NOT_FOUND_ERROR = "Question with id {0} not found or already deleted.";
+    public const string CSV_INVALID_OR_EMPTY_ERROR = "CSV is empty or has an invalid format.";
+    public const string EXCEL_INVALID_OR_EMPTY_ERROR = "Excel file is empty or has an invalid format.";
+    public const string OPTIONS_CANNOT_BE_EMPTY = "Options cannot be empty or null.";
+    public const string DUPLICATE_OPTIONS_FOUND = "Duplicate option(s) found: {0}";
+    public const string CORRECT_ANSWER_NOT_IN_OPTIONS = "Correct answer '{0}' is not listed among the options.";
+    public const string CSV_PREVIEW_LOADED_SUCCESSFULLY = "CSV preview loaded successfully.";
+    public const string EXCEL_PREVIEW_LOADED_SUCCESSFULLY = "Excel preview loaded successfully.";
+    public const string NO_QUESTIONS_TO_SAVE = "No questions to save.";
+    public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     #endregion
 }

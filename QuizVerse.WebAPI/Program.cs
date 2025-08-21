@@ -9,6 +9,9 @@ using QuizVerse.WebAPI.Middlewares;
 using Microsoft.OpenApi.Models;
 using QuizVerse.Infrastructure.Mappings;
 
+// Register encoding provider for Excel (required by ExcelDataReader)
+System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<QuizVerseDbContext>(options =>
@@ -76,7 +79,7 @@ var app = builder.Build();
 
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();

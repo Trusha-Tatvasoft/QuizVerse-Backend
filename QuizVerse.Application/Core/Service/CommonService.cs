@@ -62,7 +62,7 @@ namespace QuizVerse.Application.Core.Service
             if (file == null || file.Length == 0) return null;
 
             string wwwrootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", folderName);
-            Directory.CreateDirectory(wwwrootPath); 
+            Directory.CreateDirectory(wwwrootPath);
 
             string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
             string filePath = Path.Combine(wwwrootPath, fileName);
@@ -74,6 +74,23 @@ namespace QuizVerse.Application.Core.Service
 
             string finalFileName = Path.Combine(folderName, fileName).Replace("\\", "/");
             return finalFileName;
+        }
+        #endregion
+
+        #region Create CSV Helper
+        public string EscapeCsv(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return string.Empty;
+
+            bool mustQuote = input.Contains(",") || input.Contains("\"") || input.Contains("\n");
+            if (mustQuote)
+            {
+                // Escape quotes by doubling them
+                input = input.Replace("\"", "\"\"");
+                return $"\"{input}\"";
+            }
+
+            return input;
         }
         #endregion
     }

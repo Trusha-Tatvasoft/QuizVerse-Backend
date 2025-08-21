@@ -37,6 +37,10 @@ public partial class User
 
     public int? ModifiedBy { get; set; }
 
+    public virtual ICollection<BadgeConditionsMapping> BadgeConditionsMappingCreatedByNavigations { get; set; } = new List<BadgeConditionsMapping>();
+
+    public virtual ICollection<BadgeConditionsMapping> BadgeConditionsMappingModifiedByNavigations { get; set; } = new List<BadgeConditionsMapping>();
+
     public virtual ICollection<Badge> BadgeCreatedByNavigations { get; set; } = new List<Badge>();
 
     public virtual ICollection<Badge> BadgeModifiedByNavigations { get; set; } = new List<Badge>();
@@ -49,11 +53,19 @@ public partial class User
 
     public virtual ICollection<BattleList> BattleListModifiedByNavigations { get; set; } = new List<BattleList>();
 
+    public virtual ICollection<BattleQuesDifficultyMap> BattleQuesDifficultyMapCreatedByNavigations { get; set; } = new List<BattleQuesDifficultyMap>();
+
+    public virtual ICollection<BattleQuesDifficultyMap> BattleQuesDifficultyMapModifiedByNavigations { get; set; } = new List<BattleQuesDifficultyMap>();
+
+    public virtual ICollection<BattleRequest> BattleRequestModifiedByNavigations { get; set; } = new List<BattleRequest>();
+
     public virtual ICollection<BattleRequest> BattleRequestReceivers { get; set; } = new List<BattleRequest>();
 
     public virtual ICollection<BattleRequest> BattleRequestSenders { get; set; } = new List<BattleRequest>();
 
     public virtual ICollection<BattleResult> BattleResults { get; set; } = new List<BattleResult>();
+
+    public virtual ICollection<BattleStatus> BattleStatusModifiedByNavigations { get; set; } = new List<BattleStatus>();
 
     public virtual ICollection<BattleStatus> BattleStatusUser1s { get; set; } = new List<BattleStatus>();
 
@@ -136,6 +148,14 @@ public partial class User
     public virtual ICollection<QuizTagMapping> QuizTagMappingModifiedByNavigations { get; set; } = new List<QuizTagMapping>();
 
     public virtual ICollection<QuizTag> QuizTagModifiedByNavigations { get; set; } = new List<QuizTag>();
+
+    public virtual ICollection<QuizToBaseQuestionMap> QuizToBaseQuestionMapCreatedByNavigations { get; set; } = new List<QuizToBaseQuestionMap>();
+
+    public virtual ICollection<QuizToBaseQuestionMap> QuizToBaseQuestionMapModifiedByNavigations { get; set; } = new List<QuizToBaseQuestionMap>();
+
+    public virtual ICollection<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMapCreatedByNavigations { get; set; } = new List<QuizToQuestionDifficultyMap>();
+
+    public virtual ICollection<QuizToQuestionDifficultyMap> QuizToQuestionDifficultyMapModifiedByNavigations { get; set; } = new List<QuizToQuestionDifficultyMap>();
 
     public virtual UserRole Role { get; set; } = null!;
 

@@ -13,5 +13,19 @@ public partial class BadgeConditionsMapping
 
     public string ConditionValue { get; set; } = null!;
 
+    public bool IsDeleted { get; set; }
+
+    public int CreatedBy { get; set; }
+
+    public DateTime CreatedDate { get; set; }
+
+    public int? ModifiedBy { get; set; }
+
+    public DateTime? ModifiedDate { get; set; }
+
     public virtual Badge Badge { get; set; } = null!;
+
+    public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual User? ModifiedByNavigation { get; set; }
 }

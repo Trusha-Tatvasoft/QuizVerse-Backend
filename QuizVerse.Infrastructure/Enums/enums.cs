@@ -34,4 +34,45 @@ namespace QuizVerse.Infrastructure.Enums
         QuestionDifficulty = 4,
         QuestionType = 5
     }
+
+    public enum QuizCategoryStatus
+    {
+        Active = 1,
+        Inactive = 0
+    }
+
+    public enum QuizCategoryActionType
+    {
+        Delete = 1,
+        ChangeStatus = 2
+    }
+
+    public enum BattleStatus
+    {
+        Completed = 1,
+        Draw = 2,
+        Running = 3
+    }
+
+    public enum BattleType
+    {
+        Permanent = 1,
+        TimeLimited = 2
+    }
+
+    public enum QuizType
+    {
+        Normal = 1,
+        Battle = 2,
+        Tournament = 3
+    }
+
+    public enum EmailTemplateType
+    {
+        AccountSuspension = 1,
+        BattleRequest = 2,
+        QuizInvitation = 3,
+        ResetPassword = 4,
+        WelComeEmail = 5,
+    }
 }
