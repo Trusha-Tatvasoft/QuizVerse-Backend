@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDropDownDataService, DropDownDataService>();
         services.AddScoped<IQuestionPoolService, QuestionPoolService>();
         services.AddScoped<IBattleManagementService, BattleManagementService>();
+        services.AddScoped<IEmailTemplatesService, EmailTemplatesService>();
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
