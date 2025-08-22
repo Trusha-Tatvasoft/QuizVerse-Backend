@@ -21,6 +21,10 @@ public partial class BattleRequest
 
     public int? ModifiedBy { get; set; }
 
+    public int BattleId { get; set; }
+
+    public virtual BattleList Battle { get; set; } = null!;
+
     public virtual User? ModifiedByNavigation { get; set; }
 
     public virtual User Receiver { get; set; } = null!;

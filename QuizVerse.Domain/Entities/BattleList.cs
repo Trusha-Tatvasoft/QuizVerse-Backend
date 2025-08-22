@@ -27,6 +27,8 @@ public partial class BattleList
 
     public virtual ICollection<BattleQuesDifficultyMap> BattleQuesDifficultyMaps { get; set; } = new List<BattleQuesDifficultyMap>();
 
+    public virtual ICollection<BattleRequest> BattleRequests { get; set; } = new List<BattleRequest>();
+
     public virtual ICollection<BattleStatus> BattleStatuses { get; set; } = new List<BattleStatus>();
 
     public virtual User CreatedByNavigation { get; set; } = null!;
