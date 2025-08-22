@@ -277,7 +277,7 @@ public partial class QuizVerseDbContext : DbContext
                 .HasColumnName("modified_date");
             entity.Property(e => e.NoOfQues).HasColumnName("no_of_ques");
             entity.Property(e => e.QueDifficultyId).HasColumnName("que_difficulty_id");
-            entity.Property(e => e.QusTime).HasColumnName("qus_time");
+            entity.Property(e => e.TimePerQuestion).HasColumnName("time_per_question");
 
             entity.HasOne(d => d.Battle).WithMany(p => p.BattleQuesDifficultyMaps)
                 .HasForeignKey(d => d.BattleId)
