@@ -46,7 +46,16 @@ public class SqlConstants
 
     #region BattleManagement
     public const string GET_BATTLE_LIST_TEMPLATE =
-       "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
+       "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})";
     public const string GET_BATTLE_LIST_FUNCTION = "get_battle_list_data";
+
+    public const string CREATE_UPDATE_BATTLE_FUNCTION = "create_update_battle";
+    public const string CREATE_UPDATE_BATTLE_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}}, {{12}}, {{13}}, {{14}}, {{15}})";
+
+    public const string GET_BATTLE_DATA_BY_ID_QUERY_TEMPLATE =
+     "SELECT * FROM {0}({{0}})";
+
+    public const string GET_BATTLE_DATA_BY_ID_FUNCTION = "get_battle_data_by_id";
+
     #endregion
 }

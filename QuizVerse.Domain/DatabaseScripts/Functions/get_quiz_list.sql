@@ -19,8 +19,8 @@
 --                              p_difficulty_id := NULL,
 --                              p_quiz_type := 1
 --                          );
--- Notes:        Valid p_sort_column values: quiz_title, category_name, quiz_difficulty_level, 
---               no_of_person_attempted, total_question, status, created_date
+-- Notes:        Valid p_sort_column values: quizTitle, categoryName, quizDifficultyLevel, 
+--               noOfPersonAttempted, totalQuestion, status, createdDate
 -- =============================================
 
 CREATE OR REPLACE FUNCTION get_quiz_list(
@@ -50,8 +50,22 @@ DECLARE
     sort_dir TEXT;
     sort_col TEXT;
 BEGIN
-	sort_col := COALESCE(NULLIF(p_sort_column, ''), 'id');
+
+    sort_col := LOWER(COALESCE(NULLIF(p_sort_column, ''), 'id'));
+ 
+    sort_col := CASE sort_col
+        WHEN 'quiztitle'            THEN 'quiz_title'
+        WHEN 'categoryname'         THEN 'category_name'
+        WHEN 'quizdifficultylevel'  THEN 'quiz_difficulty_level'
+        WHEN 'totalquestion'        THEN 'total_question'
+        WHEN 'noofpersonattempted'  THEN 'no_of_person_attempted'
+        WHEN 'status'               THEN 'status'
+        WHEN 'createddate'          THEN 'created_date'
+        ELSE 'id' -- default safe fallback
+    END;
+ 
     sort_dir := CASE WHEN p_sort_descending THEN 'DESC' ELSE 'ASC' END;
+ 
 
     RETURN QUERY EXECUTE format($f$
         WITH base AS (

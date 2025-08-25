@@ -211,6 +211,13 @@ public class MappingProfile : Profile
         #region Email Templates
         CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
         #endregion
+        
+        #region Battle Question Difficulty Mapping
+        CreateMap<QuestionDifficulty, QuestionDifficultyXPData>()
+          .ForMember(dest => dest.QuestionDifficultyId, opt => opt.MapFrom(src => src.Id))
+          .ForMember(dest => dest.QuestionDifficultyName, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)))
+          .ForMember(dest => dest.XpGained, opt => opt.MapFrom(src => src.XpGained));
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>
