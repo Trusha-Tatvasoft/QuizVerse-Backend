@@ -277,7 +277,7 @@ public partial class QuizVerseDbContext : DbContext
                 .HasColumnName("modified_date");
             entity.Property(e => e.NoOfQues).HasColumnName("no_of_ques");
             entity.Property(e => e.QueDifficultyId).HasColumnName("que_difficulty_id");
-            entity.Property(e => e.QusTime).HasColumnName("qus_time");
+            entity.Property(e => e.TimePerQuestion).HasColumnName("time_per_question");
 
             entity.HasOne(d => d.Battle).WithMany(p => p.BattleQuesDifficultyMaps)
                 .HasForeignKey(d => d.BattleId)
@@ -306,6 +306,7 @@ public partial class QuizVerseDbContext : DbContext
             entity.ToTable("BattleRequest");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.BattleId).HasColumnName("battle_id");
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValue(false)
                 .HasColumnName("is_deleted");
@@ -321,6 +322,11 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.Status)
                 .HasDefaultValue(3)
                 .HasColumnName("status");
+
+            entity.HasOne(d => d.Battle).WithMany(p => p.BattleRequests)
+                .HasForeignKey(d => d.BattleId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("BattleRequest_battle_id_fkey");
 
             entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.BattleRequestModifiedByNavigations)
                 .HasForeignKey(d => d.ModifiedBy)

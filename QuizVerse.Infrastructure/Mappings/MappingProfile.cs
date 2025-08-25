@@ -216,7 +216,10 @@ public class MappingProfile : Profile
 
         CreateMap<RawLeaderboardGlobalRankingDto, LeaderboardGlobalRankingResponseDto>();
         #endregion
-
+        
+        #region Email Templates
+        CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>
