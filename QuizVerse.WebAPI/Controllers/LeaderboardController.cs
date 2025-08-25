@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.ApiResponse;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.WebAPI.Controllers
@@ -16,7 +17,7 @@ namespace QuizVerse.WebAPI.Controllers
             {
                 Success = true,
                 Data =  await _leaderboardService.GetUserLeaderboardStats(),
-                message = "",
+                message = Constants.FETCH_DATA_MESSAGE,
                 
             });
         }

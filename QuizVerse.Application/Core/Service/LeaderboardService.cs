@@ -13,7 +13,7 @@ namespace QuizVerse.Application.Core.Service;
 
 public class LeaderboardService(IGenericRepository<UserPerformanceDetail> _leaderboardRepository, IHttpContextAccessor _httpContextAccessor, IMapper _mapper, ISqlQueryRepository _sqlQueryRepository) : ILeaderboardService
 {
-    private int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new Exception(Constants.USER_NOT_FOUND);
+    private int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new Exception(Constants.USER_NOT_AUTHENTICATED_MESSAGE);
     public async Task<UserPerformanceResponseDto> GetUserLeaderboardStats()
     {
         UserPerformanceDetail userPerformanceDetail = await _leaderboardRepository.GetAsync(u => u.UserId == UserId) ?? new UserPerformanceDetail();
