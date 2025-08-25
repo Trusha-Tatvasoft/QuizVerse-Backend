@@ -4,7 +4,7 @@
 -- Description:  <Get global leaderboard rankings for top 50 users 
 --                plus the requested user. Includes rank, XP, 
 --                level, streak, trend (1 = same, 2 = moved up, 
---                3 = moved down), and am_i flag.>
+--                3 = moved down), and is_loggedin_user flag.>
 -- Example:      SELECT * FROM get_leaderboard_global_rankings(5);
 -- ===============================================================
 
@@ -54,7 +54,7 @@ final AS (
     SELECT * FROM base WHERE user_id = p_user_id
 )
 
--- Step 3: Return leaderboard with trend calculation + am_i flag
+-- Step 3: Return leaderboard with trend calculation + is_loggedin_user flag
 SELECT 
     row_rank AS rank,
     user_id,
