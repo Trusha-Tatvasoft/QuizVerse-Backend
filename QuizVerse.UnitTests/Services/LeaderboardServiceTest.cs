@@ -119,14 +119,14 @@ namespace QuizVerse.UnitTests.Services
 
             var rawLeaderboard = new List<RawLeaderboardGlobalRankingDto>
             {
-                new() { Rank = 1, UserId = 1, UserName = "user1", FullName = "User One", ProfilePic = null, TotalXp = 1000, CurrentLevel = 10, CurrentStreak = 5, NewGlobalRank = 1, Trend = 2, AmI = true },
-                new() { Rank = 2, UserId = 2, UserName = "user2", FullName = "User Two", ProfilePic = null, TotalXp = 900, CurrentLevel = 9, CurrentStreak = 3, NewGlobalRank = 2, Trend = 3, AmI = false }
+                new() { Rank = 1, UserId = 1, UserName = "user1", FullName = "User One", ProfilePic = null, TotalXp = 1000, CurrentLevel = 10, CurrentStreak = 5, NewGlobalRank = 1, Trend = 2, Is_loggedin_user = true },
+                new() { Rank = 2, UserId = 2, UserName = "user2", FullName = "User Two", ProfilePic = null, TotalXp = 900, CurrentLevel = 9, CurrentStreak = 3, NewGlobalRank = 2, Trend = 3, Is_loggedin_user = false }
             };
 
             var mappedLeaderboard = new List<LeaderboardGlobalRankingResponseDto>
             {
-                new() { Rank = 1, UserId = 1, UserName = "user1", FullName = "User One", ProfilePic = null, TotalXp = 1000, CurrentLevel = 10, CurrentStreak = 5, NewGlobalRank = 1, Trend = 2, AmI = true },
-                new() { Rank = 2, UserId = 2, UserName = "user2", FullName = "User Two", ProfilePic = null, TotalXp = 900, CurrentLevel = 9, CurrentStreak = 3, NewGlobalRank = 2, Trend = 3, AmI = false }
+                new() { Rank = 1, UserId = 1, UserName = "user1", FullName = "User One", ProfilePic = null, TotalXp = 1000, CurrentLevel = 10, CurrentStreak = 5, NewGlobalRank = 1, Trend = 2, Is_loggedin_user = true },
+                new() { Rank = 2, UserId = 2, UserName = "user2", FullName = "User Two", ProfilePic = null, TotalXp = 900, CurrentLevel = 9, CurrentStreak = 3, NewGlobalRank = 2, Trend = 3, Is_loggedin_user = false }
             };
 
             _sqlQueryRepoMock
@@ -145,7 +145,7 @@ namespace QuizVerse.UnitTests.Services
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
             Assert.Equal("user1", result[0].UserName);
-            Assert.True(result[0].AmI);
+            Assert.True(result[0].Is_loggedin_user);
 
             _sqlQueryRepoMock.Verify(x => x.SqlQueryListAsync<RawLeaderboardGlobalRankingDto>(
                 It.IsAny<string>(), It.Is<NpgsqlParameter[]>(p =>

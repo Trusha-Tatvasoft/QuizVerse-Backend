@@ -22,7 +22,7 @@ RETURNS TABLE (
     current_streak  integer,
     new_global_rank integer,
     trend           integer,  -- 1 = same, 2 = moved up, 3 = moved down
-    am_i            boolean   -- Flag: true if this row belongs to current user
+    is_loggedin_user boolean   -- Flag: true if this row belongs to current user
 ) 
 LANGUAGE sql
 COST 100
@@ -71,7 +71,7 @@ SELECT
         WHEN new_global_rank > old_global_rank THEN 3                   -- rank dropped
         ELSE 1                                                          -- same
     END AS trend,
-    (user_id = p_user_id) AS am_i
+    (user_id = p_user_id) AS is_loggedin_user
 FROM final
 ORDER BY row_rank;
 $BODY$;

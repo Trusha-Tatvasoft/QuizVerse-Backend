@@ -1,24 +1,27 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers
 {
     [ApiController]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     [Route("api/[controller]")]
     public class LeaderboardController(ILeaderboardService _leaderboardService) : ControllerBase
     {
         [HttpGet("get-user-leaderboard-stats")]
         public async Task<IActionResult> GetUserLeaderboardStats()
         {
-            return Ok(new
+            return Ok(new ApiResponse<UserPerformanceResponseDto>
             {
-                Success = true,
-                Data =  await _leaderboardService.GetUserLeaderboardStats(),
-                message = Constants.FETCH_DATA_MESSAGE,
-                
+                Result = true,
+                Message = Constants.USER_LEADERBOARD_STATS_RETRIEVED,
+                StatusCode = StatusCodes.Status200OK,
+                Data = await _leaderboardService.GetUserLeaderboardStats()
             });
         }
 
@@ -28,7 +31,7 @@ namespace QuizVerse.WebAPI.Controllers
             return Ok(new ApiResponse<List<LeaderboardGlobalRankingResponseDto>>
             {
                 Result = true,
-                Message = "Global leaderboard fetched successfully",
+                Message = Constants.GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY,
                 StatusCode = StatusCodes.Status200OK,
                 Data = await _leaderboardService.GetLeaderboardGlobalRanking()
             });

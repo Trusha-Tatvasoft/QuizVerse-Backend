@@ -29,10 +29,10 @@ public class LeaderboardService(IGenericRepository<UserPerformanceDetail> _leade
             SqlConstants.GET_GLOBAL_LEADERBOARD_FUNCTION  // e.g. "get_leaderboard_global_rankings"
         );
 
-        var parameters = new NpgsqlParameter[]
-        {
-        new("p_user_id", NpgsqlDbType.Integer) { Value = (object?)UserId ?? DBNull.Value }
-        };
+        NpgsqlParameter[] parameters =
+        [
+            new("p_user_id", NpgsqlDbType.Integer) { Value = (object?)UserId ?? DBNull.Value }
+        ];
 
         // --- FETCH DATA ---
         List<RawLeaderboardGlobalRankingDto> leaderboardRaw =
