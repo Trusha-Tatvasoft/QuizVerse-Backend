@@ -49,6 +49,10 @@ public class SqlConstants
        "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
     public const string GET_BATTLE_LIST_FUNCTION = "get_battle_list_data";
     #endregion
+    #region LeaderBoard
+        public const string GET_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
+        public const string GET_GLOBAL_LEADERBOARD_FUNCTION = "get_leaderboard_global_rankings";
+    #endregion
 
     #region UserProfile
     public const string GET_USER_BASIC_PROFILE_FUNCTION = "get_user_basic_profile";

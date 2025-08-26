@@ -191,6 +191,11 @@ public static class Constants
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     #endregion
 
+    #region Leaderboard
+    public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
+    public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
+    #endregion
+
     #region UserProfile
     public const string EMAIL_SUSPENDED = "This account has been suspended. Please contact support.";
     public const string EMAIL_ALREADY_IN_USE = "This email is already in use.";
