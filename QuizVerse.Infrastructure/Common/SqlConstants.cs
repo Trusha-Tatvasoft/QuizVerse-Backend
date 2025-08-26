@@ -49,4 +49,9 @@ public class SqlConstants
        "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
     public const string GET_BATTLE_LIST_FUNCTION = "get_battle_list_data";
     #endregion
+
+    #region UserDashboard
+    public const string GET_USER_DASHBOARD_METRICS = "SELECT * FROM get_user_dashboard_metrics({0})";
+    public const string GET_RANK_PROGRESS  = "SELECT * FROM get_rank_progress({0})";
+    #endregion
 }
