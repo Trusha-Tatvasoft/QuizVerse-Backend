@@ -213,4 +213,9 @@ public static class Constants
     public const string MONTHS_AGO = "{0} months ago";
     public const string YEARS_AGO = "{0} years ago";
     #endregion
+    
+    #region Leaderboard
+    public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
+    public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
+    #endregion
 }

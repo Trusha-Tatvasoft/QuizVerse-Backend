@@ -208,6 +208,15 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => ToTitleCase(src.Description)));
         #endregion
 
+        #region Leaderboard 
+        CreateMap<UserPerformanceDetail, UserPerformanceResponseDto>()
+            .ForMember(dest => dest.GlobalRank, opt => opt.MapFrom(src => src.NewGlobalRank))
+            .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.TotalXp))
+            .ForMember(dest => dest.CurrentLevel, opt => opt.MapFrom(src => src.CurrentLevel));
+
+        CreateMap<RawLeaderboardGlobalRankingDto, LeaderboardGlobalRankingResponseDto>();
+        #endregion
+        
         #region Email Templates
         CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
         #endregion
