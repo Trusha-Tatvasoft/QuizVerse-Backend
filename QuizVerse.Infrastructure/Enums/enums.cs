@@ -75,4 +75,13 @@ namespace QuizVerse.Infrastructure.Enums
         ResetPassword = 4,
         WelComeEmail = 5,
     }
+
+    public enum BadgeType
+    {
+        Bronze = 1,
+        Gold = 2,
+        Platinum = 3,
+        Silver = 4
+    }
+
 }

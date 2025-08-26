@@ -49,4 +49,12 @@ public class SqlConstants
        "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
     public const string GET_BATTLE_LIST_FUNCTION = "get_battle_list_data";
     #endregion
+
+    #region UserProfile
+    public const string GET_USER_BASIC_PROFILE_FUNCTION = "get_user_basic_profile";
+    public const string GET_USER_OVERVIEW_FUNCTION = "get_user_overview";
+    public const string GET_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
+    public const string UPDATE_USER_PROFILE_FUNCTION = "update_user_setting";
+    public const string UPDATE_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_current_user_id, @p_new_email, @p_new_name, @p_new_bio)";
+    #endregion
 }

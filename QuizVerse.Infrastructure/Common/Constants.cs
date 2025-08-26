@@ -14,6 +14,7 @@ public static class Constants
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
     public const string NO_DATA_FOUND = "No data found.";
     public const string UNAUTHORIZED_USER = "User ID missing";
+    public const string SENT_SUCCESS = "Sent Successfully";
     #endregion
 
     #region Auth Messages
@@ -75,11 +76,13 @@ public static class Constants
     public const string USER_REGISTERED_BUT_EMAIL_NOT_SENT = "User registered successfully, but email could not be sent.";
     public const string EMAIL_NOT_SENT = "Email not sent.";
     public const string SMTP_CONFIG_MISSING = "SMTP configuration is missing required fields.";
+    public const string EMAIL_OTP_SUBJECT = "Your QuizVerse OTP Code";
     #endregion
 
     #region EmailTemplateConstants
     public const string NEW_USER_TEMPLATE_PATH = "Templates/NewUser.html";
     public const string REGISTER_USER_TEMPLATE_PATH = "Templates/Welcome.html";
+    public const string OTP_TEMPLATE_PATH = "Templates/EmailVerifyOTP.html";
     #endregion
 
     #region CRUD Messages
@@ -129,7 +132,7 @@ public static class Constants
     public const string QUIZ_CATEGORY_INACTIVATED_SUCCESS = "Quiz category inactivated successfully.";
     public const string QUIZ_CATEGORY_DELETED_SUCCESS = "Quiz category deleted successfully.";
     #endregion
-    
+
     #region Quiz Management
     public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
     public const string CREATE_OR_UPDATE_QUIZ_FAILED = "Failed to create or update quiz.";
@@ -186,5 +189,15 @@ public static class Constants
     public const string EXCEL_PREVIEW_LOADED_SUCCESSFULLY = "Excel preview loaded successfully.";
     public const string NO_QUESTIONS_TO_SAVE = "No questions to save.";
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
+    #endregion
+
+    #region UserProfile
+    public const string EMAIL_SUSPENDED = "This account has been suspended. Please contact support.";
+    public const string EMAIL_ALREADY_IN_USE = "This email is already in use.";
+    public const string EMAIL_INACTIVE = "This account is inactive. Please contact support.";
+    public const string FULLNAME_REQUIRED = "Full name is required.";
+    public const string OTP_NOT_GENERATED_OR_EXPIRED = "OTP not generated or expired.";
+    public const string OTP_EXPIRED = "OTP expired. Please request a new one.";
+    public const string OTP_INVALID = "Invalid OTP.";
     #endregion
 }
