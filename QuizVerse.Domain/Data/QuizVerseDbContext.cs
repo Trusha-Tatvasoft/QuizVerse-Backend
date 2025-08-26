@@ -1416,10 +1416,6 @@ public partial class QuizVerseDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("UserPerformanceDetails_pkey");
 
-            entity.HasIndex(e => e.NewGlobalRank, "UserPerformanceDetails_new_global_rank_key").IsUnique();
-
-            entity.HasIndex(e => e.OldGlobalRank, "UserPerformanceDetails_old_global_rank_key").IsUnique();
-
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
