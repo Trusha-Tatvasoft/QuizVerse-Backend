@@ -58,4 +58,9 @@ public class SqlConstants
     public const string GET_BATTLE_DATA_BY_ID_FUNCTION = "get_battle_data_by_id";
 
     #endregion
+    
+    #region LeaderBoard
+    public const string GET_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
+        public const string GET_GLOBAL_LEADERBOARD_FUNCTION = "get_leaderboard_global_rankings";
+    #endregion
 }

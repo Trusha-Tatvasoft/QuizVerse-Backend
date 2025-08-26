@@ -189,6 +189,11 @@ public static class Constants
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     #endregion
 
+    #region Leaderboard
+    public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
+    public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
+    #endregion
+
     #region Battle Management
     public const string CREATE_OR_UPDATE_BATTLE_FAILED = "Failed to create or update battle.";
     public const string BATTLE_NOT_FOUND = "Battle with ID {0} not found.";
