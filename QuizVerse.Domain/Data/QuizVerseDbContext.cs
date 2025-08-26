@@ -1274,6 +1274,10 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.ModifiedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("modified_date");
+            entity.Property(e => e.Otp)
+                .HasMaxLength(10)
+                .HasColumnName("otp");
+            entity.Property(e => e.OtpSentDate).HasColumnName("otp_sent_date");
             entity.Property(e => e.Password)
                 .HasColumnType("character varying")
                 .HasColumnName("password");
