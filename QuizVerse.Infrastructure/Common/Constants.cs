@@ -192,4 +192,13 @@ public static class Constants
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
     #endregion
+
+    #region Plateform Configuration
+    public const string PLATFORM_CONFIGURATION_UPDATE_SUCCESS = "Plateform Configuration updated successfully.";
+    public const string PLATFORM_CONFIGURATION_NULL_ERROR = "PlatformQuote Configuration is missing or null.";
+    public const string PLATFORM_QUOTE_KEY = "PlatformQuote";
+    public const string PATH_KEY = "Path";
+    public const string PRIMARY_COLOR_KEY = "PrimaryColor";
+    public const string SECONDARY_COLOR_KEY = "SecondaryColor";
+    #endregion 
 }

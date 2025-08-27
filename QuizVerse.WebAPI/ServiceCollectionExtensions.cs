@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBattleManagementService, BattleManagementService>();
         services.AddScoped<IEmailTemplatesService, EmailTemplatesService>();
         services.AddScoped<ILeaderboardService, LeaderboardService>();
+        services.AddScoped<IPlatformConfigurationService, PlatformConfigurationService>();
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
