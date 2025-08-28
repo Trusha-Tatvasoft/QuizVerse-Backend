@@ -220,6 +220,28 @@ public class MappingProfile : Profile
         #region Email Templates
         CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
         #endregion
+
+        #region User Dashboard
+        CreateMap<RawUserDashboardMetricsDTO, UserDashboardResponse>()
+            .ForMember(dest => dest.QuizzesCompleted,
+                opt => opt.MapFrom(src => src.QuizzesCompleted))
+            .ForMember(dest => dest.TotalXp,
+                opt => opt.MapFrom(src => src.TotalXp))
+            .ForMember(dest => dest.WinRate,
+                opt => opt.MapFrom(src => Math.Round((double)src.WinRate, 2)))
+            .ForMember(dest => dest.CurrentRank,
+                opt => opt.MapFrom(src => src.CurrentRank));
+                
+        CreateMap<RawRankProgressDTO, RankProgressDTO>()
+            .ForMember(dest => dest.CurrentRank,
+                opt => opt.MapFrom(src => src.CurrentRank))
+            .ForMember(dest => dest.NextRank,
+                opt => opt.MapFrom(src => src.NextRank))
+            .ForMember(dest => dest.XpNeeded,
+                opt => opt.MapFrom(src => src.XpNeeded))
+            .ForMember(dest => dest.ProgressPercent,
+                opt => opt.MapFrom(src => src.ProgressPercent));
+        #endregion
         
         #region Battle Question Difficulty Mapping
         CreateMap<QuestionDifficulty, QuestionDifficultyXPData>()

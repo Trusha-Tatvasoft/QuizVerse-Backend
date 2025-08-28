@@ -83,6 +83,13 @@ namespace QuizVerse.Infrastructure.Enums
         WelComeEmail = 6,
     }
 
+    public enum BattleRequestStatus
+    {
+        Accepted = 1,
+        Rejected = 2,
+        Pending = 3
+    }
+
     public enum BadgeType
     {
         Bronze = 1,

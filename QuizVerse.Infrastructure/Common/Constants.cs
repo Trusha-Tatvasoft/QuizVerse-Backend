@@ -56,6 +56,7 @@ public static class Constants
     #endregion
 
     #region User Messages
+    public const string INVALID_USER_ID = "The provided user ID {0} is invalid.";
     public const string USER_NOT_FOUND = "User with ID {0} not found.";
     public const string DUPLICATE_EMAIL = "User with this email already exists.";
     public const string DUPLICATE_USERNAME = "User with this username already exists.";
@@ -192,6 +193,31 @@ public static class Constants
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     #endregion
 
+    #region User Dashboard
+    public const int BATCH_SIZE = 3;
+    public const int MIN_BATCH = 1;
+    public const int MAX_BATCH = 3;
+    public const int MAX_QUIZZES = 12;
+    public const string INVALID_BATCH_NUMBER = "Batch number must be between {0} and {1}.";
+    public const string USER_DASHBOARD_SUMMARY_FETCH = "User dashboard summary fetched successfully.";
+    public const string RECENT_QUIZZES_FETCHED = "Recent Quizzes fetched successfully.";
+    public const string FEATURED_QUIZZES_FETCHED = "Featured Quizzes fetched successfully.";
+    public const string BATTLE_REQUESTS_FETCHED = "Battle requests fetched successfully.";
+    public const string BATTLE_REQUEST_NOT_FOUND = "Battle request with ID {0} not found.";
+    public const string BATTLE_STATUS_UPDATED = "Battle request status updated successfully.";
+    public const string RANK_PROGRESS_FETCHED = "User rank progress fetched successfully.";
+    #endregion
+
+    #region Time Ago Messages
+    public const string JUST_NOW = "Just now";
+    public const string SECONDS_AGO = "{0} seconds ago";
+    public const string MINUTES_AGO = "{0} minutes ago";
+    public const string HOURS_AGO = "{0} hours ago";
+    public const string DAYS_AGO = "{0} days ago";
+    public const string MONTHS_AGO = "{0} months ago";
+    public const string YEARS_AGO = "{0} years ago";
+    #endregion
+    
     #region Leaderboard
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
