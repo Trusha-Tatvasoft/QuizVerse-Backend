@@ -300,7 +300,8 @@ public class QuizManagementService(
                         throw new AppException(string.Format(Constants.NO_CORRECT_ANSWER, typeName.ToLower()), 400);
                 }
                 else if (typeName.Equals(Constants.QUESTION_TYPE_TRUE_FALSE, StringComparison.OrdinalIgnoreCase) ||
-                        typeName.Equals(Constants.QUESTION_TYPE_SHORT_ANSWER, StringComparison.OrdinalIgnoreCase))
+                        typeName.Equals(Constants.QUESTION_TYPE_SHORT_ANSWER, StringComparison.OrdinalIgnoreCase) ||
+                         typeName.Equals(Constants.QUESTION_TYPE_FILL_IN_THE_BLANKS, StringComparison.OrdinalIgnoreCase))
                 {
                     if (!q.QueOptionsAns?.Any(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase)) ?? true)
                         throw new AppException(string.Format(Constants.NO_CORRECT_ANSWER, typeName.ToLower()), 400);
