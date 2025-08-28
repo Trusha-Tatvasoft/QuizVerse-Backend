@@ -33,12 +33,15 @@ public class SaveBattleRequestDTO : IValidatableObject
     public DateTime? EndDate { get; set; }
 
     [Required(ErrorMessage = "TotalTime is required.")]
+    [Range(2, 180, ErrorMessage = "Total time must be between 2 and 180 minutes.")]
     public int TotalTime { get; set; }
 
     [Required(ErrorMessage = "TotalQuestion is required.")]
+    [Range(5, 100, ErrorMessage = "Total questions must be between 5 and 100.")]
     public int TotalQuestion { get; set; }
 
     [Required(ErrorMessage = "TotalXp is required.")]
+    [Range(1, int.MaxValue, ErrorMessage = "TotalXp must be greater than zero.")]
     public int TotalXp { get; set; }
 
     public List<QuestionsListRequestDto>? Questions { get; set; } = [];
@@ -49,7 +52,7 @@ public class SaveBattleRequestDTO : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (BattleType == (int)Enums.BattleType.TimeLimited) 
+        if (BattleType == (int)Enums.BattleType.TimeLimited)
         {
             if (!StartDate.HasValue)
             {

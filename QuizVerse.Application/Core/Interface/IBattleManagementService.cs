@@ -6,4 +6,10 @@ namespace QuizVerse.Application.Core.Interface;
 public interface IBattleManagementService
 {
     Task<List<BattleManagementData>> GetBattleList();
+
+    Task<CreateUpdateResponseDto> CreateUpdateBattle(SaveBattleRequestDTO battleCreateUpdateRequestDto);
+
+    Task<BattleResponseDto> GetBattleById(int battleId);
+
+    Task<string> DeleteBattle(int battleId);
 }
