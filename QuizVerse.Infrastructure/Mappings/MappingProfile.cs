@@ -242,6 +242,13 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.ProgressPercent,
                 opt => opt.MapFrom(src => src.ProgressPercent));
         #endregion
+        
+        #region Battle Question Difficulty Mapping
+        CreateMap<QuestionDifficulty, QuestionDifficultyXPData>()
+          .ForMember(dest => dest.QuestionDifficultyId, opt => opt.MapFrom(src => src.Id))
+          .ForMember(dest => dest.QuestionDifficultyName, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)))
+          .ForMember(dest => dest.XpGained, opt => opt.MapFrom(src => src.XpGained));
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>

@@ -167,6 +167,7 @@ public static class Constants
     public const string QUESTION_TYPE_MULTIPLE_CHOICE = "Multiple Choice";
     public const string QUESTION_TYPE_TRUE_FALSE = "True/False";
     public const string QUESTION_TYPE_SHORT_ANSWER = "Short Answer";
+    public const string QUESTION_TYPE_FILL_IN_THE_BLANKS = "Fill in the Blanks";
     public const string QUESTION_KEY_OPTION = "option";
     public const string QUESTION_KEY_ANSWER = "answer";
     public const string INVALID_QUESTION_ID_MESSAGE = "ID must be greater than zero.";
@@ -217,5 +218,11 @@ public static class Constants
     #region Leaderboard
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
+    #endregion
+
+    #region Battle Management
+    public const string CREATE_OR_UPDATE_BATTLE_FAILED = "Failed to create or update battle.";
+    public const string BATTLE_NOT_FOUND = "Battle with ID {0} not found.";
+    public const string BATTLE_ALREADY_DELETED = "Battle with ID {0} is already deleted.";
     #endregion
 }
