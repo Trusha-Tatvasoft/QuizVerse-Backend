@@ -58,9 +58,14 @@ public class SqlConstants
     public const string GET_BATTLE_DATA_BY_ID_FUNCTION = "get_battle_data_by_id";
 
     #endregion
-    
+
+    #region UserDashboard
+    public const string GET_USER_DASHBOARD_METRICS = "SELECT * FROM get_user_dashboard_metrics({0})";
+    public const string GET_RANK_PROGRESS  = "SELECT * FROM get_rank_progress({0})";
+    #endregion
+
     #region LeaderBoard
     public const string GET_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
-        public const string GET_GLOBAL_LEADERBOARD_FUNCTION = "get_leaderboard_global_rankings";
+    public const string GET_GLOBAL_LEADERBOARD_FUNCTION = "get_leaderboard_global_rankings";
     #endregion
 }
