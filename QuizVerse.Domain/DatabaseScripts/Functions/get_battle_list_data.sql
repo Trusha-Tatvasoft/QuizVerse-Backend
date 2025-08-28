@@ -3,20 +3,31 @@
 -- Create Date:  14-August-2025
 -- Description:  Returns the list of battles with details including:
 --                 • Battle ID, start date, end date
---                 • Battle type (Permanent = 1, Time Limited = 2)
---                 • Battle name, description, category, difficulty
---                 • Total XP and total questions for the battle
---                 • Total unique participants (active users only) for completed battles
---                 • Current battle status
+--                 • Battle type (Permanent = p_permanent, Time Limited = p_time_limited)
+--                 • Battle name, description, category, and difficulty
+--                 • Total XP and total questions for each battle
+--                 • Total unique participants (active users only, excluding running battles)
+--                 • Current battle status (auto-updated based on end_date):
+--                       - If end_date < today → marked as Completed (p_completed_battle_status)
+--                       - If end_date >= today → marked as Active (p_active_battle_status)
 --               Joins BattleList → Quiz → Category → Difficulty and 
---               counts participants from BattleStatus.
+--               counts distinct participants from BattleStatus (ignores deleted users and running battles).
 --               Only includes non-deleted battles, quizzes, categories, and users.
--- Usage:        SELECT * FROM get_battle_list_data(p_permanent := 1, p_time_limited := 2, p_running := 3);
+-- Usage:        SELECT * 
+--               FROM get_battle_list_data(
+--                    p_permanent := 1, 
+--                    p_time_limited := 2, 
+--                    p_active_battle_status := 3, 
+--                    p_completed_battle_status := 4, 
+--                    p_running := 5
+--               );
 -- =============================================
 
 CREATE OR REPLACE FUNCTION get_battle_list_data(
     p_permanent INT,         
-    p_time_limited INT,      
+    p_time_limited INT,
+    p_active_battle_status INT,
+    p_completed_battle_status INT,    
     p_running INT            
 )
 RETURNS TABLE (
@@ -34,6 +45,30 @@ RETURNS TABLE (
     BattleStatus INT
 ) AS $$
 BEGIN
+    -- Mark battles as completed if end_date (date only) has already passed
+    UPDATE "Quiz" q
+    SET status = p_completed_battle_status
+    FROM "BattleList" b
+    WHERE q.id = b.quiz_id
+    AND b.is_deleted = FALSE
+    AND q.is_deleted = FALSE
+    AND b.start_date IS NOT NULL
+    AND b.end_date IS NOT NULL
+    AND b.end_date::date < NOW()::date
+    AND q.status != p_completed_battle_status;
+
+    -- Mark battles as active if end_date (date only) is today or later
+    UPDATE "Quiz" q
+    SET status = p_active_battle_status
+    FROM "BattleList" b
+    WHERE q.id = b.quiz_id
+    AND b.is_deleted = FALSE
+    AND q.is_deleted = FALSE
+    AND b.start_date IS NOT NULL
+    AND b.end_date IS NOT NULL
+    AND b.end_date::date >= NOW()::date
+    AND q.status != p_active_battle_status;
+
     RETURN QUERY
     SELECT
         b.id,
@@ -77,6 +112,6 @@ BEGIN
     WHERE b.is_deleted = FALSE
       AND q.is_deleted = FALSE
       AND c.is_deleted = FALSE
-	Order by b.id;
+    ORDER BY b.id;
 END;
 $$ LANGUAGE plpgsql;
