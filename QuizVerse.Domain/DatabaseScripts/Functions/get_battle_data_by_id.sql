@@ -19,7 +19,7 @@ RETURNS TABLE (
     "BattleType" INT,
     "StartDate" TIMESTAMPTZ,
     "EndDate" TIMESTAMPTZ,
-    "TotalTime" INT,
+    "TotalTime" NUMERIC,
     "TotalQuestion" INT,
     "TotalXp" INT,
     "Status" INT,
@@ -86,7 +86,7 @@ BEGIN
                     jsonb_build_object(
                         'id', qdmap.id,
                         'queDifficultyId', qdmap.que_difficulty_id,
-                        'noOfQuestions', qdmap.no_of_ques,
+                        'noOfQues', qdmap.no_of_ques,
                         'timePerQuestion', qdmap.time_per_question
                     )
                 )

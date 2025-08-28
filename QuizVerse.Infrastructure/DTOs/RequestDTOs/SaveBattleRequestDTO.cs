@@ -34,7 +34,7 @@ public class SaveBattleRequestDTO : IValidatableObject
 
     [Required(ErrorMessage = "TotalTime is required.")]
     [Range(2, 180, ErrorMessage = "Total time must be between 2 and 180 minutes.")]
-    public int TotalTime { get; set; }
+    public decimal TotalTime { get; set; }
 
     [Required(ErrorMessage = "TotalQuestion is required.")]
     [Range(5, 100, ErrorMessage = "Total questions must be between 5 and 100.")]

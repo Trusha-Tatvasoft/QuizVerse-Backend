@@ -76,9 +76,9 @@ public class BattleManagementService(
         new("p_category_id", NpgsqlDbType.Integer) { Value = battleCreateUpdateRequestDto.CategoryId },
         new("p_status", NpgsqlDbType.Integer) { Value = battleCreateUpdateRequestDto.Status },
         new("p_is_time_limited", NpgsqlDbType.Boolean){Value = (battleCreateUpdateRequestDto.BattleType == (int)BattleType.TimeLimited)},
-        new("p_start_date", NpgsqlDbType.Timestamp) { Value = (object?)battleCreateUpdateRequestDto.StartDate ?? DBNull.Value },
-        new("p_end_date", NpgsqlDbType.Timestamp) { Value = (object?)battleCreateUpdateRequestDto.EndDate ?? DBNull.Value },
-        new("p_total_time", NpgsqlDbType.Integer) { Value = battleCreateUpdateRequestDto.TotalTime },
+        new("p_start_date", NpgsqlDbType.TimestampTz) { Value = (object?)battleCreateUpdateRequestDto.StartDate ?? DBNull.Value },
+        new("p_end_date", NpgsqlDbType.TimestampTz) { Value = (object?)battleCreateUpdateRequestDto.EndDate ?? DBNull.Value },
+        new("p_total_time", NpgsqlDbType.Numeric) { Value = battleCreateUpdateRequestDto.TotalTime },
         new("p_total_question", NpgsqlDbType.Integer) { Value = battleCreateUpdateRequestDto.TotalQuestion },
         new("p_total_xp", NpgsqlDbType.Integer) { Value = battleCreateUpdateRequestDto.TotalXp },
         new("p_questions", NpgsqlDbType.Jsonb)
