@@ -1,4 +1,6 @@
-﻿namespace QuizVerse.Infrastructure.Common;
+﻿using QuizVerse.Infrastructure.Enums;
+
+namespace QuizVerse.Infrastructure.Common;
 
 public static class Constants
 {
@@ -129,7 +131,7 @@ public static class Constants
     public const string QUIZ_CATEGORY_INACTIVATED_SUCCESS = "Quiz category inactivated successfully.";
     public const string QUIZ_CATEGORY_DELETED_SUCCESS = "Quiz category deleted successfully.";
     #endregion
-    
+
     #region Quiz Management
     public const string INVALID_QUIZ_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Draft), 3 (Inactive)";
     public const string CREATE_OR_UPDATE_QUIZ_FAILED = "Failed to create or update quiz.";
@@ -191,5 +193,48 @@ public static class Constants
     #region Leaderboard
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
+    #endregion
+
+    #region Email Templates
+    public static readonly Dictionary<EmailTemplateType, string[]> EmailTemplatePlaceholdersRequired = new()
+    {
+        {
+            EmailTemplateType.AccountSuspension,
+            new[] { "{{user}}", "{{email}}" }
+        },
+        {
+            EmailTemplateType.BattleRequest,
+            new[] { "{{user}}", "{{opponent}}", "{{battleLink}}" }
+        },
+        {
+            EmailTemplateType.EmailVerification,
+            new[] { "{{user}}", "{{email}}", "{{verificationLink}}" }
+        },
+        {
+            EmailTemplateType.QuizInvitation,
+            new[] { "{{user}}", "{{quizName}}", "{{quizLink}}" }
+        },
+        {
+            EmailTemplateType.ResetPassword,
+            new[] { "{{user}}", "{{email}}", "{{resetLink}}" }
+        },
+        {
+            EmailTemplateType.WelComeEmail,
+            new[] { "{{user}}", "{{email}}", "{{registrationDate}}", "{{loginUrl}}", "{{year}}", "{{companyName}}" }
+        },
+        {
+            EmailTemplateType.NewUser,
+            new[] { "{{user}}", "{{password}}", "{{loginUrl}}" }
+        }
+    };
+    public const string INVALID_EMAIL_TEMPLATE = "Invalid email template.";
+    public const string EMAIL_TEMPLATE_ADDED = "Email template added successfully.";
+    public const string EMAIL_TEMPLATE_UPDATED = "Email template updated successfully.";
+    public const string EMAIL_TEMPLATE_NOT_FOUND = "Email template not found.";
+    public const string MISSING_PLACEHOLDER = "Template is missing required placeholder: {0}";
+    public const string EMAIL_TEMPLATE_ALREDY_AVAILABLE_FOR_SAME_TYPE = "Template is already available for same type.";
+    public const string EMAIL_TEMPLATE_DELETE = "Email template deleted successfully.";
+    public const string EMAIL_TEMPLATE_STATUS_UPDATED = "Email template's status updated successfully.";
+    public const string INVALID_ACTION = "Invalid action.";
     #endregion
 }

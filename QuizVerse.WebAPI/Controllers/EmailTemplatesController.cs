@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
@@ -23,6 +24,42 @@ public class EmailTemplatesController(IEmailTemplatesService emailTemplatesServi
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
             Data = emailTemplatesService.GetAllEmailTemplates(pageListRequest)
+        });
+    }
+
+    [HttpPost("add-or-edit-email-template")]
+    public async Task<IActionResult> AddOrEditEmailTemplate(EmailTemplatesRequestDTO emailTemplatesRequestDTO)
+    {
+        return Ok(new ApiResponse<object>
+        {
+            Result = true,
+            Message = await emailTemplatesService.AddOrEditEmailTemplate(emailTemplatesRequestDTO),
+            StatusCode = 200,
+            Data = null
+        });
+    }
+
+    [HttpGet("get-email-template-by-id/{id}")]
+    public async Task<IActionResult> GetEmailTemplateById(int id)
+    {
+        return Ok(new ApiResponse<EmailTemplatesResponseDto>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = 200,
+            Data = await emailTemplatesService.GetEmailTemplateById(id)
+        });
+    }
+
+    [HttpPut("update-email-template-by-action")]
+    public async Task<IActionResult> UpdateEmailTemplateByAction([FromBody] EmailTemplateActionRequestDTO emailTemplateActionRequest)
+    {
+        return Ok(new ApiResponse<object>
+        {
+            Result = true,
+            Message = await emailTemplatesService.UpdateEmailTemplateByAction(emailTemplateActionRequest),
+            StatusCode = 200,
+            Data = null
         });
     }
 }
