@@ -227,6 +227,35 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
             .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
         #endregion
+
+        #region User Dashboard
+        CreateMap<RawUserDashboardMetricsDTO, UserDashboardResponse>()
+            .ForMember(dest => dest.QuizzesCompleted,
+                opt => opt.MapFrom(src => src.QuizzesCompleted))
+            .ForMember(dest => dest.TotalXp,
+                opt => opt.MapFrom(src => src.TotalXp))
+            .ForMember(dest => dest.WinRate,
+                opt => opt.MapFrom(src => Math.Round((double)src.WinRate, 2)))
+            .ForMember(dest => dest.CurrentRank,
+                opt => opt.MapFrom(src => src.CurrentRank));
+                
+        CreateMap<RawRankProgressDTO, RankProgressDTO>()
+            .ForMember(dest => dest.CurrentRank,
+                opt => opt.MapFrom(src => src.CurrentRank))
+            .ForMember(dest => dest.NextRank,
+                opt => opt.MapFrom(src => src.NextRank))
+            .ForMember(dest => dest.XpNeeded,
+                opt => opt.MapFrom(src => src.XpNeeded))
+            .ForMember(dest => dest.ProgressPercent,
+                opt => opt.MapFrom(src => src.ProgressPercent));
+        #endregion
+        
+        #region Battle Question Difficulty Mapping
+        CreateMap<QuestionDifficulty, QuestionDifficultyXPData>()
+          .ForMember(dest => dest.QuestionDifficultyId, opt => opt.MapFrom(src => src.Id))
+          .ForMember(dest => dest.QuestionDifficultyName, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)))
+          .ForMember(dest => dest.XpGained, opt => opt.MapFrom(src => src.XpGained));
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>

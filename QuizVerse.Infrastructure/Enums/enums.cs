@@ -54,6 +54,12 @@ namespace QuizVerse.Infrastructure.Enums
         Running = 3
     }
 
+    public enum BattleCreationStatus
+    {
+        Active = 1,
+        Completed = 2
+    }
+
     public enum BattleType
     {
         Permanent = 1,
@@ -78,7 +84,13 @@ namespace QuizVerse.Infrastructure.Enums
         NewUser = 7
     }
 
-    public enum EmailTemplateActionType
+    public enum BattleRequestStatus
+    {
+        Accepted = 1,
+        Rejected = 2,
+        Pending = 3
+    }
+        public enum EmailTemplateActionType
     {
         Delete = 1,
         ChangeStatus = 2
