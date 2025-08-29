@@ -18,7 +18,7 @@ RETURNS TABLE (
     name VARCHAR,
     "quizCategoryId" INT,
     description VARCHAR,
-    "totalTime" INT,
+    "totalTime" NUMERIC,
     "difficultyLevelId" INT,
     "totalQuestion" INT,
     "isPaid" BOOLEAN,
