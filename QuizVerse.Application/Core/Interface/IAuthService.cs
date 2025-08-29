@@ -15,5 +15,9 @@ namespace QuizVerse.Application.Core.Interface
         Task<bool> VerifyTokenResetPassword(string token);
 
         Task<bool> ResetPassword(ResetPasswordDTO resetPasswordDto);
+
+        Task<bool> IsUserNameAvailable(string userName, int? id = null);
+        
+        Task<bool> IsEmailAvailable(string email);
     }
 }
