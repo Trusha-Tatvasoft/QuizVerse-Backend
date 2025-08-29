@@ -14,7 +14,7 @@ public static class Constants
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
     public const string NO_DATA_FOUND = "No data found.";
     public const string UNAUTHORIZED_USER = "User ID missing";
-    public const string SENT_SUCCESS = "Sent Successfully";
+    public const string SENT_SUCCESS = "OTP Sent Successfully";
     #endregion
 
     #region Auth Messages
@@ -217,7 +217,7 @@ public static class Constants
     public const string MONTHS_AGO = "{0} months ago";
     public const string YEARS_AGO = "{0} years ago";
     #endregion
-    
+
     #region Leaderboard
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
