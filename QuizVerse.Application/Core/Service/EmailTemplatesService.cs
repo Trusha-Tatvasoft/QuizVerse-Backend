@@ -66,6 +66,7 @@ public class EmailTemplatesService(IGenericRepository<EmailTemplete> emailTempla
             if (await emailTemplateRepository.Exists(x => x.TemplateType == emailTemplatesRequest.TemplateType && !x.IsDeleted)) throw new AppException(Constants.EMAIL_TEMPLATE_ALREDY_AVAILABLE_FOR_SAME_TYPE, 400);
 
             EmailTemplete emailTemplate = _mapper.Map<EmailTemplete>(emailTemplatesRequest);
+            emailTemplate.Status = true;
             emailTemplate.CreatedBy = UserId ;
             emailTemplate.CreatedDate = DateTime.UtcNow;
             emailTemplate.IsDeleted = false;
@@ -82,11 +83,12 @@ public class EmailTemplatesService(IGenericRepository<EmailTemplete> emailTempla
             // Check for if already exists for same type
             if (await emailTemplateRepository.Exists(x => x.TemplateType == emailTemplatesRequest.TemplateType && !x.IsDeleted)) throw new AppException(Constants.EMAIL_TEMPLATE_ALREDY_AVAILABLE_FOR_SAME_TYPE, 400);
         }
-        existingTemplate.TemplateType = emailTemplatesRequest.TemplateType;
-        existingTemplate.Title = emailTemplatesRequest.Title;
-        existingTemplate.Subject = emailTemplatesRequest.Subject;
-        existingTemplate.Body = emailTemplatesRequest.Body;
-        existingTemplate.Status = emailTemplatesRequest.Status;
+        existingTemplate = _mapper.Map(emailTemplatesRequest, existingTemplate);
+        if(emailTemplatesRequest.Status == null)
+        {
+            throw new AppException(Constants.STATUS_REQUIRED, 400);
+        }
+        existingTemplate.Status = (bool)emailTemplatesRequest.Status; 
         existingTemplate.ModifiedBy = UserId;
         existingTemplate.ModifiedDate = DateTime.UtcNow;
         await emailTemplateRepository.UpdateAsync(existingTemplate);

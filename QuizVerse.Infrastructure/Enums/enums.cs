@@ -90,7 +90,8 @@ namespace QuizVerse.Infrastructure.Enums
         Rejected = 2,
         Pending = 3
     }
-        public enum EmailTemplateActionType
+    
+    public enum EmailTemplateActionType
     {
         Delete = 1,
         ChangeStatus = 2

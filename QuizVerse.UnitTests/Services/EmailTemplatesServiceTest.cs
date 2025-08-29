@@ -122,7 +122,6 @@ namespace QuizVerse.Application.Core.Tests
             var result = _service.GetAllEmailTemplates(request);
 
             // Assert
-            // Because bool is inverted → it should behave as if SortDescending = true
             Assert.Equal(new[] { true, false }, result.Records.Select(r => r.Status));
         }
 
@@ -205,7 +204,8 @@ namespace QuizVerse.Application.Core.Tests
             {
                 Id = 1,
                 TemplateType = (int)EmailTemplateType.WelComeEmail,
-                IsDeleted = false
+                IsDeleted = false,
+                Status = false
             };
 
             _repoMock.Setup(r => r.GetAsync(
@@ -213,11 +213,24 @@ namespace QuizVerse.Application.Core.Tests
                 It.IsAny<Func<IQueryable<EmailTemplete>, IQueryable<EmailTemplete>>?>()
             )).ReturnsAsync(existing);
 
+            _mapperMock.Setup(m => m.Map(It.IsAny<EmailTemplatesRequestDTO>(), It.IsAny<EmailTemplete>()))
+                .Returns((EmailTemplatesRequestDTO src, EmailTemplete dest) =>
+                {
+                    dest.TemplateType = src.TemplateType;
+                    dest.Title = src.Title;
+                    dest.Subject = src.Subject;
+                    dest.Body = src.Body;
+                    dest.Status = (bool)src.Status;
+                    return dest;
+                });
+
             // Act
             var result = await _service.AddOrEditEmailTemplate(dto);
 
             // Assert
             Assert.Equal(Constants.EMAIL_TEMPLATE_UPDATED, result);
+            Assert.True(existing.Status); // updated
+            Assert.Equal(dto.Title, existing.Title); // updated field
             _repoMock.Verify(r => r.UpdateAsync(existing), Times.Once);
         }
 

@@ -7,5 +7,5 @@ public class EmailTemplatesRequestDTO
     public string Title { get; set; } = null!;
     public string Subject { get; set; } = null!;
     public string Body { get; set; } = null!;
-    public bool Status { get; set; }
+    public bool? Status { get; set; }
 }
