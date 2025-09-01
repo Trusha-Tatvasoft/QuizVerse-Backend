@@ -82,4 +82,20 @@ namespace QuizVerse.Infrastructure.Enums
         ResetPassword = 5,
         WelComeEmail = 6,
     }
+
+    public enum BattleRequestStatus
+    {
+        Accepted = 1,
+        Rejected = 2,
+        Pending = 3
+    }
+
+    public enum BadgeType
+    {
+        Bronze = 1,
+        Gold = 2,
+        Platinum = 3,
+        Silver = 4
+    }
+
 }

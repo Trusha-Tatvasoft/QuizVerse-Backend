@@ -14,6 +14,7 @@ public static class Constants
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
     public const string NO_DATA_FOUND = "No data found.";
     public const string UNAUTHORIZED_USER = "User ID missing";
+    public const string SENT_SUCCESS = "OTP Sent Successfully";
     #endregion
 
     #region Auth Messages
@@ -55,6 +56,7 @@ public static class Constants
     #endregion
 
     #region User Messages
+    public const string INVALID_USER_ID = "The provided user ID {0} is invalid.";
     public const string USER_NOT_FOUND = "User with ID {0} not found.";
     public const string DUPLICATE_EMAIL = "User with this email already exists.";
     public const string DUPLICATE_USERNAME = "User with this username already exists.";
@@ -75,11 +77,13 @@ public static class Constants
     public const string USER_REGISTERED_BUT_EMAIL_NOT_SENT = "User registered successfully, but email could not be sent.";
     public const string EMAIL_NOT_SENT = "Email not sent.";
     public const string SMTP_CONFIG_MISSING = "SMTP configuration is missing required fields.";
+    public const string EMAIL_OTP_SUBJECT = "Your QuizVerse OTP Code";
     #endregion
 
     #region EmailTemplateConstants
     public const string NEW_USER_TEMPLATE_PATH = "Templates/NewUser.html";
     public const string REGISTER_USER_TEMPLATE_PATH = "Templates/Welcome.html";
+    public const string OTP_TEMPLATE_PATH = "Templates/EmailVerifyOTP.html";
     #endregion
 
     #region CRUD Messages
@@ -189,6 +193,31 @@ public static class Constants
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     #endregion
 
+    #region User Dashboard
+    public const int BATCH_SIZE = 3;
+    public const int MIN_BATCH = 1;
+    public const int MAX_BATCH = 3;
+    public const int MAX_QUIZZES = 12;
+    public const string INVALID_BATCH_NUMBER = "Batch number must be between {0} and {1}.";
+    public const string USER_DASHBOARD_SUMMARY_FETCH = "User dashboard summary fetched successfully.";
+    public const string RECENT_QUIZZES_FETCHED = "Recent Quizzes fetched successfully.";
+    public const string FEATURED_QUIZZES_FETCHED = "Featured Quizzes fetched successfully.";
+    public const string BATTLE_REQUESTS_FETCHED = "Battle requests fetched successfully.";
+    public const string BATTLE_REQUEST_NOT_FOUND = "Battle request with ID {0} not found.";
+    public const string BATTLE_STATUS_UPDATED = "Battle request status updated successfully.";
+    public const string RANK_PROGRESS_FETCHED = "User rank progress fetched successfully.";
+    #endregion
+
+    #region Time Ago Messages
+    public const string JUST_NOW = "Just now";
+    public const string SECONDS_AGO = "{0} seconds ago";
+    public const string MINUTES_AGO = "{0} minutes ago";
+    public const string HOURS_AGO = "{0} hours ago";
+    public const string DAYS_AGO = "{0} days ago";
+    public const string MONTHS_AGO = "{0} months ago";
+    public const string YEARS_AGO = "{0} years ago";
+    #endregion
+
     #region Leaderboard
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
@@ -198,6 +227,16 @@ public static class Constants
     public const string CREATE_OR_UPDATE_BATTLE_FAILED = "Failed to create or update battle.";
     public const string BATTLE_NOT_FOUND = "Battle with ID {0} not found.";
     public const string BATTLE_ALREADY_DELETED = "Battle with ID {0} is already deleted.";
+    #endregion
+
+    #region UserProfile
+    public const string EMAIL_SUSPENDED = "This account has been suspended. Please contact support.";
+    public const string EMAIL_ALREADY_IN_USE = "This email is already in use.";
+    public const string EMAIL_INACTIVE = "This account is inactive. Please contact support.";
+    public const string FULLNAME_REQUIRED = "Full name is required.";
+    public const string OTP_NOT_GENERATED_OR_EXPIRED = "OTP not generated or expired.";
+    public const string OTP_EXPIRED = "OTP expired. Please request a new one.";
+    public const string OTP_INVALID = "Invalid OTP.";
     #endregion
 
     #region Plateform Configuration
