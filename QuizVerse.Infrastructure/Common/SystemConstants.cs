@@ -22,4 +22,6 @@ public class SystemConstants
     public const string PLATFORM_COLOR_CONFIGURATION_NAME = "Colors";
     public const string LOGO_PATH = "wwwroot/uploads/logo";
     public const string LOGO_FOLDER_NAME = "logo";
+    public const string DEFAULT_PRIMARY_COLOR = "#9333ea";
+    public const string DEFAULT_SECONDARY_COLOR = "#2563eb";
 }

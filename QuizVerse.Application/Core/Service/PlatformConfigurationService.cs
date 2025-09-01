@@ -38,12 +38,15 @@ public class PlatformConfigurationService(IGenericRepository<PlatformConfigurati
         }
 
         // COLORS
-        var platformColorJson = platformConfigurationList
-            .First(p => p.ConfigurationName == SystemConstants.PLATFORM_COLOR_CONFIGURATION_NAME)
-            .Values;
-        var platformColorDoc = JsonDocument.Parse(platformColorJson);
-        string primaryColor = platformColorDoc.RootElement.GetProperty(Constants.PRIMARY_COLOR_KEY).GetString() ?? throw new AppException(Constants.PLATFORM_CONFIGURATION_NULL_ERROR);
-        string secondaryColor = platformColorDoc.RootElement.GetProperty(Constants.SECONDARY_COLOR_KEY).GetString() ?? throw new AppException(Constants.PLATFORM_CONFIGURATION_NULL_ERROR);
+        var platformColor = platformConfigurationList.FirstOrDefault(p => p.ConfigurationName == SystemConstants.PLATFORM_COLOR_CONFIGURATION_NAME);
+        string primaryColor = SystemConstants.DEFAULT_PRIMARY_COLOR;
+        string secondaryColor = SystemConstants.DEFAULT_SECONDARY_COLOR;
+        if (platformColor?.Values != null)
+        {
+            var platformColorDoc = JsonDocument.Parse(platformColor.Values);
+            primaryColor = platformColorDoc.RootElement.GetProperty(Constants.PRIMARY_COLOR_KEY).GetString() ?? SystemConstants.DEFAULT_PRIMARY_COLOR;
+            secondaryColor = platformColorDoc.RootElement.GetProperty(Constants.SECONDARY_COLOR_KEY).GetString() ?? SystemConstants.DEFAULT_SECONDARY_COLOR;
+        }
 
         DefaultsColors defaultsColors = new DefaultsColors()
         {
@@ -77,7 +80,7 @@ public class PlatformConfigurationService(IGenericRepository<PlatformConfigurati
         if (platformConfigurationRequest.Logo != null)
         {
             string? imagePath;
-            imagePath = await commonService.SaveFile(platformConfigurationRequest.Logo, SystemConstants.LOGO_FOLDER_NAME);
+            imagePath = await commonService.SaveFile(platformConfigurationRequest.Logo, SystemConstants.LOGO_FOLDER_NAME) ?? throw new AppException(Constants.IMAGE_SAVE_ERROR);
             var logoConfig = platformConfigurationList
                 .First(p => p.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME);
             logoConfig.Values = JsonSerializer.Serialize(new { Path = imagePath });

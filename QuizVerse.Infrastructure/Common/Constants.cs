@@ -207,5 +207,6 @@ public static class Constants
     public const string PATH_KEY = "Path";
     public const string PRIMARY_COLOR_KEY = "PrimaryColor";
     public const string SECONDARY_COLOR_KEY = "SecondaryColor";
+    public const string IMAGE_SAVE_ERROR = "Failed to save image.";
     #endregion 
 }
