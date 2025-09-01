@@ -2,15 +2,24 @@ using System.Text;
 using ClosedXML.Excel;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Moq;
 using QuizVerse.Application.Core.Service;
+using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Interface;
 using Xunit;
 
 namespace QuizVerse.UnitTests.Services
 {
     public class CommonServiceTests
     {
-        private readonly CommonService _service = new();
+        private readonly Mock<IGenericRepository<User>> _userRepositoryMock;
+        private readonly CommonService _service;
 
+        public CommonServiceTests()
+        {
+            _userRepositoryMock = new Mock<IGenericRepository<User>>();
+            _service = new CommonService(_userRepositoryMock.Object);
+        }
 
         #region PasswordHash
         [Fact]
@@ -384,6 +393,45 @@ namespace QuizVerse.UnitTests.Services
 
             // Assert
             result.Should().Be("\"Hello,\n\"\"World\"\"\"");
+        }
+        #endregion
+
+        #region GenerateOtp
+        [Fact]
+        public async Task GenerateOtp_ShouldCreateOtp_AndUpdateUser_WhenUserExists()
+        {
+            var user = new User { Email = "test@test.com" };
+            _userRepositoryMock
+                .Setup(r => r.GetAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), null))
+                .ReturnsAsync(user);
+
+            _userRepositoryMock
+                .Setup(r => r.UpdateAsync(It.IsAny<User>()))
+                .Returns(Task.CompletedTask);
+
+            var otp = await _service.GenerateOtp("test@test.com");
+
+            otp.Should().NotBeNullOrEmpty();
+            otp.Length.Should().Be(6);
+            user.Otp.Should().Be(otp);
+            user.OtpSentDate.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+
+            _userRepositoryMock.Verify(r => r.UpdateAsync(It.Is<User>(u => u.Otp == otp)), Times.Once);
+        }
+
+        [Fact]
+        public async Task GenerateOtp_ShouldReturnOtp_WhenUserDoesNotExist()
+        {
+            _userRepositoryMock
+                .Setup(r => r.GetAsync(It.IsAny<System.Linq.Expressions.Expression<Func<User, bool>>>(), null))
+                .ReturnsAsync((User?)null);
+
+            var otp = await _service.GenerateOtp("notfound@test.com");
+
+            otp.Should().NotBeNullOrEmpty();
+            otp.Length.Should().Be(6);
+
+            _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
         }
         #endregion
     }
