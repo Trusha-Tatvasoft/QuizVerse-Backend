@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserDashboardService, UserDashboardService>();
         services.AddScoped<IQuestionDifficultyService, QuestionDifficultyService>();
         services.AddScoped<ILeaderboardService, LeaderboardService>();
+        services.AddScoped<IUserProfileService, UserProfileService>();
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
