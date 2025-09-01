@@ -238,4 +238,14 @@ public static class Constants
     public const string OTP_EXPIRED = "OTP expired. Please request a new one.";
     public const string OTP_INVALID = "Invalid OTP.";
     #endregion
+
+    #region Plateform Configuration
+    public const string PLATFORM_CONFIGURATION_UPDATE_SUCCESS = "Plateform Configuration updated successfully.";
+    public const string PLATFORM_CONFIGURATION_NULL_ERROR = "PlatformQuote Configuration is missing or null.";
+    public const string PLATFORM_QUOTE_KEY = "PlatformQuote";
+    public const string PATH_KEY = "Path";
+    public const string PRIMARY_COLOR_KEY = "PrimaryColor";
+    public const string SECONDARY_COLOR_KEY = "SecondaryColor";
+    public const string IMAGE_SAVE_ERROR = "Failed to save image.";
+    #endregion 
 }
