@@ -5,11 +5,12 @@ using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
-// [Authorize(Roles = nameof(UserRoles.Player))]
+[Authorize(Roles = nameof(UserRoles.Player))]
 [Route("api/[controller]")]
 public class UserProfileController(IUserProfileService userProfileService) : ControllerBase
 {
@@ -17,28 +18,25 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     [HttpGet("get-user-basic-profile")]
     public async Task<IActionResult> GetUserBasicProfile()
     {
-        var profile = await userProfileService.GetUserBasicProfile();
-
         return Ok(new ApiResponse<UserBasicProfileDto>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = StatusCodes.Status200OK,
-            Data = profile
+            Data = await userProfileService.GetUserBasicProfile()
         });
     }
 
     [HttpGet("get-user-overview")]
     public async Task<IActionResult> GetUserOverview()
     {
-        var overview = await userProfileService.GetUserOverview();
 
         return Ok(new ApiResponse<UserOverviewDto>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = StatusCodes.Status200OK,
-            Data = overview
+            Data = await userProfileService.GetUserOverview()
         });
     }
     #endregion
@@ -48,11 +46,9 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UpdateProfilePic([FromForm] UpdateProfilePicRequestDto dto)
     {
-        var responseDto = await userProfileService.UpdateProfilePicture(dto);
-
         return Ok(new ApiResponse<string>
         {
-            Result = true,
+            Result = await userProfileService.UpdateProfilePicture(dto),
             Message = Constants.UPDATE_SUCCESS,
             StatusCode = StatusCodes.Status200OK,
             Data = null
@@ -64,13 +60,12 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     [HttpGet("get-user-badges")]
     public async Task<IActionResult> GetUserBadges()
     {
-        var badges = await userProfileService.GetUserBadges();
         return Ok(new ApiResponse<List<UserBadgesResponseDto>>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = StatusCodes.Status200OK,
-            Data = badges
+            Data = await userProfileService.GetUserBadges()
         });
     }
     #endregion
@@ -79,13 +74,12 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     [HttpGet("get-user-profile-setting")]
     public async Task<IActionResult> GetUserProfileSetting()
     {
-        var profile = await userProfileService.GetUserProfileSetting();
         return Ok(new ApiResponse<UserProfileSettingDto>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = StatusCodes.Status200OK,
-            Data = profile
+            Data = await userProfileService.GetUserProfileSetting()
         });
     }
 
@@ -106,41 +100,36 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     [HttpGet("is-email-available")]
     public async Task<IActionResult> IsEmailAvailable(string email)
     {
-        var isAvailable = await userProfileService.IsEmailAvailable(email);
-
         return Ok(new ApiResponse<bool>
         {
             Result = true,
             Message = Constants.VALID_DATA,
             StatusCode = StatusCodes.Status200OK,
-            Data = isAvailable
+            Data = await userProfileService.IsEmailAvailable(email)
         });
     }
 
     [HttpPost("send-otp-to-user")]
     public async Task<IActionResult> SendOtpToUser([FromBody] UserProfileSettingDto userProfileSettingDto)
     {
-        var responseMessage = await userProfileService.SendOtpToUser(userProfileSettingDto);
-
         return Ok(new ApiResponse<string>
         {
             Result = true,
             Message = Constants.SENT_SUCCESS,
             StatusCode = StatusCodes.Status200OK,
-            Data = responseMessage
+            Data = await userProfileService.SendOtpToUser(userProfileSettingDto)
         });
     }
 
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequestDto request)
     {
-        var result = await userProfileService.VerifyOtp(request);
         return Ok(new ApiResponse<bool>
         {
             Result = true,
             Message = Constants.VALID_DATA,
             StatusCode = StatusCodes.Status200OK,
-            Data = result
+            Data = await userProfileService.VerifyOtp(request)
         });
     }
     #endregion
