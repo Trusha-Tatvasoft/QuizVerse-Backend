@@ -30,7 +30,12 @@ namespace QuizVerse.UnitTests.Services
 
         public BattleManagementServiceTests()
         {
-            _mockHttpContext.Setup(x => x.HttpContext).Returns(new DefaultHttpContext());
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim(ClaimTypes.UserData, "1")], "mock"));
+
+            _mockHttpContext.Setup(x => x.HttpContext).Returns(httpContext);
 
             _service = new BattleManagementService(
                 _mockSqlRepo.Object,
@@ -110,41 +115,6 @@ namespace QuizVerse.UnitTests.Services
         }
 
         [Fact]
-        public async Task CreateUpdateBattle_Update_NoUser()
-        {
-            var req = new SaveBattleRequestDTO
-            {
-                Id = 7,
-                Name = "Upd",
-                Description = "D",
-                DifficultyLevelId = 2,
-                CategoryId = 3,
-                Status = (int)BattleCreationStatus.Completed,
-                BattleType = (int)BattleType.Permanent,
-                TotalTime = 60,
-                TotalQuestion = 20,
-                TotalXp = 200,
-                Questions = null,
-                QuestionsDifficulty = null,
-                QuizTypes = (int)QuizType.Battle
-            };
-
-            object[]? captured = null;
-
-            _mockSqlRepo
-                .Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
-                .Callback<string, object[]>((_, p) => captured = p)
-                .ReturnsAsync(new CreateUpdateResponseDto { Success = true, Message = "updated" });
-
-            var result = await _service.CreateUpdateBattle(req);
-
-            Assert.Equal("updated", result.Message);
-            Assert.NotNull(captured);
-            var cb = ((NpgsqlParameter)captured!.Single(x => ((NpgsqlParameter)x).ParameterName == "p_created_by")).Value;
-            Assert.Equal(DBNull.Value, cb);
-        }
-
-        [Fact]
         public async Task CreateUpdateBattle_ShouldThrow_OnNullRequest()
         {
             await Assert.ThrowsAsync<AppException>(() => _service.CreateUpdateBattle(null!));
@@ -200,7 +170,7 @@ namespace QuizVerse.UnitTests.Services
 
             await Assert.ThrowsAsync<AppException>(() => _service.GetBattleById(99));
         }
- 
+
         #endregion
 
         #region DeleteBattle

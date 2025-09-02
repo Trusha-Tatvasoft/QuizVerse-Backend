@@ -23,7 +23,7 @@ public class BattleManagementService(
     IGenericRepository<BattleList> battleListRepository
 ) : IBattleManagementService
 {
-    public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
+    public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     #region Battle List Data 
 
@@ -94,7 +94,7 @@ public class BattleManagementService(
                 : "[]"
         },
         new("p_quiz_types", NpgsqlDbType.Integer) { Value = battleCreateUpdateRequestDto.QuizTypes },
-        new("p_created_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value }
+        new("p_created_by", NpgsqlDbType.Integer) { Value = UserId }
         };
 
         CreateUpdateResponseDto response = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
