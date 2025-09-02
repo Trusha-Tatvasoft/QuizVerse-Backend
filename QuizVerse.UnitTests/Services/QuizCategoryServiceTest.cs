@@ -355,7 +355,7 @@ namespace QuizVerse.UnitTests.Services
 
             string result = await _service.UpdateQuizCategoryByAction(request);
 
-            Assert.Equal(Constants.DELETE_SUCCESS, result);
+            Assert.Equal(Constants.QUIZ_CATEGORY_DELETED_SUCCESS, result);
             Assert.True(category.IsDeleted);
             _quizCategoryRepoMock.Verify(r => r.UpdateAsync(category), Times.AtLeastOnce);
         }
@@ -513,7 +513,7 @@ namespace QuizVerse.UnitTests.Services
             string result = await _service.UpdateQuizCategoryByAction(request);
 
             // Assert
-            Assert.Equal(Constants.DELETE_SUCCESS, result);
+            Assert.Equal(Constants.QUIZ_CATEGORY_DELETED_SUCCESS, result);
             Assert.True(category.IsDeleted);
 
             _quizCategoryRepoMock.Verify(r => r.UpdateAsync(category), Times.AtLeastOnce);

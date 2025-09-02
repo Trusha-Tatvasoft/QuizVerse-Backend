@@ -11,7 +11,7 @@ public partial class Quiz
 
     public string Description { get; set; } = null!;
 
-    public int TotalTime { get; set; }
+    public decimal TotalTime { get; set; }
 
     public int TotalQuestion { get; set; }
 

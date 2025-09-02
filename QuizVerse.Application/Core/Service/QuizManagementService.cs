@@ -139,7 +139,7 @@ public class QuizManagementService(
             new("p_name", NpgsqlDbType.Text) { Value = quizCreateUpdateRequestDto.Name },
             new("p_category_id", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.CategoryId },
             new("p_description", NpgsqlDbType.Text) { Value = quizCreateUpdateRequestDto.Description },
-            new("p_total_time", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.TotalTime },
+            new("p_total_time", NpgsqlDbType.Numeric) { Value = quizCreateUpdateRequestDto.TotalTime },
             new("p_difficulty_level_id", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.DifficultyLevelId },
             new("p_total_question", NpgsqlDbType.Integer) { Value = quizCreateUpdateRequestDto.TotalQuestion },
             new("p_is_paid", NpgsqlDbType.Boolean) { Value = quizCreateUpdateRequestDto.IsPaid },

@@ -21,7 +21,7 @@ public class SaveQuizRequestDto
 
     [Required(ErrorMessage = "Quiz total time is required.")]
     [Range(2, 180, ErrorMessage = "Total time must be between 2 and 180 minutes.")]
-    public int TotalTime { get; set; }
+    public decimal TotalTime { get; set; }
 
     [Required(ErrorMessage = "Difficulty level is required.")]
     public int DifficultyLevelId { get; set; }

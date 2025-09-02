@@ -166,7 +166,7 @@ public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryR
 
                 await _quizCategoryRepository.UpdateAsync(quizCategory);
 
-                resultMessage = Constants.DELETE_SUCCESS;
+                resultMessage = Constants.QUIZ_CATEGORY_DELETED_SUCCESS;
                 break;
 
             case QuizCategoryActionType.ChangeStatus:

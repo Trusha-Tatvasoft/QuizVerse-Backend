@@ -57,7 +57,7 @@ CREATE OR REPLACE FUNCTION create_update_quiz(
     p_name TEXT,
     p_category_id INT,
     p_description TEXT,
-    p_total_time INT,
+    p_total_time NUMERIC,
     p_difficulty_level_id INT,
     p_total_question INT,
     p_is_paid BOOLEAN,

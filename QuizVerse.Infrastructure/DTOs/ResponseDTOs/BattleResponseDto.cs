@@ -19,7 +19,7 @@ public class BattleResponseDto
 
     public DateTime? EndDate { get; set; }
 
-    public int TotalTime { get; set; }
+    public decimal TotalTime { get; set; }
 
     public int TotalQuestion { get; set; }
 

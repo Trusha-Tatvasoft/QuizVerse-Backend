@@ -40,6 +40,7 @@ BEGIN
     JOIN "QuestionDifficulty" qd ON bq.que_difficulty_id = qd.id
     JOIN "QuestionType" qt ON bq.que_type_id = qt.id
     WHERE bq.is_deleted = false
+      AND qc.is_deleted = false
       AND (p_search_term IS NULL OR bq.que_text ILIKE '%' || p_search_term || '%')
       AND (p_category_id IS NULL OR bq.category_id = p_category_id)
       AND (p_difficulty_id IS NULL OR bq.que_difficulty_id = p_difficulty_id)

@@ -202,10 +202,16 @@ public class MappingProfile : Profile
 
         #region BattleManagement
         CreateMap<BattleManagementData, BattleManagementData>()
-            .ForMember(dest => dest.BattleDifficulty, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleDifficulty)))
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => CapitalizeFirst(src.CategoryName)))
-            .ForMember(dest => dest.BattleName, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleName)))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => ToTitleCase(src.Description)));
+            .ForMember(dest => dest.BattleDifficulty, opt => opt.MapFrom(src => ToTitleCase(src.BattleDifficulty)))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => ToTitleCase(src.CategoryName)))
+            .ForMember(dest => dest.BattleName, opt => opt.MapFrom(src => ToTitleCase(src.BattleName)))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
+
+        CreateMap<BattleResponseDto, BattleResponseDto>()
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => ToTitleCase(src.Name)))
+            .ForMember(dest => dest.Description,
+                opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
         #endregion
 
         #region Leaderboard 
