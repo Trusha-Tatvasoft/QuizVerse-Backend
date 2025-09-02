@@ -14,6 +14,7 @@ public static class Constants
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
     public const string NO_DATA_FOUND = "No data found.";
     public const string UNAUTHORIZED_USER = "User ID missing";
+    public const string SENT_SUCCESS = "OTP Sent Successfully";
     #endregion
 
     #region Auth Messages
@@ -76,11 +77,13 @@ public static class Constants
     public const string USER_REGISTERED_BUT_EMAIL_NOT_SENT = "User registered successfully, but email could not be sent.";
     public const string EMAIL_NOT_SENT = "Email not sent.";
     public const string SMTP_CONFIG_MISSING = "SMTP configuration is missing required fields.";
+    public const string EMAIL_OTP_SUBJECT = "Your QuizVerse OTP Code";
     #endregion
 
     #region EmailTemplateConstants
     public const string NEW_USER_TEMPLATE_PATH = "Templates/NewUser.html";
     public const string REGISTER_USER_TEMPLATE_PATH = "Templates/Welcome.html";
+    public const string OTP_TEMPLATE_PATH = "Templates/EmailVerifyOTP.html";
     #endregion
 
     #region CRUD Messages
@@ -214,7 +217,7 @@ public static class Constants
     public const string MONTHS_AGO = "{0} months ago";
     public const string YEARS_AGO = "{0} years ago";
     #endregion
-    
+
     #region Leaderboard
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
@@ -225,4 +228,24 @@ public static class Constants
     public const string BATTLE_NOT_FOUND = "Battle with ID {0} not found.";
     public const string BATTLE_ALREADY_DELETED = "Battle with ID {0} is already deleted.";
     #endregion
+
+    #region UserProfile
+    public const string EMAIL_SUSPENDED = "This account has been suspended. Please contact support.";
+    public const string EMAIL_ALREADY_IN_USE = "This email is already in use.";
+    public const string EMAIL_INACTIVE = "This account is inactive. Please contact support.";
+    public const string FULLNAME_REQUIRED = "Full name is required.";
+    public const string OTP_NOT_GENERATED_OR_EXPIRED = "OTP not generated or expired.";
+    public const string OTP_EXPIRED = "OTP expired. Please request a new one.";
+    public const string OTP_INVALID = "Invalid OTP.";
+    #endregion
+
+    #region Plateform Configuration
+    public const string PLATFORM_CONFIGURATION_UPDATE_SUCCESS = "Plateform Configuration updated successfully.";
+    public const string PLATFORM_CONFIGURATION_NULL_ERROR = "PlatformQuote Configuration is missing or null.";
+    public const string PLATFORM_QUOTE_KEY = "PlatformQuote";
+    public const string PATH_KEY = "Path";
+    public const string PRIMARY_COLOR_KEY = "PrimaryColor";
+    public const string SECONDARY_COLOR_KEY = "SecondaryColor";
+    public const string IMAGE_SAVE_ERROR = "Failed to save image.";
+    #endregion 
 }

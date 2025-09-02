@@ -85,6 +85,7 @@ BEGIN
                 JOIN "BaseQuestions" bq ON bq.id = qbm.que_id
                 WHERE qbm.quiz_id = q.id
                   AND bq.is_deleted = FALSE
+                  AND qbm.is_deleted = FALSE
             ), '[]'::jsonb
         ) AS questions,
         COALESCE(

@@ -17,4 +17,11 @@ public class SystemConstants
     public const int DEFAULT_PAGE_SIZE = 10;
     public const int IMAGE_UPLOAD_MAX_SIZE = 10 * 1024 * 1024;
     public static readonly string[] IMAGE_ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif"];
+    public const string PLATFORM_QUOTE_CONFIGURATION_NAME = "Platform Quote";
+    public const string PLATFORM_LOGO_CONFIGURATION_NAME = "Logo";
+    public const string PLATFORM_COLOR_CONFIGURATION_NAME = "Colors";
+    public const string LOGO_PATH = "wwwroot/uploads/logo";
+    public const string LOGO_FOLDER_NAME = "logo";
+    public const string DEFAULT_PRIMARY_COLOR = "#9333ea";
+    public const string DEFAULT_SECONDARY_COLOR = "#2563eb";
 }
