@@ -37,6 +37,10 @@ public partial class User
 
     public int? ModifiedBy { get; set; }
 
+    public string? Otp { get; set; }
+
+    public DateTime? OtpSentDate { get; set; }
+
     public virtual ICollection<BadgeConditionsMapping> BadgeConditionsMappingCreatedByNavigations { get; set; } = new List<BadgeConditionsMapping>();
 
     public virtual ICollection<BadgeConditionsMapping> BadgeConditionsMappingModifiedByNavigations { get; set; } = new List<BadgeConditionsMapping>();

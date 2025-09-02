@@ -208,8 +208,46 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Description, opt => opt.MapFrom(src => ToTitleCase(src.Description)));
         #endregion
 
+        #region Leaderboard 
+        CreateMap<UserPerformanceDetail, UserPerformanceResponseDto>()
+            .ForMember(dest => dest.GlobalRank, opt => opt.MapFrom(src => src.NewGlobalRank))
+            .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.TotalXp))
+            .ForMember(dest => dest.CurrentLevel, opt => opt.MapFrom(src => src.CurrentLevel));
+
+        CreateMap<RawLeaderboardGlobalRankingDto, LeaderboardGlobalRankingResponseDto>();
+        #endregion
+        
         #region Email Templates
         CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
+        #endregion
+
+        #region User Dashboard
+        CreateMap<RawUserDashboardMetricsDTO, UserDashboardResponse>()
+            .ForMember(dest => dest.QuizzesCompleted,
+                opt => opt.MapFrom(src => src.QuizzesCompleted))
+            .ForMember(dest => dest.TotalXp,
+                opt => opt.MapFrom(src => src.TotalXp))
+            .ForMember(dest => dest.WinRate,
+                opt => opt.MapFrom(src => Math.Round((double)src.WinRate, 2)))
+            .ForMember(dest => dest.CurrentRank,
+                opt => opt.MapFrom(src => src.CurrentRank));
+                
+        CreateMap<RawRankProgressDTO, RankProgressDTO>()
+            .ForMember(dest => dest.CurrentRank,
+                opt => opt.MapFrom(src => src.CurrentRank))
+            .ForMember(dest => dest.NextRank,
+                opt => opt.MapFrom(src => src.NextRank))
+            .ForMember(dest => dest.XpNeeded,
+                opt => opt.MapFrom(src => src.XpNeeded))
+            .ForMember(dest => dest.ProgressPercent,
+                opt => opt.MapFrom(src => src.ProgressPercent));
+        #endregion
+        
+        #region Battle Question Difficulty Mapping
+        CreateMap<QuestionDifficulty, QuestionDifficultyXPData>()
+          .ForMember(dest => dest.QuestionDifficultyId, opt => opt.MapFrom(src => src.Id))
+          .ForMember(dest => dest.QuestionDifficultyName, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)))
+          .ForMember(dest => dest.XpGained, opt => opt.MapFrom(src => src.XpGained));
         #endregion
     }
 

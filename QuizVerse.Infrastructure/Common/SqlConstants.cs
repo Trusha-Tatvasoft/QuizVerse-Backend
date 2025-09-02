@@ -46,7 +46,34 @@ public class SqlConstants
 
     #region BattleManagement
     public const string GET_BATTLE_LIST_TEMPLATE =
-       "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
+       "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})";
     public const string GET_BATTLE_LIST_FUNCTION = "get_battle_list_data";
+
+    public const string CREATE_UPDATE_BATTLE_FUNCTION = "create_update_battle";
+    public const string CREATE_UPDATE_BATTLE_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}}, {{12}}, {{13}}, {{14}}, {{15}})";
+
+    public const string GET_BATTLE_DATA_BY_ID_QUERY_TEMPLATE =
+     "SELECT * FROM {0}({{0}})";
+
+    public const string GET_BATTLE_DATA_BY_ID_FUNCTION = "get_battle_data_by_id";
+
+    #endregion
+
+    #region UserDashboard
+    public const string GET_USER_DASHBOARD_METRICS = "SELECT * FROM get_user_dashboard_metrics({0})";
+    public const string GET_RANK_PROGRESS  = "SELECT * FROM get_rank_progress({0})";
+    #endregion
+
+    #region LeaderBoard
+    public const string GET_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
+    public const string GET_GLOBAL_LEADERBOARD_FUNCTION = "get_leaderboard_global_rankings";
+    #endregion
+
+    #region UserProfile
+    public const string GET_USER_BASIC_PROFILE_FUNCTION = "get_user_basic_profile";
+    public const string GET_USER_OVERVIEW_FUNCTION = "get_user_overview";
+    public const string GET_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
+    public const string UPDATE_USER_PROFILE_FUNCTION = "update_user_setting";
+    public const string UPDATE_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_current_user_id, @p_new_email, @p_new_name, @p_new_bio)";
     #endregion
 }

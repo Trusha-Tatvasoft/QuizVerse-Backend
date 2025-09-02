@@ -54,6 +54,12 @@ namespace QuizVerse.Infrastructure.Enums
         Running = 3
     }
 
+    public enum BattleCreationStatus
+    {
+        Active = 1,
+        Completed = 2
+    }
+
     public enum BattleType
     {
         Permanent = 1,
@@ -76,4 +82,20 @@ namespace QuizVerse.Infrastructure.Enums
         ResetPassword = 5,
         WelComeEmail = 6,
     }
+
+    public enum BattleRequestStatus
+    {
+        Accepted = 1,
+        Rejected = 2,
+        Pending = 3
+    }
+
+    public enum BadgeType
+    {
+        Bronze = 1,
+        Gold = 2,
+        Platinum = 3,
+        Silver = 4
+    }
+
 }
