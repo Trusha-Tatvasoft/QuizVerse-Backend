@@ -13,7 +13,7 @@ public partial class BattleQuesDifficultyMap
 
     public int NoOfQues { get; set; }
 
-    public DateTime QusTime { get; set; }
+    public int TimePerQuestion { get; set; }
 
     public DateTime CreatedDate { get; set; }
 

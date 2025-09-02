@@ -24,6 +24,8 @@ public class BattleManagementService(ISqlQueryRepository _sqlQueryRepository, IM
         {
             new("p_permanent_type", NpgsqlDbType.Integer) { Value = (int)BattleType.Permanent },
             new("p_time_limited_type", NpgsqlDbType.Integer) { Value = (int)BattleType.TimeLimited },
+            new("p_active_battle_status", NpgsqlDbType.Integer) { Value = (int)BattleCreationStatus.Active },
+            new("p_completed_battle_status", NpgsqlDbType.Integer) { Value = (int)BattleCreationStatus.Completed },
             new("p_running_status", NpgsqlDbType.Integer) { Value = (int)BattleStatus.Running }
         };
 
