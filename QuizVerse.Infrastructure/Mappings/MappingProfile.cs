@@ -262,6 +262,31 @@ public class MappingProfile : Profile
           .ForMember(dest => dest.QuestionDifficultyName, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)))
           .ForMember(dest => dest.XpGained, opt => opt.MapFrom(src => src.XpGained));
         #endregion
+
+        #region UserProfile
+
+        CreateMap<UserBasicProfileDto, UserBasicProfileDto>()
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => ToTitleCase(src.Name)));
+
+        // user earned badges
+        CreateMap<Badge, UserBadgesResponseDto>()
+            .ForMember(dest => dest.BadgeId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.BadgeType, opt => opt.MapFrom(src => (BadgeType)src.BadgeType))
+            .ForMember(dest => dest.Earned, opt => opt.Ignore());
+
+        // user profile setting
+        CreateMap<User, UserProfileSettingDto>();
+
+        CreateMap<UserProfileSettingDto, UserProfileSettingDto>()
+            .ForMember(dest => dest.FullName,
+                opt => opt.MapFrom(src => src.FullName == null ? null : src.FullName.Trim()))
+            .ForMember(dest => dest.Email,
+                opt => opt.MapFrom(src => src.Email.Trim().ToLower()))
+            .ForMember(dest => dest.Bio,
+                opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Bio) ? null : src.Bio.Trim()));
+
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>

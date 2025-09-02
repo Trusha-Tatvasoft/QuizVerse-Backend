@@ -2,11 +2,13 @@ using System.Globalization;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Interface;
+using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class CommonService : ICommonService
+    public class CommonService(IGenericRepository<User> userRepository) : ICommonService
     {
         #region PasswordHash
         public string Hash(string password)
@@ -91,6 +93,24 @@ namespace QuizVerse.Application.Core.Service
             }
 
             return input;
+        }
+        #endregion
+
+        #region GenerateOtp
+        public async Task<string> GenerateOtp(string email)
+        {
+            var user = await userRepository.GetAsync(u => u.Email.ToLower().Trim() == email.ToLower().Trim());
+
+            // Generate 6-digit OTP
+            var otp = new Random().Next(100000, 999999).ToString();
+
+            if (user != null)
+            {
+                user.Otp = otp;
+                user.OtpSentDate = DateTime.UtcNow;
+                await userRepository.UpdateAsync(user);
+            }
+            return otp;
         }
         #endregion
     }
