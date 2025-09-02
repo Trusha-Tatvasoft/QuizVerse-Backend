@@ -90,6 +90,15 @@ namespace QuizVerse.Infrastructure.Enums
         Rejected = 2,
         Pending = 3
     }
+
+    public enum BadgeType
+    {
+        Bronze = 1,
+        Gold = 2,
+        Platinum = 3,
+        Silver = 4
+    }
+
     
     public enum EmailTemplateActionType
     {

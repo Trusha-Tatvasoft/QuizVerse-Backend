@@ -68,4 +68,12 @@ public class SqlConstants
     public const string GET_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
     public const string GET_GLOBAL_LEADERBOARD_FUNCTION = "get_leaderboard_global_rankings";
     #endregion
+
+    #region UserProfile
+    public const string GET_USER_BASIC_PROFILE_FUNCTION = "get_user_basic_profile";
+    public const string GET_USER_OVERVIEW_FUNCTION = "get_user_overview";
+    public const string GET_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
+    public const string UPDATE_USER_PROFILE_FUNCTION = "update_user_setting";
+    public const string UPDATE_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_current_user_id, @p_new_email, @p_new_name, @p_new_bio)";
+    #endregion
 }
