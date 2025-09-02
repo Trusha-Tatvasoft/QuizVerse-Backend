@@ -225,6 +225,13 @@ public class MappingProfile : Profile
         
         #region Email Templates
         CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
+        
+        CreateMap<EmailTemplatesRequestDTO, EmailTemplete>()
+            .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
         #endregion
 
         #region User Dashboard
