@@ -106,5 +106,29 @@ namespace QuizVerse.WebAPI.Controllers
             };
             return Ok(response);
         }
+
+        [HttpGet("is-username-available")]
+        public async Task<IActionResult> IsUserNameAvailable([FromQuery] string userName, [FromQuery] int? id = null)
+        {
+            return Ok(new ApiResponse<string>
+            {
+                Result = await authService.IsUserNameAvailable(userName, id),
+                Message = Constants.VALID_DATA,
+                StatusCode = 200,
+                Data = null
+            });
+        }
+
+        [HttpGet("is-email-available")]
+        public async Task<IActionResult> IsEmailAvailable([FromQuery] string email)
+        {
+            return Ok(new ApiResponse<string>
+            {
+                Result = await authService.IsEmailAvailable(email),
+                Message = Constants.VALID_DATA,
+                StatusCode = 200,
+                Data = null
+            });
+        }
     }
 }
