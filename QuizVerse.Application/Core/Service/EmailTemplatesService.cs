@@ -17,7 +17,7 @@ namespace QuizVerse.Application.Core.Service;
 
 public class EmailTemplatesService(IGenericRepository<EmailTemplete> emailTemplateRepository, IMapper _mapper, IHttpContextAccessor httpContextAccessor) : IEmailTemplatesService
 {
-    int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new AppException(Constants.INVALID_USER_ID_MESSAGE);
+    int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.INVALID_USER_ID_MESSAGE);
 
     public PageListResponse<EmailTemplatesResponseDto> GetAllEmailTemplates(PageListRequest pageListRequest)
     {
