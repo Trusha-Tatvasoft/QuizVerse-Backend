@@ -15,7 +15,7 @@ public class QuizResponseDto
     [Column("description")]
     public string Description { get; set; } = string.Empty;
     [Column("totalTime")]
-    public int TotalTime { get; set; }
+    public decimal TotalTime { get; set; }
     [Column("difficultyLevelId")]
     public int DifficultyLevelId { get; set; }
     [Column("totalQuestion")]

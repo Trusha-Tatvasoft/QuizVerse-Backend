@@ -315,5 +315,20 @@ namespace QuizVerse.Application.Core.Service
             return await _emailService.SendEmailAsync(emailRequest);
         }
 
+        public async Task<bool> IsUserNameAvailable(string userName, int? id = null)
+        {
+            if (await _genericUserRepository.Exists(u => u.UserName.Trim() == userName.Trim() && !u.IsDeleted && (id == null || u.Id != id)))
+                throw new AppException(Constants.DUPLICATE_USERNAME);
+
+            return true;
+        }
+
+        public async Task<bool> IsEmailAvailable(string email)
+        {
+            if (await _genericUserRepository.Exists(u => u.Email.Trim() == email.Trim() && !u.IsDeleted))
+                throw new AppException(Constants.DUPLICATE_EMAIL);
+
+            return true;
+        }
     }
 }

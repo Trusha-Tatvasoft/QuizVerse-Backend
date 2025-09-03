@@ -28,7 +28,7 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<IGenericRepository<PasswordResetToken>> _passwordResetTokenRepoMock = new();
 
         private AuthService CreateService() =>
-            new(_tokenServiceMock.Object, _commonServiceMock.Object, _userRepoMock.Object, _passwordResetTokenRepoMock.Object, _emailServiceMock.Object, _mapperMock.Object,_configurationMock.Object);
+            new(_tokenServiceMock.Object, _commonServiceMock.Object, _userRepoMock.Object, _passwordResetTokenRepoMock.Object, _emailServiceMock.Object, _mapperMock.Object, _configurationMock.Object);
 
 
         public AuthServiceTests()
@@ -447,7 +447,7 @@ namespace QuizVerse.UnitTests.Services
             var userRegisterDto = CreateValidUserDto();
 
             // Create test template file at the exact location used in your service
-            string templateFullPath = Path.Combine(Directory.GetCurrentDirectory(), Constants.REGISTER_USER_TEMPLATE_PATH );
+            string templateFullPath = Path.Combine(Directory.GetCurrentDirectory(), Constants.REGISTER_USER_TEMPLATE_PATH);
             string templateDirectory = Path.GetDirectoryName(templateFullPath)!;
 
             Directory.CreateDirectory(templateDirectory);
@@ -707,6 +707,99 @@ namespace QuizVerse.UnitTests.Services
             var ex = await Assert.ThrowsAsync<ArgumentException>(() => service.ResetPassword(null!));
 
             Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
+        }
+
+        [Fact]
+        public async Task IsUserNameAvailable_ShouldReturnTrue_WhenUserNameDoesNotExist()
+        {
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                         .ReturnsAsync(false);
+
+            AuthService service = CreateService();
+
+            bool result = await service.IsUserNameAvailable("NewUser");
+
+            result.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task IsUserNameAvailable_ShouldThrow_WhenUserNameExists_ExactMatch()
+        {
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                         .ReturnsAsync(true);
+
+            AuthService service = CreateService();
+
+            Func<Task<bool>> act = async () => await service.IsUserNameAvailable("ExistingUser");
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.DUPLICATE_USERNAME);
+        }
+
+        [Fact]
+        public async Task IsUserNameAvailable_ShouldAllow_WhenSameUserIdUpdating()
+        {
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                         .ReturnsAsync(false);
+
+            AuthService service = CreateService();
+
+            bool result = await service.IsUserNameAvailable("ExistingUser", id: 1);
+
+            result.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task IsUserNameAvailable_ShouldBeCaseSensitive()
+        {
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                         .ReturnsAsync(false);
+
+            AuthService service = CreateService();
+
+            bool result = await service.IsUserNameAvailable("john");
+
+            result.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task IsEmailAvailable_ShouldReturnTrue_WhenEmailDoesNotExist()
+        {
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                         .ReturnsAsync(false);
+
+            AuthService service = CreateService();
+
+            bool result = await service.IsEmailAvailable("unique@example.com");
+
+            result.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task IsEmailAvailable_ShouldThrow_WhenEmailExists_ExactMatch()
+        {
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                         .ReturnsAsync(true);
+
+            AuthService service = CreateService();
+
+            Func<Task<bool>> act = async () => await service.IsEmailAvailable("test@example.com");
+
+            await act.Should().ThrowAsync<AppException>()
+                     .WithMessage(Constants.DUPLICATE_EMAIL);
+        }
+
+        [Fact]
+        public async Task IsEmailAvailable_ShouldBeCaseSensitive()
+        {
+            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+                         .ReturnsAsync(false);
+
+            AuthService service = CreateService();
+
+            bool result = await service.IsEmailAvailable("TEST@EXAMPLE.COM");
+
+            result.Should().BeTrue();
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace QuizVerse.Infrastructure.Common;
+﻿using QuizVerse.Infrastructure.Enums;
+
+namespace QuizVerse.Infrastructure.Common;
 
 public static class Constants
 {
@@ -13,7 +15,7 @@ public static class Constants
     public const string INVALID_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Inactive), 3 (Suspend)";
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
     public const string NO_DATA_FOUND = "No data found.";
-    public const string UNAUTHORIZED_USER = "User ID missing";
+    public const string UNAUTHORIZED_USER = "User is not authorized.";
     public const string SENT_SUCCESS = "OTP Sent Successfully";
     #endregion
 
@@ -248,4 +250,47 @@ public static class Constants
     public const string SECONDARY_COLOR_KEY = "SecondaryColor";
     public const string IMAGE_SAVE_ERROR = "Failed to save image.";
     #endregion 
+
+    #region Email Templates
+    public static readonly Dictionary<EmailTemplateType, string[]> EmailTemplatePlaceholdersRequired = new()
+    {
+        {
+            EmailTemplateType.AccountSuspension,
+            new[] { "{{user}}", "{{email}}" }
+        },
+        {
+            EmailTemplateType.BattleRequest,
+            new[] { "{{user}}", "{{opponent}}", "{{battleLink}}" }
+        },
+        {
+            EmailTemplateType.EmailVerification,
+            new[] { "{{user}}", "{{email}}", "{{verificationLink}}" }
+        },
+        {
+            EmailTemplateType.QuizInvitation,
+            new[] { "{{user}}", "{{quizName}}", "{{quizLink}}" }
+        },
+        {
+            EmailTemplateType.ResetPassword,
+            new[] { "{{user}}", "{{email}}", "{{resetLink}}" }
+        },
+        {
+            EmailTemplateType.WelComeEmail,
+            new[] { "{{user}}", "{{email}}", "{{registrationDate}}", "{{loginUrl}}", "{{year}}", "{{companyName}}" }
+        },
+        {
+            EmailTemplateType.NewUser,
+            new[] { "{{user}}", "{{password}}", "{{loginUrl}}" }
+        }
+    };
+    public const string INVALID_EMAIL_TEMPLATE = "Invalid email template.";
+    public const string EMAIL_TEMPLATE_ADDED = "Email template added successfully.";
+    public const string EMAIL_TEMPLATE_UPDATED = "Email template updated successfully.";
+    public const string EMAIL_TEMPLATE_NOT_FOUND = "Email template not found.";
+    public const string MISSING_PLACEHOLDER = "Template is missing required placeholder: {0}";
+    public const string EMAIL_TEMPLATE_ALREDY_AVAILABLE_FOR_SAME_TYPE = "Template is already available for same type.";
+    public const string EMAIL_TEMPLATE_DELETE = "Email template deleted successfully.";
+    public const string EMAIL_TEMPLATE_STATUS_UPDATED = "Email template's status updated successfully.";
+    public const string INVALID_ACTION = "Invalid action.";
+    #endregion
 }

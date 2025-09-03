@@ -11,7 +11,7 @@ public class BattleQuestionDifficultyDTO
     public int QueDifficultyId { get; set; }
 
     [Required(ErrorMessage = "Number of questions is required.")]
-    [Range(1, int.MaxValue, ErrorMessage = "Number of questions must be a non-negative integer.")]
+    [Range(0, int.MaxValue, ErrorMessage = "Number of questions must be a non-negative integer.")]
     [JsonPropertyName("noOfQues")]
     public int NoOfQues { get; set; }
 

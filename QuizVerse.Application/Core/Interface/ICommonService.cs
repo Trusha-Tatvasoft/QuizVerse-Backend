@@ -11,5 +11,6 @@ namespace QuizVerse.Application.Core.Interface
         MemoryStream ExportToExcel<T>(List<T> data, string sheetName, XLTableTheme? tableTheme, int startRow = 10, int startCol = 1, Action<IXLWorksheet>? setup = null);
         Task<string?> SaveFile(IFormFile file, string folderName);
         string EscapeCsv(string input);
+        Task<string> GenerateOtp(string email);
     }
 }

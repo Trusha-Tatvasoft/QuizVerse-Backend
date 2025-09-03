@@ -81,6 +81,7 @@ namespace QuizVerse.Infrastructure.Enums
         QuizInvitation = 4,
         ResetPassword = 5,
         WelComeEmail = 6,
+        NewUser = 7
     }
 
     public enum BattleRequestStatus
@@ -98,4 +99,10 @@ namespace QuizVerse.Infrastructure.Enums
         Silver = 4
     }
 
+    
+    public enum EmailTemplateActionType
+    {
+        Delete = 1,
+        ChangeStatus = 2
+    }
 }

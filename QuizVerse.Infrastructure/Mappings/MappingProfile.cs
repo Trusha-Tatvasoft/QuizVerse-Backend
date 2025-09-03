@@ -202,10 +202,16 @@ public class MappingProfile : Profile
 
         #region BattleManagement
         CreateMap<BattleManagementData, BattleManagementData>()
-            .ForMember(dest => dest.BattleDifficulty, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleDifficulty)))
-            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => CapitalizeFirst(src.CategoryName)))
-            .ForMember(dest => dest.BattleName, opt => opt.MapFrom(src => CapitalizeFirst(src.BattleName)))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => ToTitleCase(src.Description)));
+            .ForMember(dest => dest.BattleDifficulty, opt => opt.MapFrom(src => ToTitleCase(src.BattleDifficulty)))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => ToTitleCase(src.CategoryName)))
+            .ForMember(dest => dest.BattleName, opt => opt.MapFrom(src => ToTitleCase(src.BattleName)))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
+
+        CreateMap<BattleResponseDto, BattleResponseDto>()
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => ToTitleCase(src.Name)))
+            .ForMember(dest => dest.Description,
+                opt => opt.MapFrom(src => CapitalizeFirst(src.Description)));
         #endregion
 
         #region Leaderboard 
@@ -219,6 +225,13 @@ public class MappingProfile : Profile
         
         #region Email Templates
         CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
+        
+        CreateMap<EmailTemplatesRequestDTO, EmailTemplete>()
+            .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
+            .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
+            .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
         #endregion
 
         #region User Dashboard
@@ -248,6 +261,31 @@ public class MappingProfile : Profile
           .ForMember(dest => dest.QuestionDifficultyId, opt => opt.MapFrom(src => src.Id))
           .ForMember(dest => dest.QuestionDifficultyName, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)))
           .ForMember(dest => dest.XpGained, opt => opt.MapFrom(src => src.XpGained));
+        #endregion
+
+        #region UserProfile
+
+        CreateMap<UserBasicProfileDto, UserBasicProfileDto>()
+            .ForMember(dest => dest.Name,
+                opt => opt.MapFrom(src => ToTitleCase(src.Name)));
+
+        // user earned badges
+        CreateMap<Badge, UserBadgesResponseDto>()
+            .ForMember(dest => dest.BadgeId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.BadgeType, opt => opt.MapFrom(src => (BadgeType)src.BadgeType))
+            .ForMember(dest => dest.Earned, opt => opt.Ignore());
+
+        // user profile setting
+        CreateMap<User, UserProfileSettingDto>();
+
+        CreateMap<UserProfileSettingDto, UserProfileSettingDto>()
+            .ForMember(dest => dest.FullName,
+                opt => opt.MapFrom(src => src.FullName == null ? null : src.FullName.Trim()))
+            .ForMember(dest => dest.Email,
+                opt => opt.MapFrom(src => src.Email.Trim().ToLower()))
+            .ForMember(dest => dest.Bio,
+                opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Bio) ? null : src.Bio.Trim()));
+
         #endregion
     }
 
