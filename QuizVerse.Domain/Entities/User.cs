@@ -177,5 +177,5 @@ public partial class User
 
     public virtual ICollection<UserNotification> UserNotificationUsers { get; set; } = new List<UserNotification>();
 
-    public virtual ICollection<UserPerformanceDetail> UserPerformanceDetails { get; set; } = new List<UserPerformanceDetail>();
+    public virtual UserPerformanceDetail? UserPerformanceDetail { get; set; }
 }

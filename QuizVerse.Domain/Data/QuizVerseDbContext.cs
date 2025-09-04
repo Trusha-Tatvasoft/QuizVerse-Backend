@@ -1416,6 +1416,8 @@ public partial class QuizVerseDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("UserPerformanceDetails_pkey");
 
+            entity.HasIndex(e => e.UserId, "UserPerformanceDetails_user_id_unique").IsUnique();
+
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
@@ -1431,8 +1433,8 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.TotalXp).HasColumnName("total_xp");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
-            entity.HasOne(d => d.User).WithMany(p => p.UserPerformanceDetails)
-                .HasForeignKey(d => d.UserId)
+            entity.HasOne(d => d.User).WithOne(p => p.UserPerformanceDetail)
+                .HasForeignKey<UserPerformanceDetail>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("UserPerformanceDetails_user_id_fkey");
         });
