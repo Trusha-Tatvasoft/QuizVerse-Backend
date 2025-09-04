@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserProfileService, UserProfileService>();
         services.AddScoped<IPlatformConfigurationService, PlatformConfigurationService>();
         services.AddScoped<IQuizService, QuizService>();
+        services.AddScoped<IUserBattlesService, UserBattlesService>();
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
