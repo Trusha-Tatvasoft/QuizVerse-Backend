@@ -13,6 +13,7 @@ namespace QuizVerse.WebAPI.Controllers;
 [Route("api/[controller]")]
 public class UserBattlesController(IUserBattlesService userBattlesService) : ControllerBase
 {
+    #region User Recent Battles
     [HttpGet("get-user-recent-battles")]
     public async Task<IActionResult> GetUserRecentBattles()
     {
@@ -24,4 +25,19 @@ public class UserBattlesController(IUserBattlesService userBattlesService) : Con
             Data = await userBattlesService.GetUserRecentBattles()
         });
     }
+    #endregion
+
+    #region Battle Leaderboard Data 
+    [HttpGet("get-battle-leaderboard-list")]
+    public async Task<IActionResult> GetBattleLeaderboardList()
+    {
+        return Ok(new ApiResponse<List<UserBattleLeaderboardData>>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = 200,
+            Data = await userBattlesService.GetBattleLeaderboardList()
+        });
+    }
+    #endregion
 }

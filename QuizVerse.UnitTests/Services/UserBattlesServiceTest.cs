@@ -34,7 +34,8 @@ namespace QuizVerse.UnitTests.Services
                 _mockSqlQueryRepository.Object,
                 _mockMapper.Object);
         }
-
+        
+        #region User Recent Battles
         [Fact]
         public async Task GetUserRecentBattles_ReturnsMappedBattleList()
         {
@@ -88,5 +89,68 @@ namespace QuizVerse.UnitTests.Services
             _mockMapper.Verify(mapper =>
                 mapper.Map<List<UserRecentBattleDto>>(rawBattles), Times.Once);
         }
+        #endregion
+
+        #region Battle Leaderboard Data
+        [Fact]
+        public async Task GetBattleLeaderboardList_ReturnsMappedLeaderboardList()
+        {
+            // Arrange
+            var rawLeaderboardData = new List<UserBattleLeaderboardData>
+            {
+                new()
+                {
+                    UserName = "User1",
+                    TotalWins = 5,
+                    WinPercentage = 50.0m,
+                    TotalXp = 1200,
+                    Rank = 1,
+                    IsLoggedInUser = true
+                }
+            };
+
+                    var mappedLeaderboardData = new List<UserBattleLeaderboardData>
+            {
+                new()
+                {
+                    UserName = "User1",
+                    TotalWins = 5,
+                    WinPercentage = 50.0m,
+                    TotalXp = 1200,
+                    Rank = 1,
+                    IsLoggedInUser = true
+                }
+            };
+
+            _mockSqlQueryRepository
+                .Setup(repo => repo.SqlQueryListAsync<UserBattleLeaderboardData>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(rawLeaderboardData);
+
+            _mockMapper
+                .Setup(m => m.Map<List<UserBattleLeaderboardData>>(rawLeaderboardData))
+                .Returns(mappedLeaderboardData);
+
+            // Act
+            var result = await _service.GetBattleLeaderboardList();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Single(result);
+            Assert.Equal("User1", result[0].UserName);
+            Assert.Equal(5, result[0].TotalWins);
+            Assert.Equal(50.0m, result[0].WinPercentage);
+            Assert.Equal(1200, result[0].TotalXp);
+            Assert.Equal(1, result[0].Rank);
+            Assert.True(result[0].IsLoggedInUser);
+
+            _mockSqlQueryRepository.Verify(repo =>
+                repo.SqlQueryListAsync<UserBattleLeaderboardData>(It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()), Times.Once);
+
+            _mockMapper.Verify(mapper =>
+                mapper.Map<List<UserBattleLeaderboardData>>(rawLeaderboardData), Times.Once);
+        }
+        #endregion
     }
 }

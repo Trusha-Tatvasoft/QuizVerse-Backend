@@ -61,7 +61,7 @@ public class SqlConstants
 
     #region UserDashboard
     public const string GET_USER_DASHBOARD_METRICS = "SELECT * FROM get_user_dashboard_metrics({0})";
-    public const string GET_RANK_PROGRESS  = "SELECT * FROM get_rank_progress({0})";
+    public const string GET_RANK_PROGRESS = "SELECT * FROM get_rank_progress({0})";
     #endregion
 
     #region LeaderBoard
@@ -80,6 +80,7 @@ public class SqlConstants
     #region UserBattles
     public const string GET_USER_RECENT_BATTLES_FUNCTION = "get_user_recent_battles";
     public const string GET_USER_RECENT_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_status_draw, @p_status_completed)";
+    public const string GET_USER_BATTLE_LEADERBOARD_LIST_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}})";
+    public const string GET_USER_BATTLE_LEADERBOARD_LIST_FUNCTION = "get_user_battles_leaderboard_list";
     #endregion
-
 }
