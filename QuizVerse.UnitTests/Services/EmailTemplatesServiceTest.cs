@@ -13,7 +13,7 @@ using System.Linq.Expressions;
 using System.Security.Claims;
 using Xunit;
 
-namespace QuizVerse.Application.Core.Tests
+namespace QuizVerse.UnitTests.Services
 {
     public class EmailTemplatesServiceTests
     {

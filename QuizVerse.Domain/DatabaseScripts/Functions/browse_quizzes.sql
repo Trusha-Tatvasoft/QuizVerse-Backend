@@ -1,0 +1,114 @@
+-- ==============================================================================
+-- Author:       <Brjrajsinh Jadeja>
+-- Create date:  <4-September-2025>
+-- Description:  <Fetches quizzes with support for searching, filtering and sorting.
+--               The function applies filters like category, difficulty level,
+--               tags, price range, rating range, and total time.
+--               Sorting options include MostPopular, HighestRated, Newest,
+--               and PriceLowToHigh. The function also returns a flag indicating
+--               whether more data is available (has_more).>
+-- Usage:        SELECT * FROM browse_quizzes(
+--                   p_search_text              := 'science',
+--                   p_quiz_category_id         := 2,
+--                   p_quiz_difficulty_level_id := NULL,
+--                   p_tag_ids                  := ARRAY[1, 3],
+--                   p_sort_by                  := 'HighestRated',
+--                   p_filter_by_type           := 'Premium',
+--                   p_batch_number             := 1,
+--                   p_min_price                := 0,
+--                   p_max_price                := 200,
+--                   p_min_rating               := 2,
+--                   p_max_rating               := 5,
+--                   p_min_total_time           := 5,
+--                   p_max_total_time           := 120
+--               );
+-- ==============================================================================
+
+CREATE OR REPLACE FUNCTION browse_quizzes(
+    p_search_text TEXT DEFAULT NULL,
+    p_quiz_category_id INT DEFAULT NULL,
+    p_quiz_difficulty_level_id INT DEFAULT NULL,
+    p_tag_ids INT[] DEFAULT NULL,
+    p_sort_by TEXT DEFAULT NULL,
+    p_filter_by_type TEXT DEFAULT NULL,
+    p_batch_number INT DEFAULT 1,
+    p_min_price NUMERIC DEFAULT 0,
+    p_max_price NUMERIC DEFAULT NULL,
+    p_min_rating NUMERIC DEFAULT 0,
+    p_max_rating NUMERIC DEFAULT 5,
+    p_min_total_time NUMERIC DEFAULT 2,
+    p_max_total_time NUMERIC DEFAULT 180
+)
+RETURNS TABLE (
+    quizzes JSON,
+    has_more BOOLEAN
+)
+AS $$
+BEGIN
+    RETURN QUERY
+    WITH base AS (
+        SELECT 
+            q.id,
+            q.name,
+            q.description,
+            q.is_paid,
+            q.price,
+            qc.category_name,
+			qd.name AS difficulty_level,
+			(q.is_featured = TRUE AND qc.created_date >= NOW() - INTERVAL '30 days') AS is_featured,
+            ARRAY_AGG(DISTINCT qt.tag_name) AS tags,
+            q.total_time,
+            q.total_question AS total_questions,
+            COALESCE(COUNT(DISTINCT qa.id), 0) AS total_participates,
+            COALESCE(AVG(q.rating), 0) AS rating
+        FROM "Quiz" q
+        INNER JOIN "QuizCategory" qc ON qc.id = q.category_id
+		INNER JOIN "QuizDifficulty" qd ON qd.id = q.difficulty_level_id
+        LEFT JOIN "QuizTagMapping" qtm ON qtm.quiz_id = q.id AND qtm.is_deleted = FALSE
+        LEFT JOIN "QuizTag" qt ON qt.id = qtm.tag_id
+        LEFT JOIN "QuizAttempted" qa ON qa.quiz_id = q.id
+        WHERE q.is_deleted = FALSE
+          AND q.quiz_type = 1
+          AND (p_search_text IS NULL OR q.name ILIKE '%' || p_search_text || '%' OR q.description ILIKE '%' || p_search_text || '%')
+          AND (p_quiz_category_id IS NULL OR q.category_id = p_quiz_category_id)
+          AND (p_quiz_difficulty_level_id IS NULL OR q.difficulty_level_id = p_quiz_difficulty_level_id)
+          AND (p_filter_by_type IS NULL OR 
+                (p_filter_by_type = 'Premium' AND q.is_paid = TRUE) OR
+                (p_filter_by_type = 'Free' AND q.is_paid = FALSE) OR
+                (p_filter_by_type = 'Featured' AND qc.created_date >= NOW() - INTERVAL '30 days') AND q.is_featured = TRUE)
+          AND (p_tag_ids IS NULL OR EXISTS (
+                SELECT 1
+                FROM "QuizTagMapping" qtm2
+                WHERE qtm2.quiz_id = q.id
+                  AND qtm2.tag_id = ANY(p_tag_ids)
+                  AND qtm2.is_deleted = FALSE
+          ))
+          AND (p_min_price IS NULL OR q.price >= p_min_price)
+          AND (p_max_price IS NULL OR q.price <= p_max_price)
+          AND (p_min_rating IS NULL OR q.rating >= p_min_rating)
+          AND (p_max_rating IS NULL OR q.rating <= p_max_rating)
+          AND (p_min_total_time IS NULL OR q.total_time >= p_min_total_time)
+          AND (p_max_total_time IS NULL OR q.total_time <= p_max_total_time)
+        GROUP BY q.id, qc.category_name, qd.name, q.is_featured, qc.created_date
+    ),
+    total_count AS (
+        SELECT COUNT(*)::INT AS cnt FROM base
+    ),
+    paged AS (
+        SELECT b.*
+        FROM base b
+        ORDER BY 
+            CASE WHEN p_sort_by = 'MostPopular' THEN b.total_participates END DESC,
+            CASE WHEN p_sort_by = 'HighestRated' THEN b.rating END DESC,
+            CASE WHEN p_sort_by = 'Newest' THEN b.id END DESC,
+            CASE WHEN p_sort_by = 'PriceLowToHigh' THEN b.price END ASC,
+            b.id ASC
+        LIMIT 4
+        OFFSET (p_batch_number - 1) * 4
+    )
+    SELECT 
+        (SELECT COALESCE(json_agg(p), '[]'::json) FROM paged p) AS quizzes,
+        (t.cnt > (p_batch_number * 4)) AS has_more
+    FROM total_count t;
+END;
+$$ LANGUAGE plpgsql;
