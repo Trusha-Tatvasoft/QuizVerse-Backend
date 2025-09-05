@@ -287,6 +287,14 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Bio) ? null : src.Bio.Trim()));
 
         #endregion
+
+        #region UserBattles
+        CreateMap<UserRecentBattleDto, UserRecentBattleDto>()
+            .ForMember(dest => dest.Opponent,
+                opt => opt.MapFrom(src => ToTitleCase(src.Opponent)))
+            .ForMember(dest => dest.Category,
+                opt => opt.MapFrom(src => ToTitleCase(src.Category)));
+        #endregion
     }
 
     private static string ToTitleCase(string input) =>

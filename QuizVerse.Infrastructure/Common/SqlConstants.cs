@@ -76,4 +76,10 @@ public class SqlConstants
     public const string UPDATE_USER_PROFILE_FUNCTION = "update_user_setting";
     public const string UPDATE_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_current_user_id, @p_new_email, @p_new_name, @p_new_bio)";
     #endregion
+
+    #region UserBattles
+    public const string GET_USER_RECENT_BATTLES_FUNCTION = "get_user_recent_battles";
+    public const string GET_USER_RECENT_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_status_draw, @p_status_completed)";
+    #endregion
+
 }
