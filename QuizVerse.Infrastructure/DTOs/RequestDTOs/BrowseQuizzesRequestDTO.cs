@@ -55,8 +55,3 @@ public class BrowseQuizzesResultDTO
     [Column("has_more")]
     public bool HasMore { get; set; }
 }
-
-
-
-
-

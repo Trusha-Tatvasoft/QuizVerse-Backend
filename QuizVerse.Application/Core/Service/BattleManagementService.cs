@@ -113,7 +113,7 @@ public class BattleManagementService(
     public async Task<BattleResponseDto> GetBattleById(int battleId)
     {
         if (!await battleListRepository.Exists(b => b.Id == battleId && !b.IsDeleted))
-            throw new AppException(string.Format(Constants.BATTLE_NOT_FOUND, battleId));
+            throw new AppException(string.Format(Constants.BATTLE_NOT_FOUND));
 
         string query = string.Format(
             SqlConstants.GET_BATTLE_DATA_BY_ID_QUERY_TEMPLATE,
@@ -133,7 +133,7 @@ public class BattleManagementService(
     public async Task<string> DeleteBattle(int battleId)
     {
         var battle = await battleListRepository.GetAsync(b => b.Id == battleId && !b.IsDeleted)
-            ?? throw new AppException(string.Format(Constants.BATTLE_NOT_FOUND, battleId));
+            ?? throw new AppException(string.Format(Constants.BATTLE_NOT_FOUND));
 
         // Soft delete battle
         battle.IsDeleted = true;

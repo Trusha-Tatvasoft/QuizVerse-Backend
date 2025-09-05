@@ -66,7 +66,13 @@ public class SqlConstants
 
     #region LeaderBoard
     public const string GET_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
+    public const string GET_CATEGORY_WISE_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_category_id)";
+    public const string GET_MONTHLY_CHAMPIONS_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_month, @p_year)";
+    public const string GET_WEEKLY_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
     public const string GET_GLOBAL_LEADERBOARD_FUNCTION = "get_leaderboard_global_rankings";
+    public const string GET_CATEGORY_WISE_LEADERBOARD_FUNCTION = "get_category_wise_leaderboard";
+    public const string GET_MONTHLY_CHAMPIONS_FUNCTION = "get_monthly_champions";
+    public const string GET_WEEKLY_LEADERBOARD_FUNCTION = "get_weekly_leaderboard";
     #endregion
 
     #region UserProfile
@@ -80,5 +86,12 @@ public class SqlConstants
     #region BrowseQuizzes
     public const string Browse_Quizzes_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}}, {{12}})";
     public const string Browse_Quizzes_FUNCTION = "browse_quizzes";
+    #endregion
+
+    #region UserBattles
+    public const string GET_USER_RECENT_BATTLES_FUNCTION = "get_user_recent_battles";
+    public const string GET_USER_RECENT_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_status_draw, @p_status_completed)";
+    public const string GET_USER_BATTLE_LEADERBOARD_LIST_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}})";
+    public const string GET_USER_BATTLE_LEADERBOARD_LIST_FUNCTION = "get_user_battles_leaderboard_list";
     #endregion
 }

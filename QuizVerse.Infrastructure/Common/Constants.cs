@@ -134,6 +134,7 @@ public static class Constants
     public const string QUIZ_CATEGORY_ACTIVATED_SUCCESS = "Quiz category activated successfully.";
     public const string QUIZ_CATEGORY_INACTIVATED_SUCCESS = "Quiz category inactivated successfully.";
     public const string QUIZ_CATEGORY_DELETED_SUCCESS = "Quiz category deleted successfully.";
+    public const string QUIZ_CATEGORY_NOT_FOUND_MESSAGE = "The Selected Quiz Category is invalid.";
     #endregion
 
     #region Quiz Management
@@ -223,11 +224,17 @@ public static class Constants
     #region Leaderboard
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
+    public const string CATEGORY_WISE_LEADERBOARD_RETRIEVED = "Category-wise leaderboard retrieved successfully.";
+    public const string MONTHLY_CHAMPIONS_RETRIEVED = "Monthly champions retrieved successfully.";
+    public const string WEEKLY_LEADERBOARD_RETRIEVED = "Weekly leaderboard retrieved successfully.";
+    public const string INVALID_MONTH_MESSAGE = "Invalid month. Please provide a value between 1 and 12.";
+    public const string INVALID_YEAR_MESSAGE = "Invalid year. Please provide a valid year between 2023 to present.";
+    public const string INVALID_MONTH_YEAR_COMBINATION_MESSAGE = "Invalid month and year combination. The specified month and year cannot be in the future.";
     #endregion
 
     #region Battle Management
     public const string CREATE_OR_UPDATE_BATTLE_FAILED = "Failed to create or update battle.";
-    public const string BATTLE_NOT_FOUND = "Battle with ID {0} not found.";
+    public const string BATTLE_NOT_FOUND = "Battle not found.";
     public const string BATTLE_ALREADY_DELETED = "Battle with ID {0} is already deleted.";
     #endregion
 
