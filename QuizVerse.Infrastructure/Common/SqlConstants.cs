@@ -66,7 +66,13 @@ public class SqlConstants
 
     #region LeaderBoard
     public const string GET_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
+    public const string GET_CATEGORY_WISE_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_category_id)";
+    public const string GET_MONTHLY_CHAMPIONS_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_month, @p_year)";
+    public const string GET_WEEKLY_LEADERBOARD_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
     public const string GET_GLOBAL_LEADERBOARD_FUNCTION = "get_leaderboard_global_rankings";
+    public const string GET_CATEGORY_WISE_LEADERBOARD_FUNCTION = "get_category_wise_leaderboard";
+    public const string GET_MONTHLY_CHAMPIONS_FUNCTION = "get_monthly_champions";
+    public const string GET_WEEKLY_LEADERBOARD_FUNCTION = "get_weekly_leaderboard";
     #endregion
 
     #region UserProfile
