@@ -222,10 +222,10 @@ public class MappingProfile : Profile
 
         CreateMap<RawLeaderboardGlobalRankingDto, LeaderboardGlobalRankingResponseDto>();
         #endregion
-        
+
         #region Email Templates
         CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
-        
+
         CreateMap<EmailTemplatesRequestDTO, EmailTemplete>()
             .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
@@ -244,7 +244,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => Math.Round((double)src.WinRate, 2)))
             .ForMember(dest => dest.CurrentRank,
                 opt => opt.MapFrom(src => src.CurrentRank));
-                
+
         CreateMap<RawRankProgressDTO, RankProgressDTO>()
             .ForMember(dest => dest.CurrentRank,
                 opt => opt.MapFrom(src => src.CurrentRank))
@@ -255,7 +255,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.ProgressPercent,
                 opt => opt.MapFrom(src => src.ProgressPercent));
         #endregion
-        
+
         #region Battle Question Difficulty Mapping
         CreateMap<QuestionDifficulty, QuestionDifficultyXPData>()
           .ForMember(dest => dest.QuestionDifficultyId, opt => opt.MapFrom(src => src.Id))
@@ -294,6 +294,10 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => ToTitleCase(src.Opponent)))
             .ForMember(dest => dest.Category,
                 opt => opt.MapFrom(src => ToTitleCase(src.Category)));
+                
+        CreateMap<UserBattleLeaderboardData, UserBattleLeaderboardData>()
+            .ForMember(dest => dest.UserName,
+                opt => opt.MapFrom(src => src.UserName.Trim()));
         #endregion
     }
 

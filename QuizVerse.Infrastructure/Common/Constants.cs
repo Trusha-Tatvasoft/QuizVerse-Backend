@@ -227,7 +227,7 @@ public static class Constants
 
     #region Battle Management
     public const string CREATE_OR_UPDATE_BATTLE_FAILED = "Failed to create or update battle.";
-    public const string BATTLE_NOT_FOUND = "Battle with ID {0} not found.";
+    public const string BATTLE_NOT_FOUND = "Battle not found.";
     public const string BATTLE_ALREADY_DELETED = "Battle with ID {0} is already deleted.";
     #endregion
 
