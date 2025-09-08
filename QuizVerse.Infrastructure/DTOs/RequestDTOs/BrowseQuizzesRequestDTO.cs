@@ -54,4 +54,16 @@ public class BrowseQuizzesResultDTO
 
     [Column("has_more")]
     public bool HasMore { get; set; }
+
+    [Column("total_featured")]
+    public int TotalFeatured { get; set; }
+
+    [Column("total_free")]
+    public int TotalFree { get; set; }
+
+    [Column("total_premium")]
+    public int TotalPremium { get; set; }
+
+    [Column("total_all")]
+    public int TotalAll { get; set; }
 }

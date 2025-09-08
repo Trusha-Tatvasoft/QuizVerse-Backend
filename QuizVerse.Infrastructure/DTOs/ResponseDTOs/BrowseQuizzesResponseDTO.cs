@@ -5,8 +5,16 @@ namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 public class BrowseQuizzesResponseDTO
 {
     public List<BrowseQuizz> Quizzes { get; set; } = new List<BrowseQuizz>();
-    
+
     public bool HasMore { get; set; }
+
+    public int TotalFeatured { get; set; }
+
+    public int TotalFree { get; set; }
+
+    public int TotalPremium { get; set; }
+
+    public int TotalAll { get; set; }
 }
 
 public class BrowseQuizz
@@ -33,7 +41,7 @@ public class BrowseQuizz
     public string DifficultyLevel { get; set; } = string.Empty;
 
     [JsonPropertyName("is_featured")]
-    public bool IsFeatured { get; set; } 
+    public bool IsFeatured { get; set; }
 
     [JsonPropertyName("tags")]
     public string[] Tags { get; set; } = Array.Empty<string>();

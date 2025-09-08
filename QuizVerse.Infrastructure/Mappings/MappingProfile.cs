@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
@@ -298,6 +299,21 @@ public class MappingProfile : Profile
         CreateMap<UserBattleLeaderboardData, UserBattleLeaderboardData>()
             .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.UserName.Trim()));
+        #endregion
+
+        #region Browse Quizzes
+        CreateMap<BrowseQuizzesResultDTO, BrowseQuizzesResponseDTO>()
+            .ConvertUsing(src => new BrowseQuizzesResponseDTO
+            {
+                HasMore = src.HasMore,
+                Quizzes = string.IsNullOrWhiteSpace(src.QuizzesJSON)
+                    ? new List<BrowseQuizz>()
+                    : JsonSerializer.Deserialize<List<BrowseQuizz>>(src.QuizzesJSON, new JsonSerializerOptions())!,
+                TotalFeatured = src.TotalFeatured,
+                TotalFree = src.TotalFree,
+                TotalPremium = src.TotalPremium,
+                TotalAll = src.TotalAll
+            });
         #endregion
     }
 

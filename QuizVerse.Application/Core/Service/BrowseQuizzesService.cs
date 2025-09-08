@@ -1,4 +1,4 @@
-using System.Text.Json;
+using AutoMapper;
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
@@ -10,7 +10,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class BrowseQuizzesService(ISqlQueryRepository _sqlQueryRepository) : IBrowseQuizzesService
+public class BrowseQuizzesService(ISqlQueryRepository _sqlQueryRepository, IMapper _mapper) : IBrowseQuizzesService
 {
     public async Task<BrowseQuizzesResponseDTO> BrowseQuizzes(BrowseQuizzesRequestDTO request)
     {
@@ -64,13 +64,7 @@ public class BrowseQuizzesService(ISqlQueryRepository _sqlQueryRepository) : IBr
         BrowseQuizzesResultDTO result = await _sqlQueryRepository.SqlQuerySingleAsync<BrowseQuizzesResultDTO>(query, parameters);
 
         // Deserialize the JSON result to List<BrowseQuizz> and prepare the response DTO
-        BrowseQuizzesResponseDTO response = new BrowseQuizzesResponseDTO
-        {
-            HasMore = result.HasMore,
-            Quizzes = string.IsNullOrWhiteSpace(result.QuizzesJSON)
-                ? new List<BrowseQuizz>()
-                : JsonSerializer.Deserialize<List<BrowseQuizz>>(result.QuizzesJSON)!
-        };
+        BrowseQuizzesResponseDTO response = _mapper.Map<BrowseQuizzesResponseDTO>(result);
 
         return response;
     }

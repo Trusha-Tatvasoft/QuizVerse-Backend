@@ -1,7 +1,9 @@
+using AutoMapper;
 using Moq;
 using Xunit;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 using QuizVerse.Infrastructure.Enums;
 
@@ -10,12 +12,14 @@ namespace QuizVerse.UnitTests.Services;
 public class BrowseQuizzesServiceTests
 {
     private readonly Mock<ISqlQueryRepository> _sqlQueryRepoMock;
+    private readonly Mock<IMapper> _mapperMock;
     private readonly BrowseQuizzesService _service;
 
     public BrowseQuizzesServiceTests()
     {
         _sqlQueryRepoMock = new Mock<ISqlQueryRepository>();
-        _service = new BrowseQuizzesService(_sqlQueryRepoMock.Object);
+        _mapperMock = new Mock<IMapper>();
+        _service = new BrowseQuizzesService(_sqlQueryRepoMock.Object, _mapperMock.Object);
     }
 
     [Fact]
@@ -29,9 +33,16 @@ public class BrowseQuizzesServiceTests
             BatchNumber = 1
         };
 
+        var dbResult = new BrowseQuizzesResultDTO { QuizzesJSON = "[]", HasMore = false };
+        var mappedResponse = new BrowseQuizzesResponseDTO { HasMore = false, Quizzes = new List<BrowseQuizz>() };
+
         _sqlQueryRepoMock
             .Setup(r => r.SqlQuerySingleAsync<BrowseQuizzesResultDTO>(It.IsAny<string>(), It.IsAny<object[]>()))
-            .ReturnsAsync(new BrowseQuizzesResultDTO { QuizzesJSON = "[]", HasMore = false });
+            .ReturnsAsync(dbResult);
+
+        _mapperMock
+            .Setup(m => m.Map<BrowseQuizzesResponseDTO>(dbResult))
+            .Returns(mappedResponse);
 
         // Act
         var result = await _service.BrowseQuizzes(request);
@@ -80,16 +91,26 @@ public class BrowseQuizzesServiceTests
     }
 
     [Fact]
-    public async Task BrowseQuizzes_Returns_Quizzes_When_Json_Is_Valid()
+    public async Task BrowseQuizzes_Returns_Quizzes_When_Mapped()
     {
-        var quizzesJson = "[{\"id\":1,\"name\":\"Test Quiz\",\"description\":\"Desc\",\"is_paid\":true," +
-                          "\"price\":9.99,\"category_name\":\"General\",\"difficulty_level\":\"Easy\"," +
-                          "\"is_featured\":true,\"tags\":[\"tag1\"],\"total_time\":60," +
-                          "\"total_questions\":10,\"total_participates\":100,\"rating\":4.5}]";
+        // Arrange
+        var dbResult = new BrowseQuizzesResultDTO { QuizzesJSON = "valid-json", HasMore = true };
+        var mappedResponse = new BrowseQuizzesResponseDTO
+        {
+            HasMore = true,
+            Quizzes = new List<BrowseQuizz>
+            {
+                new BrowseQuizz { Id = 1, Name = "Test Quiz" }
+            }
+        };
 
         _sqlQueryRepoMock
             .Setup(r => r.SqlQuerySingleAsync<BrowseQuizzesResultDTO>(It.IsAny<string>(), It.IsAny<object[]>()))
-            .ReturnsAsync(new BrowseQuizzesResultDTO { QuizzesJSON = quizzesJson, HasMore = true });
+            .ReturnsAsync(dbResult);
+
+        _mapperMock
+            .Setup(m => m.Map<BrowseQuizzesResponseDTO>(dbResult))
+            .Returns(mappedResponse);
 
         var request = new BrowseQuizzesRequestDTO { BatchNumber = 1 };
 
@@ -103,11 +124,22 @@ public class BrowseQuizzesServiceTests
     }
 
     [Fact]
-    public async Task BrowseQuizzes_Returns_Empty_List_When_Json_Is_Null_Or_Whitespace()
+    public async Task BrowseQuizzes_Returns_Empty_List_When_Mapper_Returns_Empty()
     {
+        var dbResult = new BrowseQuizzesResultDTO { QuizzesJSON = " ", HasMore = false };
+        var mappedResponse = new BrowseQuizzesResponseDTO
+        {
+            HasMore = false,
+            Quizzes = new List<BrowseQuizz>()
+        };
+
         _sqlQueryRepoMock
             .Setup(r => r.SqlQuerySingleAsync<BrowseQuizzesResultDTO>(It.IsAny<string>(), It.IsAny<object[]>()))
-            .ReturnsAsync(new BrowseQuizzesResultDTO { QuizzesJSON = " ", HasMore = false });
+            .ReturnsAsync(dbResult);
+
+        _mapperMock
+            .Setup(m => m.Map<BrowseQuizzesResponseDTO>(dbResult))
+            .Returns(mappedResponse);
 
         var request = new BrowseQuizzesRequestDTO { BatchNumber = 1 };
 

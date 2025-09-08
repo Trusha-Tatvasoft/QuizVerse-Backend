@@ -41,12 +41,16 @@ CREATE OR REPLACE FUNCTION browse_quizzes(
 )
 RETURNS TABLE (
     quizzes JSON,
-    has_more BOOLEAN
+    has_more BOOLEAN,
+    total_featured INT,
+    total_free INT,
+    total_premium INT,
+    total_all INT
 )
 AS $$
 BEGIN
     RETURN QUERY
-    WITH base AS (
+    WITH base_all AS (  
         SELECT 
             q.id,
             q.name,
@@ -54,8 +58,8 @@ BEGIN
             q.is_paid,
             q.price,
             qc.category_name,
-			qd.name AS difficulty_level,
-			(q.is_featured = TRUE AND qc.created_date >= NOW() - INTERVAL '30 days') AS is_featured,
+            qd.name AS difficulty_level,
+            (q.is_featured = TRUE AND qc.created_date >= NOW() - INTERVAL '30 days') AS is_featured,
             ARRAY_AGG(DISTINCT qt.tag_name) AS tags,
             q.total_time,
             q.total_question AS total_questions,
@@ -63,7 +67,7 @@ BEGIN
             COALESCE(AVG(q.rating), 0) AS rating
         FROM "Quiz" q
         INNER JOIN "QuizCategory" qc ON qc.id = q.category_id
-		INNER JOIN "QuizDifficulty" qd ON qd.id = q.difficulty_level_id
+        INNER JOIN "QuizDifficulty" qd ON qd.id = q.difficulty_level_id
         LEFT JOIN "QuizTagMapping" qtm ON qtm.quiz_id = q.id AND qtm.is_deleted = FALSE
         LEFT JOIN "QuizTag" qt ON qt.id = qtm.tag_id
         LEFT JOIN "QuizAttempted" qa ON qa.quiz_id = q.id
@@ -72,10 +76,6 @@ BEGIN
           AND (p_search_text IS NULL OR q.name ILIKE '%' || p_search_text || '%' OR q.description ILIKE '%' || p_search_text || '%')
           AND (p_quiz_category_id IS NULL OR q.category_id = p_quiz_category_id)
           AND (p_quiz_difficulty_level_id IS NULL OR q.difficulty_level_id = p_quiz_difficulty_level_id)
-          AND (p_filter_by_type IS NULL OR 
-                (p_filter_by_type = 'Premium' AND q.is_paid = TRUE) OR
-                (p_filter_by_type = 'Free' AND q.is_paid = FALSE) OR
-                (p_filter_by_type = 'Featured' AND qc.created_date >= NOW() - INTERVAL '30 days') AND q.is_featured = TRUE)
           AND (p_tag_ids IS NULL OR EXISTS (
                 SELECT 1
                 FROM "QuizTagMapping" qtm2
@@ -91,8 +91,24 @@ BEGIN
           AND (p_max_total_time IS NULL OR q.total_time <= p_max_total_time)
         GROUP BY q.id, qc.category_name, qd.name, q.is_featured, qc.created_date
     ),
+    base AS (   -- applies p_filter_by_type
+        SELECT *
+        FROM base_all
+        WHERE (p_filter_by_type IS NULL OR 
+              (p_filter_by_type = 'Premium' AND is_paid = TRUE) OR
+              (p_filter_by_type = 'Free' AND is_paid = FALSE) OR
+              (p_filter_by_type = 'Featured' AND is_featured = TRUE))
+    ),
     total_count AS (
         SELECT COUNT(*)::INT AS cnt FROM base
+    ),
+    totals AS (   
+        SELECT 
+            COUNT(*) FILTER (WHERE b.is_featured)::INT AS total_featured,
+            COUNT(*) FILTER (WHERE b.is_paid = FALSE)::INT AS total_free,
+            COUNT(*) FILTER (WHERE b.is_paid = TRUE)::INT AS total_premium,
+            COUNT(*)::INT AS total_all
+        FROM base_all b
     ),
     paged AS (
         SELECT b.*
@@ -108,7 +124,11 @@ BEGIN
     )
     SELECT 
         (SELECT COALESCE(json_agg(p), '[]'::json) FROM paged p) AS quizzes,
-        (t.cnt > (p_batch_number * 4)) AS has_more
-    FROM total_count t;
+        (t.cnt > (p_batch_number * 4)) AS has_more,
+        totals.total_featured,
+        totals.total_free,
+        totals.total_premium,
+        totals.total_all
+    FROM total_count t, totals;
 END;
 $$ LANGUAGE plpgsql;
