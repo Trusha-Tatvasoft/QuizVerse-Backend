@@ -38,6 +38,16 @@ BEGIN
         RETURN;
     END IF;
 
+	-- Checks if quiz is being played right now
+	IF EXISTS (
+		SELECT 1 
+		FROM "QuizPlayStatus"
+		where quiz_id = p_quiz_id AND is_completed = FALSE
+	) THEN 
+		RETURN QUERY SELECT FALSE, 'Someone is playing this quiz currently. So you can not delete it.';
+		RETURN;
+	END IF;
+
     -- If exists, fetch is_paid
     SELECT is_paid
     INTO v_is_paid
