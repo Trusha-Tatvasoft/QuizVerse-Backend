@@ -300,4 +300,13 @@ public static class Constants
     public const string EMAIL_TEMPLATE_STATUS_UPDATED = "Email template's status updated successfully.";
     public const string INVALID_ACTION = "Invalid action.";
     #endregion
+
+    #region Browse Quizzes
+    public const string MIN_PRICE_LESS_THAN_MAX_PRICE = "Min Price cannot be greater than Max Price.";
+    public const string MIN_RATING_LESS_THAN_MAX_RATING = "Min Rating cannot be greater than Max Rating.";
+    public const string MIN_TOTAL_TIME_LESS_THAN_MAX_TOTAL_TIME = "Min Total Time cannot be greater than Max Total Time.";
+    public const int MAX_QUIZ_TOTAL_TIME_MINUTES = 180;
+    public const int MIN_QUIZ_TOTAL_TIME_MINUTES = 2;
+    public const int MAX_RATING = 5;
+    #endregion
 }

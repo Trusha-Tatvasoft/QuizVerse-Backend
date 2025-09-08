@@ -83,6 +83,11 @@ public class SqlConstants
     public const string UPDATE_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_current_user_id, @p_new_email, @p_new_name, @p_new_bio)";
     #endregion
 
+    #region BrowseQuizzes
+    public const string Browse_Quizzes_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}}, {{12}})";
+    public const string Browse_Quizzes_FUNCTION = "browse_quizzes";
+    #endregion
+
     #region UserBattles
     public const string GET_USER_RECENT_BATTLES_FUNCTION = "get_user_recent_battles";
     public const string GET_USER_RECENT_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_status_draw, @p_status_completed)";
