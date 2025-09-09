@@ -170,7 +170,7 @@ BEGIN
 	    r.total_battles_played,
 	    (r.user_id = p_user_id) AS is_logged_in_user
 	FROM (
-	    SELECT * FROM top50 where r.total_xp > 0 AND COALESCE(r.average_score,0) > 0 AND r.user_id <> p_user_id
+	    SELECT * FROM top50
 	    UNION
 	    SELECT * FROM logged_in_user
 	) r

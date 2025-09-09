@@ -28,31 +28,31 @@ public class BrowseQuizz
     [JsonPropertyName("description")]
     public string Description { get; set; } = string.Empty;
 
-    [JsonPropertyName("is_paid")]
+    [JsonPropertyName("isPaid")]
     public bool IsPaid { get; set; }
 
     [JsonPropertyName("price")]
     public decimal? Price { get; set; }
 
-    [JsonPropertyName("category_name")]
+    [JsonPropertyName("categoryName")]
     public string CategoryName { get; set; } = string.Empty;
 
-    [JsonPropertyName("difficulty_level")]
+    [JsonPropertyName("difficultyLevel")]
     public string DifficultyLevel { get; set; } = string.Empty;
 
-    [JsonPropertyName("is_featured")]
+    [JsonPropertyName("isFeatured")]
     public bool IsFeatured { get; set; }
 
     [JsonPropertyName("tags")]
     public string[] Tags { get; set; } = Array.Empty<string>();
 
-    [JsonPropertyName("total_time")]
+    [JsonPropertyName("totalTime")]
     public decimal TotalTime { get; set; }
 
-    [JsonPropertyName("total_questions")]
+    [JsonPropertyName("totalQuestions")]
     public int TotalQuestions { get; set; }
 
-    [JsonPropertyName("total_participates")]
+    [JsonPropertyName("totalParticipates")]
     public long TotalParticipates { get; set; }
 
     [JsonPropertyName("rating")]

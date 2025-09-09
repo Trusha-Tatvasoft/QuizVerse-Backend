@@ -52,18 +52,18 @@ public class BrowseQuizzesResultDTO
     [Column("quizzes")]
     public string QuizzesJSON { get; set; } = string.Empty;
 
-    [Column("has_more")]
+    [Column("hasMore")]
     public bool HasMore { get; set; }
 
-    [Column("total_featured")]
+    [Column("totalFeatured")]
     public int TotalFeatured { get; set; }
 
-    [Column("total_free")]
+    [Column("totalFree")]
     public int TotalFree { get; set; }
 
-    [Column("total_premium")]
+    [Column("totalPremium")]
     public int TotalPremium { get; set; }
 
-    [Column("total_all")]
+    [Column("totalAll")]
     public int TotalAll { get; set; }
 }

@@ -41,11 +41,11 @@ CREATE OR REPLACE FUNCTION browse_quizzes(
 )
 RETURNS TABLE (
     quizzes JSON,
-    has_more BOOLEAN,
-    total_featured INT,
-    total_free INT,
-    total_premium INT,
-    total_all INT
+    "hasMore" BOOLEAN,
+    "totalFeatured" INT,
+    "totalFree" INT,
+    "totalPremium" INT,
+    "totalAll" INT
 )
 AS $$
 BEGIN
@@ -55,15 +55,15 @@ BEGIN
             q.id,
             q.name,
             q.description,
-            q.is_paid,
+            q.is_paid AS "isPaid",
             q.price,
-            qc.category_name,
-            qd.name AS difficulty_level,
-            (q.is_featured = TRUE AND qc.created_date >= NOW() - INTERVAL '30 days') AS is_featured,
+            qc.category_name AS "categoryName",
+            qd.name AS "difficultyLevel",
+            (q.is_featured = TRUE AND qc.created_date >= NOW() - INTERVAL '30 days') AS "isFeatured",
             ARRAY_AGG(DISTINCT qt.tag_name) AS tags,
-            q.total_time,
-            q.total_question AS total_questions,
-            COALESCE(COUNT(DISTINCT qa.id), 0) AS total_participates,
+            q.total_time AS "totalTime",
+            q.total_question AS "totalQuestions",
+            COALESCE(COUNT(DISTINCT qa.id), 0) AS "totalParticipates",
             COALESCE(AVG(q.rating), 0) AS rating
         FROM "Quiz" q
         INNER JOIN "QuizCategory" qc ON qc.id = q.category_id
@@ -91,30 +91,30 @@ BEGIN
           AND (p_max_total_time IS NULL OR q.total_time <= p_max_total_time)
         GROUP BY q.id, qc.category_name, qd.name, q.is_featured, qc.created_date
     ),
-    base AS (   -- applies p_filter_by_type
+    base AS (  
         SELECT *
         FROM base_all
-        WHERE (p_filter_by_type IS NULL OR 
-              (p_filter_by_type = 'Premium' AND is_paid = TRUE) OR
-              (p_filter_by_type = 'Free' AND is_paid = FALSE) OR
-              (p_filter_by_type = 'Featured' AND is_featured = TRUE))
+        WHERE (p_filter_by_type IS NULL OR
+              (p_filter_by_type = 'Premium' AND "isPaid" = TRUE) OR
+              (p_filter_by_type = 'Free' AND "isPaid" = FALSE) OR
+              (p_filter_by_type = 'Featured' AND "isFeatured" = TRUE))
     ),
     total_count AS (
         SELECT COUNT(*)::INT AS cnt FROM base
     ),
-    totals AS (   
-        SELECT 
-            COUNT(*) FILTER (WHERE b.is_featured)::INT AS total_featured,
-            COUNT(*) FILTER (WHERE b.is_paid = FALSE)::INT AS total_free,
-            COUNT(*) FILTER (WHERE b.is_paid = TRUE)::INT AS total_premium,
-            COUNT(*)::INT AS total_all
+    totals AS (  
+        SELECT
+            COUNT(*) FILTER (WHERE b."isFeatured")::INT AS "totalFeatured",
+            COUNT(*) FILTER (WHERE b."isPaid" = FALSE)::INT AS "totalFree",
+            COUNT(*) FILTER (WHERE b."isPaid" = TRUE)::INT AS "totalPremium",
+            COUNT(*)::INT AS "totalAll"
         FROM base_all b
     ),
     paged AS (
         SELECT b.*
         FROM base b
-        ORDER BY 
-            CASE WHEN p_sort_by = 'MostPopular' THEN b.total_participates END DESC,
+        ORDER BY
+            CASE WHEN p_sort_by = 'MostPopular' THEN b."totalParticipates" END DESC,
             CASE WHEN p_sort_by = 'HighestRated' THEN b.rating END DESC,
             CASE WHEN p_sort_by = 'Newest' THEN b.id END DESC,
             CASE WHEN p_sort_by = 'PriceLowToHigh' THEN b.price END ASC,
@@ -124,11 +124,11 @@ BEGIN
     )
     SELECT 
         (SELECT COALESCE(json_agg(p), '[]'::json) FROM paged p) AS quizzes,
-        (t.cnt > (p_batch_number * 4)) AS has_more,
-        totals.total_featured,
-        totals.total_free,
-        totals.total_premium,
-        totals.total_all
+        (t.cnt > (p_batch_number * 4)) AS "hasMore",
+        totals."totalFeatured",
+        totals."totalFree",
+        totals."totalPremium",
+        totals."totalAll"
     FROM total_count t, totals;
 END;
 $$ LANGUAGE plpgsql;

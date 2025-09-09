@@ -138,7 +138,7 @@ BEGIN
 	        0 AS "TotalWins",
 	        0 AS "WinPercentage",
 	        0::INT AS "TotalXp",
-	        (SELECT COALESCE(MAX(rank),0)+1 FROM ranked)::INT AS "Rank",
+	        0::INT AS "Rank",
 	        TRUE AS "IsLoggedInUser"
 	    FROM "Users" u
 	    WHERE u.id = p_logged_in_user_id
@@ -150,6 +150,6 @@ BEGIN
         UNION ALL
         SELECT * FROM logged_in_user
     ) final_result
-    ORDER BY "Rank";
+    ORDER BY CASE WHEN final_result."Rank" = 0 THEN 999999 ELSE final_result."Rank" END;
 END;
 $$ LANGUAGE plpgsql;
