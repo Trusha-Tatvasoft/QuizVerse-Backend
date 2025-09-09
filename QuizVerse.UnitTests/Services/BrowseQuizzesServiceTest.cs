@@ -6,6 +6,8 @@ using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 using QuizVerse.Infrastructure.Enums;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace QuizVerse.UnitTests.Services;
 
@@ -13,13 +15,29 @@ public class BrowseQuizzesServiceTests
 {
     private readonly Mock<ISqlQueryRepository> _sqlQueryRepoMock;
     private readonly Mock<IMapper> _mapperMock;
+    private readonly Mock<IHttpContextAccessor> _httpContextAccessor;
     private readonly BrowseQuizzesService _service;
 
     public BrowseQuizzesServiceTests()
     {
         _sqlQueryRepoMock = new Mock<ISqlQueryRepository>();
         _mapperMock = new Mock<IMapper>();
-        _service = new BrowseQuizzesService(_sqlQueryRepoMock.Object, _mapperMock.Object);
+        _httpContextAccessor = new Mock<IHttpContextAccessor>();
+
+        // Fake user with claims
+        var testUser = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+                new Claim(ClaimTypes.UserData, "123")
+            }, "mock"));
+
+        var context = new DefaultHttpContext { User = testUser };
+        _httpContextAccessor.Setup(x => x.HttpContext).Returns(context);
+
+        _service = new BrowseQuizzesService(
+            _sqlQueryRepoMock.Object,
+            _mapperMock.Object,
+            _httpContextAccessor.Object
+        );
     }
 
     [Fact]
