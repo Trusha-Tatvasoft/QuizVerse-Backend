@@ -8,6 +8,7 @@ using QuizVerse.WebAPI.Helper;
 using QuizVerse.WebAPI.Middlewares;
 using Microsoft.OpenApi.Models;
 using QuizVerse.Infrastructure.Mappings;
+using QuizVerse.Infrastructure.DTOs;
 
 // Register encoding provider for Excel (required by ExcelDataReader)
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -25,6 +26,11 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
     });
 });
+
+// Configure AI service settings
+builder.Services.Configure<AiServiceOptions>(
+    builder.Configuration.GetSection("AiServiceSettings")
+);
 
 builder.Services.RegisterDependency();
 builder.Services.AddJwtAuthentication(builder.Configuration);
