@@ -18,15 +18,17 @@ public class PlatformConfigurationService(IGenericRepository<PlatformConfigurati
 
         // QUOTE
         var platformQuoteJson = platformConfigurationList
-            .First(p => p.ConfigurationName == SystemConstants.PLATFORM_QUOTE_CONFIGURATION_NAME)
-            .Values;
+            .FirstOrDefault(p => p.ConfigurationName == SystemConstants.PLATFORM_QUOTE_CONFIGURATION_NAME)
+            ?.Values
+            ?? SystemConstants.DEFAULT_PLATFORM_QUOTE_JSON;
         var platformQuoteDoc = JsonDocument.Parse(platformQuoteJson);
         string platformQuote = platformQuoteDoc.RootElement.GetProperty(Constants.PLATFORM_QUOTE_KEY).GetString() ?? throw new AppException(Constants.PLATFORM_CONFIGURATION_NULL_ERROR);
 
-        // LOGO 
+        // LOGO
         var platformLogoJson = platformConfigurationList
-            .First(p => p.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME)
-            .Values;
+            .FirstOrDefault(p => p.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME)
+            ?.Values
+            ?? SystemConstants.DEFAULT_PLATFORM_LOGO_JSON;
         var platformLogoDoc = JsonDocument.Parse(platformLogoJson);
         string logoPath = platformLogoDoc.RootElement.GetProperty(Constants.PATH_KEY).GetString() ?? throw new AppException(Constants.PLATFORM_CONFIGURATION_NULL_ERROR);
 

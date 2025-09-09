@@ -118,6 +118,10 @@ public class MappingProfile : Profile
         #region Question Difficulty
         CreateMap<QuestionDifficulty, CommonListDropDownDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)));
+
+        CreateMap<QuestionDifficulty, QuestionDifficultyResponseDTO>()
+            .ForMember(dest => dest.TotalQuestions,
+                opt => opt.Ignore());
         #endregion
 
         #region Question Mapping
