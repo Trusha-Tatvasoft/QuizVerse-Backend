@@ -308,5 +308,11 @@ public static class Constants
     public const int MAX_QUIZ_TOTAL_TIME_MINUTES = 180;
     public const int MIN_QUIZ_TOTAL_TIME_MINUTES = 2;
     public const int MAX_RATING = 5;
+    public const string QUIZ_NOT_FOUND = "Quiz not found.";
+    public const string QUIZ_NOT_FOUND_OR_COMPLETED = "Quiz not found or already completed.";
+    public const string QUIZ_ALREADY_COMPLETED = "Quiz already completed.";
+    public const string QUESTION_NOT_FOUND = "Question not found";
+    
     #endregion
+
 }
