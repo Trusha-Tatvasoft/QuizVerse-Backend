@@ -25,6 +25,7 @@
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION browse_quizzes(
+	p_user_id INT,
     p_search_text TEXT DEFAULT NULL,
     p_quiz_category_id INT DEFAULT NULL,
     p_quiz_difficulty_level_id INT DEFAULT NULL,
@@ -124,6 +125,11 @@ BEGIN
     )
     SELECT 
         (SELECT COALESCE(json_agg(p), '[]'::json) FROM paged p) AS quizzes,
+        (t.cnt > (p_batch_number * 4)) AS "hasMore",
+        totals."totalFeatured",
+        totals."totalFree",
+        totals."totalPremium",
+        totals."totalAll"
         (t.cnt > (p_batch_number * 4)) AS "hasMore",
         totals."totalFeatured",
         totals."totalFree",

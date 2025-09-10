@@ -57,4 +57,7 @@ public class BrowseQuizz
 
     [JsonPropertyName("rating")]
     public decimal Rating { get; set; }
+
+    [JsonPropertyName("isAttempted")]
+    public bool IsAttempted { get; set; }
 }
