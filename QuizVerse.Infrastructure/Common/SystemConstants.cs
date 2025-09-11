@@ -24,4 +24,9 @@ public class SystemConstants
     public const string LOGO_FOLDER_NAME = "logo";
     public const string DEFAULT_PRIMARY_COLOR = "#9333ea";
     public const string DEFAULT_SECONDARY_COLOR = "#2563eb";
+    public const string DEFAULT_PLATFORM_QUOTE_JSON =
+        "{\"PlatformQuote\":\"Create, share, and compete in quizzes powered by AI. Challenge friends, join tournaments, and climb the leaderboards in the ultimate quiz experience.\"}";
+    public const string DEFAULT_PLATFORM_LOGO_JSON =
+        "{\"Path\":\"default-logo/default-logo.png\"}";
+
 }
