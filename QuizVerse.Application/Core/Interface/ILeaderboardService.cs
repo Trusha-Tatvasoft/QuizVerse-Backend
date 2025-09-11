@@ -9,4 +9,8 @@ public interface ILeaderboardService
     public Task<List<WeeklyLeaderBoardResponseDto>> GetWeeklyLeaderboardRanking();
     public Task<List<CategoryWiseLeaderBoardResponseDto>> GetQuizCategoryWiseLeaderboardRanking(int categoryId);
     public Task<List<MonthlyChampionsResponseDto>> GetMonthlyChampions(int month, int year);
+    List<CommonListDropDownDto> GetAvailableYears();
+    List<CommonListDropDownDto> GetAvailableMonthsByYear(int year);
+    void ClearAvailableYearsCache();
+    void ClearAvailableMonthsCache(int year);
 }

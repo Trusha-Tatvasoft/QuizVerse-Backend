@@ -22,6 +22,9 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<ISqlQueryRepository> _sqlQueryRepoMock;
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
         private readonly LeaderboardService _service;
+        private readonly Mock<IMemoryCacheService> _cacheServiceMock;
+        private readonly Mock<IGenericRepository<QuizAttempted>> _quizAttemptedRepoMock;
+        private readonly Mock<IGenericRepository<BattleStatus>> _battleStatusRepoMock;
 
         public LeaderboardServiceTests()
         {
@@ -30,6 +33,9 @@ namespace QuizVerse.UnitTests.Services
             _mapperMock = new Mock<IMapper>();
             _sqlQueryRepoMock = new Mock<ISqlQueryRepository>();
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+            _cacheServiceMock = new Mock<IMemoryCacheService>();
+            _quizAttemptedRepoMock = new Mock<IGenericRepository<QuizAttempted>>();
+            _battleStatusRepoMock = new Mock<IGenericRepository<BattleStatus>>();
 
             // Setup HTTP context with user ID claim
             var httpContext = new DefaultHttpContext();
@@ -42,7 +48,10 @@ namespace QuizVerse.UnitTests.Services
                 _quizCategoryRepoMock.Object, // Added missing dependency
                 _httpContextAccessorMock.Object,
                 _mapperMock.Object,
-                _sqlQueryRepoMock.Object
+                _sqlQueryRepoMock.Object,
+                _quizAttemptedRepoMock.Object,
+                _battleStatusRepoMock.Object,
+                _cacheServiceMock.Object
             );
         }
 
@@ -351,6 +360,119 @@ namespace QuizVerse.UnitTests.Services
 
             _sqlQueryRepoMock.Verify(x => x.SqlQueryListAsync<MonthlyChampionsResponseDto>(
                 It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()), Times.Never);
+        }
+
+        [Fact]
+        public void GetAvailableYears_ReturnsCachedValue_WhenCacheExists()
+        {
+            List<CommonListDropDownDto> cachedYears = [new() { Id = 2025, Name = "2025" }];
+            _cacheServiceMock.Setup(c => c.GetOrSet("AvailableYears", It.IsAny<Func<List<CommonListDropDownDto>>>()))
+                .Returns(cachedYears);
+
+            List<CommonListDropDownDto> result = _service.GetAvailableYears();
+
+            Assert.Single(result);
+            Assert.Equal(2025, result[0].Id);
+            _cacheServiceMock.Verify(c => c.GetOrSet("AvailableYears", It.IsAny<Func<List<CommonListDropDownDto>>>()), Times.Once);
+        }
+
+        [Fact]
+        public void ClearAvailableYearsCache_CallsCacheClear()
+        {
+            _service.ClearAvailableYearsCache();
+
+            _cacheServiceMock.Verify(c => c.Clear("AvailableYears"), Times.Once);
+        }
+
+        [Fact]
+        public void GetAvailableMonthsByYear_ReturnsCachedValue_WhenCacheExists()
+        {
+            int year = 2025;
+            List<CommonListDropDownDto> cachedMonths = [
+                new() { Id = 1, Name = "January" },
+                new() { Id = 2, Name = "February" }
+            ];
+
+            _cacheServiceMock.Setup(c => c.GetOrSet($"AvailableMonths_{year}", It.IsAny<Func<List<CommonListDropDownDto>>>()))
+                .Returns(cachedMonths);
+
+            List<CommonListDropDownDto> result = _service.GetAvailableMonthsByYear(year);
+
+            Assert.Equal(2, result.Count);
+            Assert.Equal("January", result[0].Name);
+            Assert.Equal("February", result[1].Name);
+            _cacheServiceMock.Verify(c => c.GetOrSet($"AvailableMonths_{year}", It.IsAny<Func<List<CommonListDropDownDto>>>()), Times.Once);
+        }
+
+        [Fact]
+        public void ClearAvailableMonthsCache_CallsCacheClearWithYear()
+        {
+            int year = 2025;
+
+            _service.ClearAvailableMonthsCache(year);
+
+            _cacheServiceMock.Verify(c => c.Clear($"AvailableMonths_{year}"), Times.Once);
+        }
+
+        [Fact]
+        public void GetAvailableYears_ComputesDistinctYears_WhenCacheEmpty()
+        {
+            IQueryable<QuizAttempted> quizData = new List<QuizAttempted>
+            {
+                new() { CreatedDate = new DateTime(2023, 1, 1) },
+                new() { CreatedDate = new DateTime(2024, 1, 1) }
+            }.AsQueryable();
+
+            IQueryable<BattleStatus> battleData = new List<BattleStatus>
+            {
+                new() { CreatedDate = new DateTime(2024, 1, 1) },
+                new() { CreatedDate = new DateTime(2025, 1, 1) }
+            }.AsQueryable();
+
+            _quizAttemptedRepoMock.Setup(r => r.GetQueryableInclude()).Returns(quizData);
+            _battleStatusRepoMock.Setup(r => r.GetQueryableInclude()).Returns(battleData);
+            _cacheServiceMock.Setup(c => c.GetOrSet("AvailableYears", It.IsAny<Func<List<CommonListDropDownDto>>>()))
+                .Returns((string key, Func<List<CommonListDropDownDto>> factory) => factory());
+
+            List<CommonListDropDownDto> result = _service.GetAvailableYears();
+
+            Assert.Equal(3, result.Count);
+            Assert.Equal(2025, result[0].Id);
+            Assert.Equal(2024, result[1].Id);
+            Assert.Equal(2023, result[2].Id);
+        }
+
+        [Fact]
+        public void GetAvailableMonthsByYear_ComputesDistinctMonths_WhenCacheEmpty()
+        {
+            int year = 2024;
+            IQueryable<QuizAttempted> quizData = new List<QuizAttempted>
+            {
+                new() { CreatedDate = new DateTime(year, 3, 1) },
+                new() { CreatedDate = new DateTime(year, 1, 1) }
+            }.AsQueryable();
+
+            IQueryable<BattleStatus> battleData = new List<BattleStatus>
+            {
+                new() { CreatedDate = new DateTime(year, 2, 1) },
+                new() { CreatedDate = new DateTime(year, 3, 1) }
+            }.AsQueryable();
+
+            _quizAttemptedRepoMock.Setup(r => r.GetQueryableInclude()).Returns(quizData);
+            _battleStatusRepoMock.Setup(r => r.GetQueryableInclude()).Returns(battleData);
+
+            _cacheServiceMock.Setup(c => c.GetOrSet($"AvailableMonths_{year}", It.IsAny<Func<List<CommonListDropDownDto>>>()))
+                .Returns((string key, Func<List<CommonListDropDownDto>> factory) => factory());
+
+            List<CommonListDropDownDto> result = _service.GetAvailableMonthsByYear(year);
+
+            Assert.Equal(3, result.Count);
+            Assert.Equal(1, result[0].Id);
+            Assert.Equal(2, result[1].Id);
+            Assert.Equal(3, result[2].Id);
+            Assert.Equal("January", result[0].Name);
+            Assert.Equal("February", result[1].Name);
+            Assert.Equal("March", result[2].Name);
         }
     }
 }
