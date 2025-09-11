@@ -23,9 +23,9 @@
 --                   p_max_total_time           := 120
 --               );
 -- ==============================================================================
-
+ 
 CREATE OR REPLACE FUNCTION browse_quizzes(
-	p_user_id INT,
+    p_user_id INT,
     p_search_text TEXT DEFAULT NULL,
     p_quiz_category_id INT DEFAULT NULL,
     p_quiz_difficulty_level_id INT DEFAULT NULL,
@@ -52,7 +52,7 @@ AS $$
 BEGIN
     RETURN QUERY
     WITH base_all AS (  
-        SELECT 
+        SELECT
             q.id,
             q.name,
             q.description,
@@ -64,14 +64,26 @@ BEGIN
             ARRAY_AGG(DISTINCT qt.tag_name) AS tags,
             q.total_time AS "totalTime",
             q.total_question AS "totalQuestions",
-            COALESCE(COUNT(DISTINCT qa.id), 0) AS "totalParticipates",
-            COALESCE(AVG(q.rating), 0) AS rating
+            COALESCE(
+                COUNT(DISTINCT qa.id) FILTER (
+                    WHERE u.is_deleted = FALSE
+                ),
+                0
+            ) AS "totalParticipates",
+            COALESCE(AVG(q.rating), 0) AS rating,
+            EXISTS (
+                SELECT 1
+                FROM "QuizAttempted" qa2
+                WHERE qa2.quiz_id = q.id
+                  AND qa2.user_id = p_user_id
+            ) AS "isAttempted"
         FROM "Quiz" q
         INNER JOIN "QuizCategory" qc ON qc.id = q.category_id
         INNER JOIN "QuizDifficulty" qd ON qd.id = q.difficulty_level_id
         LEFT JOIN "QuizTagMapping" qtm ON qtm.quiz_id = q.id AND qtm.is_deleted = FALSE
         LEFT JOIN "QuizTag" qt ON qt.id = qtm.tag_id
         LEFT JOIN "QuizAttempted" qa ON qa.quiz_id = q.id
+        LEFT JOIN "Users" u ON u.id = qa.user_id
         WHERE q.is_deleted = FALSE
           AND q.quiz_type = 1
           AND (p_search_text IS NULL OR q.name ILIKE '%' || p_search_text || '%' OR q.description ILIKE '%' || p_search_text || '%')
@@ -123,13 +135,8 @@ BEGIN
         LIMIT 4
         OFFSET (p_batch_number - 1) * 4
     )
-    SELECT 
+    SELECT
         (SELECT COALESCE(json_agg(p), '[]'::json) FROM paged p) AS quizzes,
-        (t.cnt > (p_batch_number * 4)) AS "hasMore",
-        totals."totalFeatured",
-        totals."totalFree",
-        totals."totalPremium",
-        totals."totalAll"
         (t.cnt > (p_batch_number * 4)) AS "hasMore",
         totals."totalFeatured",
         totals."totalFree",

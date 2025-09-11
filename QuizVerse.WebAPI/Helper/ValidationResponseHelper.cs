@@ -18,10 +18,11 @@ public static class ValidationResponseHelper
                     Errors = ms.Value.Errors.Select(e => isDevelopment ? e.ErrorMessage : "Invalid input.")
                 });
 
+            var errorMessage = errors.First().Errors.First();
             return new BadRequestObjectResult(new ApiResponse<object>
             {
                 Result = false,
-                Message = "Validation failed.",
+                Message = $"Validation failed. {errorMessage}",
                 StatusCode = 400,
                 Data = errors
             });
