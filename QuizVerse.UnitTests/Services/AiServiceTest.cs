@@ -3,11 +3,6 @@ using Moq;
 using Microsoft.Extensions.Options;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Infrastructure.Common.Exceptions;
-using QuizVerse.Application.Core.Interface;
-using System.Threading.Tasks;
-using System.Text;
-using System.Collections.Generic;
-using OllamaSharp;
 using QuizVerse.Infrastructure.DTOs;
 
 namespace QuizVerse.UnitTests.Services

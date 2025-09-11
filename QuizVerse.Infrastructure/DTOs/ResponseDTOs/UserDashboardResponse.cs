@@ -60,6 +60,7 @@ public class BattleRequestDTO
 {
     public int RequestId { get; set; }
     public string SenderUserName { get; set; } = null!;
+    public string SenderFullName { get; set; } = null!;
     public string? SenderProfilePic { get; set; }
     public string? BattleName { get; set; } = null!;
     public string BattleCategory { get; set; } = null!;
