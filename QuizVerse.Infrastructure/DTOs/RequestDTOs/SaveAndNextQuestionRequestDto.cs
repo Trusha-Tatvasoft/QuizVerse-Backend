@@ -5,13 +5,10 @@ namespace QuizVerse.Infrastructure.DTOs.RequestDTOs
     {
         [Required]
         public int QuizId { get; set; }
-
         [Required]
         public int CurrentQuestionId { get; set; }
-
-        [Required(ErrorMessage = "Answer is required.")]
-        public string GivenAnswer { get; set; } = null!;
-
+        public string GivenAnswer { get; set; } = string.Empty;
+        [Required]
         public int NextQuestionNumber { get; set; }
     }
 }

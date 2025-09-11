@@ -5,6 +5,8 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.DTOs;
 using AngleSharp.Dom;
+using System.Security.AccessControl;
+using QuizVerse.Infrastructure.Common;
 
 namespace QuizVerse.Application.Core.Service
 {
@@ -14,12 +16,12 @@ namespace QuizVerse.Application.Core.Service
 
         public AiService(IOptions<AiServiceOptions> options)
         {
-            AiServiceOptions opts = options?.Value ?? throw new AppException("AI service options are not configured.");
+            AiServiceOptions opts = options?.Value ?? throw new AppException(Constants.OPTIONS_NOT_CONFIGURED);
 
             if (string.IsNullOrWhiteSpace(opts.BaseUrl))
-                throw new AppException("BaseUrl cannot be empty.");
+                throw new AppException(Constants.BASE_URL_CANNOT_BE_EMPTY);
             if (string.IsNullOrWhiteSpace(opts.Model))
-                throw new AppException("Model cannot be empty.");
+                throw new AppException(Constants.MODEL_CANNOT_BE_EMPTY);
 
             _aiClient = new OllamaApiClient(new Url(opts.BaseUrl))
             {

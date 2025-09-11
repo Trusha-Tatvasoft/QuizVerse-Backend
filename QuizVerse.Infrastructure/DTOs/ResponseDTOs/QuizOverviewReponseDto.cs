@@ -11,4 +11,5 @@ public class QuizOverviewResponseDto
     public bool IsPaid { get; set; }
     public decimal QuizPrice { get; set; }
     public string Description { get; set; } = null!;
+    public string DifficultyLevelName { get; set; } = null!;
 }

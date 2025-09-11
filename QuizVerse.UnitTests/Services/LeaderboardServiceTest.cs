@@ -115,14 +115,14 @@ namespace QuizVerse.UnitTests.Services
             // Arrange
             var rawLeaderboard = new List<RawLeaderboardGlobalRankingDto>
             {
-                new() { Rank = 1, UserId = 1, UserName = "user1", FullName = "User One", ProfilePic = null, TotalXp = 1000, CurrentLevel = 10, CurrentStreak = 5, NewGlobalRank = 1, Trend = 2, Is_loggedin_user = true },
-                new() { Rank = 2, UserId = 2, UserName = "user2", FullName = "User Two", ProfilePic = null, TotalXp = 900, CurrentLevel = 9, CurrentStreak = 3, NewGlobalRank = 2, Trend = 3, Is_loggedin_user = false }
+                new() { Rank = 1, UserId = 1, UserName = "user1", FullName = "User One", ProfilePic = null, TotalXp = 1000, CurrentLevel = 10, CurrentStreak = 5, Trend = 2, Is_loggedin_user = true },
+                new() { Rank = 2, UserId = 2, UserName = "user2", FullName = "User Two", ProfilePic = null, TotalXp = 900, CurrentLevel = 9, CurrentStreak = 3, Trend = 3, Is_loggedin_user = false }
             };
 
             var mappedLeaderboard = new List<LeaderboardGlobalRankingResponseDto>
             {
-                new() { Rank = 1, UserId = 1, UserName = "user1", FullName = "User One", ProfilePic = null, TotalXp = 1000, CurrentLevel = 10, CurrentStreak = 5, NewGlobalRank = 1, Trend = 2, Is_loggedin_user = true },
-                new() { Rank = 2, UserId = 2, UserName = "user2", FullName = "User Two", ProfilePic = null, TotalXp = 900, CurrentLevel = 9, CurrentStreak = 3, NewGlobalRank = 2, Trend = 3, Is_loggedin_user = false }
+                new() { Rank = 1, UserId = 1, UserName = "user1", FullName = "User One", ProfilePic = null, TotalXp = 1000, CurrentLevel = 10, CurrentStreak = 5, Trend = 2, Is_loggedin_user = true },
+                new() { Rank = 2, UserId = 2, UserName = "user2", FullName = "User Two", ProfilePic = null, TotalXp = 900, CurrentLevel = 9, CurrentStreak = 3, Trend = 3, Is_loggedin_user = false }
             };
 
             _sqlQueryRepoMock

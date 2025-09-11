@@ -314,6 +314,13 @@ public class MappingProfile : Profile
                 TotalPremium = src.TotalPremium,
                 TotalAll = src.TotalAll
             });
+
+        CreateMap<RawStartQuizDto, QuizStartResponseDto>()
+            .ForMember(dest => dest.Options, opt => opt.Ignore());
+
+        CreateMap<RawQuizQuestionDto, QuizQuestionResponseDto>()
+            .ForMember(dest => dest.Options, opt => opt.Ignore());
+
         #endregion
 
         #region Quiz Overview

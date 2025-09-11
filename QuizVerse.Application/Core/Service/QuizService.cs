@@ -34,24 +34,14 @@ public class QuizService(IGenericRepository<QuizPlayStatus> _quizPlayStatusRepos
     {
         string sql = $"SELECT * FROM start_quiz({quizId}, {UserId})";
 
-
         RawStartQuizDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawStartQuizDto>(sql);
         if (raw == null) return null;
 
         List<OptionResponseDto> options = JsonSerializer.Deserialize<List<OptionResponseDto>>(raw.Options ?? "[]") ?? [];
+        QuizStartResponseDto quizQuestionDto = _mapper.Map<QuizStartResponseDto>(raw);
+        quizQuestionDto.Options = options;
 
-        return new QuizStartResponseDto
-        {
-            QuizId = raw.QuizId,
-            QuizName = raw.QuizName,
-            CategoryName = raw.CategoryName,
-            TotalTime = raw.TotalTime,
-            TotalQuestion = raw.TotalQuestion,
-            QuizQuestionId = raw.QuizQuestionId,
-            QuestionName = raw.QuestionName,
-            QuestionType = raw.QuestionType,
-            Options = options
-        };
+        return quizQuestionDto;
     }
 
     public async Task<QuizQuestionResponseDto> SaveAndNextQuestion(SaveAndNextQuestionRequestDto request)
@@ -130,16 +120,13 @@ public class QuizService(IGenericRepository<QuizPlayStatus> _quizPlayStatusRepos
         string sql = $"SELECT * FROM get_quiz_questions({request.QuizId}, {request.NextQuestionNumber})";
 
         RawQuizQuestionDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawQuizQuestionDto>(sql);
- 
+
         List<OptionResponseDto> options = JsonSerializer.Deserialize<List<OptionResponseDto>>(raw.Options ?? "[]") ?? [];
 
-        return new QuizQuestionResponseDto
-        {
-            QuizQuestionId = raw.QuizQuestionId,
-            QuestionName = raw.QuestionName,
-            QuestionType = raw.QuestionType,
-            Options = options
-        };
+        QuizQuestionResponseDto quizResponseDto = _mapper.Map<QuizQuestionResponseDto>(raw);
+        quizResponseDto.Options = options;
+
+        return quizResponseDto;
     }
 
     private async Task<bool> CheckAnswer(QuizAnswerCheckDto quizAnswerCheck)
