@@ -72,5 +72,33 @@ namespace QuizVerse.WebAPI.Controllers
                 Data = await _leaderboardService.GetMonthlyChampions(month, year)
             });
         }
+
+        [HttpGet("get-available-years")]
+        public IActionResult GetAvailableYears()
+        {
+            ApiResponse<List<CommonListDropDownDto>> response = new()
+            {
+                Result = true,
+                Message = Constants.AVAILABLE_YEARS_RETRIEVED,
+                StatusCode = StatusCodes.Status200OK,
+                Data = _leaderboardService.GetAvailableYears()
+            };
+
+            return Ok(response);
+        }
+
+        [HttpGet("get-available-months/{year}")]
+        public IActionResult GetAvailableMonthsByYear([FromRoute] int year)
+        {
+            ApiResponse<List<CommonListDropDownDto>> response = new()
+            {
+                Result = true,
+                Message = string.Format(Constants.AVAILABLE_MONTHS_RETRIEVED, year),
+                StatusCode = StatusCodes.Status200OK,
+                Data = _leaderboardService.GetAvailableMonthsByYear(year)
+            };
+
+            return Ok(response);
+        }
     }
 }

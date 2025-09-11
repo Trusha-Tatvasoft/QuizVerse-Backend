@@ -230,6 +230,8 @@ public static class Constants
     public const string INVALID_MONTH_MESSAGE = "Invalid month. Please provide a value between 1 and 12.";
     public const string INVALID_YEAR_MESSAGE = "Invalid year. Please provide a valid year between 2023 to present.";
     public const string INVALID_MONTH_YEAR_COMBINATION_MESSAGE = "Invalid month and year combination. The specified month and year cannot be in the future.";
+    public const string AVAILABLE_YEARS_RETRIEVED = "Available years retrieved successfully.";
+    public const string AVAILABLE_MONTHS_RETRIEVED = "Available months for {0} retrieved successfully.";
     #endregion
 
     #region Battle Management

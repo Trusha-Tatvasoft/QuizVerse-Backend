@@ -12,7 +12,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class LeaderboardService(IGenericRepository<UserPerformanceDetail> _leaderboardRepository,IGenericRepository<QuizCategory> _quizCategoryRepository, IHttpContextAccessor _httpContextAccessor, IMapper _mapper, ISqlQueryRepository _sqlQueryRepository) : ILeaderboardService
+public class LeaderboardService(IGenericRepository<UserPerformanceDetail> _leaderboardRepository, IGenericRepository<QuizCategory> _quizCategoryRepository, IHttpContextAccessor _httpContextAccessor, IMapper _mapper, ISqlQueryRepository _sqlQueryRepository, IGenericRepository<QuizAttempted> _quizAttemptedRepository, IGenericRepository<BattleStatus> _battleStatusRepository, IMemoryCacheService _cacheService) : ILeaderboardService
 {
     private int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
     public async Task<UserPerformanceResponseDto> GetUserLeaderboardStats()
@@ -110,5 +110,67 @@ public class LeaderboardService(IGenericRepository<UserPerformanceDetail> _leade
             await _sqlQueryRepository.SqlQueryListAsync<MonthlyChampionsResponseDto>(query, parameters);
 
         return monthlyChampions;
+    }
+    
+    public List<CommonListDropDownDto> GetAvailableYears()
+    {
+        return _cacheService.GetOrSet("AvailableYears", () =>
+        {
+            IQueryable<int> quizYears = _quizAttemptedRepository.GetQueryableInclude()
+                .Select(q => q.CreatedDate.Year);
+
+            IQueryable<int> battleYears = _battleStatusRepository.GetQueryableInclude()
+                .Select(b => b.CreatedDate.Year);
+
+            List<int> distinctYears = [.. quizYears
+                .Union(battleYears)
+                .Distinct()
+                .OrderByDescending(y => y)];
+
+            return distinctYears
+                .Select(y => new CommonListDropDownDto
+                {
+                    Id = y,
+                    Name = y.ToString()
+                })
+                .ToList();
+        });
+    }
+
+    public void ClearAvailableYearsCache()
+    {
+        _cacheService.Clear("AvailableYears");
+    }
+
+    public List<CommonListDropDownDto> GetAvailableMonthsByYear(int year)
+    {
+        return _cacheService.GetOrSet($"AvailableMonths_{year}", () =>
+        {
+            IQueryable<int> quizMonths = _quizAttemptedRepository.GetQueryableInclude()
+                .Where(q => q.CreatedDate.Year == year)
+                .Select(q => q.CreatedDate.Month);
+
+            IQueryable<int> battleMonths = _battleStatusRepository.GetQueryableInclude()
+                .Where(b => b.CreatedDate.Year == year)
+                .Select(b => b.CreatedDate.Month);
+
+            List<int> distinctMonths = [.. quizMonths
+                .Union(battleMonths)
+                .Distinct()
+                .OrderBy(m => m)];
+
+            return distinctMonths
+                .Select(m => new CommonListDropDownDto
+                {
+                    Id = m,
+                    Name = new DateTime(2000, m, 1).ToString("MMMM")
+                })
+                .ToList();
+        });
+    }
+
+    public void ClearAvailableMonthsCache(int year)
+    {
+        _cacheService.Clear($"AvailableMonths_{year}");
     }
 }
