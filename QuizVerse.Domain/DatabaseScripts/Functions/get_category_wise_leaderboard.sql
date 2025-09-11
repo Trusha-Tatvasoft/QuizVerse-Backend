@@ -12,7 +12,7 @@
 --                     - Quizzes/Battles whose categories are deleted (QuizCategory.is_deleted = TRUE)
 --                 • Returns top 3 users ranked by average score within the category
 --                 • Always includes the currently logged-in user (if not already in top 3)
--- Usage:        SELECT * FROM get_category_wise_leaderboard(7, 2);
+-- Usage:        SELECT * FROM get_category_wise_leaderboard(7, 1);
 -- =============================================
 
 CREATE OR REPLACE FUNCTION get_category_wise_leaderboard(p_user_id INT,p_category_id INT)
@@ -101,7 +101,7 @@ BEGIN
                 , 2)
                 ELSE NULL
             END AS average_score,
-            RANK() OVER (ORDER BY 
+            DENSE_RANK() OVER (ORDER BY 
                 CASE 
                     WHEN (c.total_quizzes_played + c.total_battles_played) > 0 
                     THEN (
@@ -118,7 +118,8 @@ BEGIN
 	    SELECT *
 	    FROM ranked r
 	    WHERE user_rank <= 50 
-	      AND COALESCE(r.average_score, 0) > 0
+	      AND COALESCE(r.average_score, 0) >= 0
+		  AND (r.total_quizzes_played > 0 OR r.total_battles_played > 0)
 	      AND r.user_id <> p_user_id
 	    ORDER BY r.user_rank
 	),

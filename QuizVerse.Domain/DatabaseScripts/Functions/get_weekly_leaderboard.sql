@@ -105,7 +105,7 @@ BEGIN
 	        c.total_xp,
 	        c.total_quizzes_played,
 	        c.total_battles_played,
-	        RANK() OVER (ORDER BY c.total_xp DESC) AS user_rank
+	        DENSE_RANK() OVER (ORDER BY c.total_xp DESC) AS user_rank
 	    FROM combined c
 	    JOIN "Users" u ON u.id = c.user_id
 	),
@@ -113,7 +113,8 @@ BEGIN
 	    SELECT *
 	    FROM ranked r
 	    WHERE user_rank <= 50 
-	      AND r.total_xp > 0  
+	      AND r.total_xp >= 0  
+		  AND (r.total_quizzes_played > 0 OR r.total_battles_played > 0)
 	      AND r.user_id <> p_user_id
 	    ORDER BY r.user_rank
 	),
