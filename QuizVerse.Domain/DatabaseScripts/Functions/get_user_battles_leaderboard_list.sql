@@ -13,7 +13,7 @@
 --                    p_completed_battle_status := 1,
 --                    p_draw_battle_status := 2,
 --                    p_active_user_status := 1,
---                    p_logged_in_user_id := 51
+--                    p_logged_in_user_id := 52
 --               );
 -- =============================================
 
@@ -45,6 +45,10 @@ BEGIN
                 WHEN br.winner_id IS NULL THEN br.winner_gained_xp
                 ELSE br.looser_gained_xp
             END AS gained_xp,
+			CASE 
+			    WHEN u.id = bs.user1_id THEN br.user1_taken_time
+			    ELSE br.user2_taken_time
+			END AS taken_time,
             CASE WHEN br.winner_id = u.id THEN 1 ELSE 0 END AS is_win,
             CASE WHEN br.winner_id IS NULL THEN 1 ELSE 0 END AS is_draw
         FROM "BattleStatus" bs
@@ -68,6 +72,10 @@ BEGIN
                 WHEN br.winner_id IS NULL THEN br.winner_gained_xp
                 ELSE br.looser_gained_xp
             END AS gained_xp,
+			CASE 
+			    WHEN u.id = bs.user1_id THEN br.user1_taken_time
+			    ELSE br.user2_taken_time
+			END AS taken_time,
             CASE WHEN br.winner_id = u.id THEN 1 ELSE 0 END AS is_win,
             CASE WHEN br.winner_id IS NULL THEN 1 ELSE 0 END AS is_draw
         FROM "BattleStatus" bs
@@ -93,14 +101,15 @@ BEGIN
                     / COUNT(*)::NUMERIC
                 ) * 100
             END AS win_percentage,
-            SUM(bd.gained_xp) AS total_xp
+            SUM(bd.gained_xp) AS total_xp,
+			SUM(bd.taken_time) AS total_time
         FROM battle_data bd
         GROUP BY bd.user_id, bd.username
     ),
     ranked AS (
         SELECT
             a.*,
-            DENSE_RANK() OVER (ORDER BY a.total_xp DESC) AS rank
+        	DENSE_RANK() OVER (ORDER BY a.total_xp DESC, a.total_time ASC) AS rank
         FROM aggregated a
     ),
     top_list AS (

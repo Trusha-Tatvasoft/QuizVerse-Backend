@@ -11,7 +11,7 @@
 --                     - Quizzes/Battles whose categories are deleted (QuizCategory.is_deleted = TRUE)
 --                 • Returns top 3 users ranked by total XP earned in the given month/year
 --                 • Always includes the currently logged-in user (if not already in top 3)
--- Usage:        SELECT * FROM get_monthly_champions(40, 9, 2025);
+-- Usage:        SELECT * FROM get_monthly_champions(51, 9, 2025);
 -- =============================================
 
 CREATE OR REPLACE FUNCTION get_monthly_champions(p_user_id INT,p_month INT,p_year INT)
@@ -131,7 +131,7 @@ BEGIN
 	            , 2)
 	            ELSE NULL
 	        END AS average_score,
-	        RANK() OVER (
+	        DENSE_RANK() OVER (
             ORDER BY 
                 c.total_xp DESC, 
                  CASE 
@@ -150,8 +150,9 @@ BEGIN
 	    SELECT *
 	    FROM ranked r
 	    WHERE user_rank <= 50 
-	      AND r.total_xp > 0  
-	      AND COALESCE(r.average_score, 0) > 0
+	      AND r.total_xp >= 0  
+	      AND COALESCE(r.average_score, 0) >= 0
+		  AND (r.total_quizzes_played > 0 OR r.total_battles_played > 0)
 	      AND r.user_id <> p_user_id
 	    ORDER BY r.user_rank
 	),
