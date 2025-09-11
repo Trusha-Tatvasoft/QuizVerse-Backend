@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common.Exceptions;
 
@@ -48,6 +49,8 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized access"),
 
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Resource not found"),
+            
+            PostgresException ex when ex.Severity == "ERROR" => (StatusCodes.Status400BadRequest, $"{ex.MessageText}"),
 
             NotImplementedException => (StatusCodes.Status501NotImplemented, "This feature is not implemented yet"),
 

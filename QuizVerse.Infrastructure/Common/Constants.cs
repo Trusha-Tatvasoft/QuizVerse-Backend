@@ -197,10 +197,10 @@ public static class Constants
     #endregion
 
     #region User Dashboard
-    public const int BATCH_SIZE = 3;
+    public const int BATCH_SIZE = 5;
     public const int MIN_BATCH = 1;
-    public const int MAX_BATCH = 3;
-    public const int MAX_QUIZZES = 12;
+    public const int MAX_BATCH = 5;
+    public const int MAX_QUIZZES = 15;
     public const string INVALID_BATCH_NUMBER = "Batch number must be between {0} and {1}.";
     public const string USER_DASHBOARD_SUMMARY_FETCH = "User dashboard summary fetched successfully.";
     public const string RECENT_QUIZZES_FETCHED = "Recent Quizzes fetched successfully.";
@@ -308,6 +308,19 @@ public static class Constants
     public const int MAX_QUIZ_TOTAL_TIME_MINUTES = 180;
     public const int MIN_QUIZ_TOTAL_TIME_MINUTES = 2;
     public const int MAX_RATING = 5;
+    public const string QUIZ_NOT_FOUND = "Quiz not found.";
+    public const string QUIZ_NOT_FOUND_OR_COMPLETED = "Quiz not found or already completed.";
+    public const string QUIZ_ALREADY_COMPLETED = "Quiz already completed.";
+    public const string QUESTION_NOT_FOUND = "Question not found";
+
+    #endregion
+
+    #region 
+    public const string OPTIONS_NOT_CONFIGURED = "AI service options are not configured.";
+    public const string BASE_URL_CANNOT_BE_EMPTY = "BaseUrl cannot be empty.";
+    public const string MODEL_CANNOT_BE_EMPTY = "Model cannot be empty.";
+    public const string PROMPT_CANNOT_BE_EMPTY = "Prompt cannot be empty.";
+
     #endregion
 
     #region Question Difficulty

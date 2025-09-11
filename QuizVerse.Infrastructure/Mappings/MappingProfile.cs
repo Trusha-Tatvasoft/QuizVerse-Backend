@@ -299,7 +299,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => ToTitleCase(src.Opponent)))
             .ForMember(dest => dest.Category,
                 opt => opt.MapFrom(src => ToTitleCase(src.Category)));
-                
+
         CreateMap<UserBattleLeaderboardData, UserBattleLeaderboardData>()
             .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.UserName.Trim()));
@@ -318,6 +318,26 @@ public class MappingProfile : Profile
                 TotalPremium = src.TotalPremium,
                 TotalAll = src.TotalAll
             });
+
+        CreateMap<RawStartQuizDto, QuizStartResponseDto>()
+            .ForMember(dest => dest.Options, opt => opt.Ignore());
+
+        CreateMap<RawQuizQuestionDto, QuizQuestionResponseDto>()
+            .ForMember(dest => dest.Options, opt => opt.Ignore());
+
+        #endregion
+
+        #region Quiz Overview
+        CreateMap<Quiz, QuizOverviewResponseDto>()
+            .ForMember(dest => dest.QuizId, opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.QuizName, opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.TotalTime, opt => opt.MapFrom(src => src.TotalTime))
+            .ForMember(dest => dest.TotalQuestion, opt => opt.MapFrom(src => src.TotalQuestion))
+            .ForMember(dest => dest.IsPaid, opt => opt.MapFrom(src => src.IsPaid))
+            .ForMember(dest => dest.QuizPrice, opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.QuizCategoryName, opt => opt.MapFrom(src => src.Category.CategoryName))
+            .ForMember(dest => dest.QuizDifficultyName, opt => opt.MapFrom(src => src.DifficultyLevel.Name));
         #endregion
     }
 
