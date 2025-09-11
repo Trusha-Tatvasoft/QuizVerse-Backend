@@ -323,4 +323,13 @@ public static class Constants
 
     #endregion
 
+    #region Question Difficulty
+    public const string QUESTION_DIFFICULTY_NOT_FOUND = "Question Difficulty not found.";
+    public const string QUESTION_DIFFICULTY_ALREADY_EXISTS = "Question Difficulty with name '{0}' already exists.";
+    public const string QUESTION_DIFFICULTY_UPDATED = "Question Difficulty updated successfully.";
+    public const string QUESTION_DIFFICULTY_ADDED = "Question Difficulty added successfully.";
+    public const string QUESTION_DIFFICULTY_DELETED = "Question Difficulty deleted successfully.";
+    public const string QUESTION_DIFFICULTY_DUPLICATE_NAME = "Question Difficulty level with this name already exists.";
+    public const string QUESTION_DIFFICULTY_DUPLICATE_XP = "Question Difficulty level with this xp already exists.";
+    #endregion
 }

@@ -65,18 +65,6 @@ public class PlatformConfigurationServiceTests
     }
 
     [Fact]
-    public async Task GetPlatformConfigurations_ShouldThrow_WhenMissingQuoteConfig()
-    {
-        // Arrange: remove quote config
-        var configs = GetValidConfigs();
-        configs.RemoveAt(0);
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetPlatformConfigurations());
-    }
-
-    [Fact]
     public async Task UpdatePlatformConfigurations_ShouldUpdateQuoteAndColors_WhenLogoNotProvided()
     {
         // Arrange

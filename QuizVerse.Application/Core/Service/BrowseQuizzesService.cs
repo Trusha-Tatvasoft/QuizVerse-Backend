@@ -1,8 +1,10 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
@@ -10,8 +12,10 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class BrowseQuizzesService(ISqlQueryRepository _sqlQueryRepository, IMapper _mapper) : IBrowseQuizzesService
+public class BrowseQuizzesService(ISqlQueryRepository _sqlQueryRepository, IMapper _mapper,IHttpContextAccessor _httpContextAccessor) : IBrowseQuizzesService
 {
+    int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.INVALID_USER_ID_MESSAGE);
+
     public async Task<BrowseQuizzesResponseDTO> BrowseQuizzes(BrowseQuizzesRequestDTO request)
     {
         // Set default values for optional parameters and validations
@@ -43,6 +47,7 @@ public class BrowseQuizzesService(ISqlQueryRepository _sqlQueryRepository, IMapp
 
         var parameters = new NpgsqlParameter[]
         {
+            new("p_user_id", NpgsqlDbType.Integer) { Value = UserId },
             new("p_search_text", NpgsqlDbType.Text) { Value = (object?)request.SearchText ?? "" },
             new("p_quiz_category_id", NpgsqlDbType.Integer) { Value = (object?)request.QuizCategoryId ?? DBNull.Value },
             new("p_quiz_difficulty_level_id", NpgsqlDbType.Integer) { Value = (object?)request.QuizDifficultyLevelId ?? DBNull.Value },
