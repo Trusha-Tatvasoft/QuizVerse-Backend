@@ -6,6 +6,7 @@ using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Data;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
@@ -16,6 +17,7 @@ using System.Security.Claims;
 using System.Text.Json;
 using Xunit;
 namespace QuizVerse.UnitTests.Services;
+
 public class QuizServiceTests
 {
     private readonly QuizVerseDbContext _context;
@@ -37,7 +39,7 @@ public class QuizServiceTests
 
         var mapperConfig = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>());
         _mapper = mapperConfig.CreateMapper();
-       
+
         _sqlQueryRepoMock = new Mock<ISqlQueryRepository>();
         _aiServiceMock = new Mock<IAiService>();
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
@@ -182,81 +184,100 @@ public class QuizServiceTests
     }
 
     [Fact]
-    public async Task SaveAndNextQuestion_ObjectiveAnswer_CorrectAnswer_UpdatesAttemptAndReturnsNextQuestion()
+    public async Task SaveAndNextQuestion_ShouldReturnNextQuestion_WhenValidRequest()
     {
-        var request = new SaveAndNextQuestionRequestDto
+        SaveAndNextQuestionRequestDto request = new()
         {
             QuizId = 1,
             CurrentQuestionId = 1,
-            GivenAnswer = "4",
-            NextQuestionNumber = 2
+            NextQuestionNumber = 2,
+            GivenAnswer = "4"
         };
 
-        var rawNextQuestion = new RawQuizQuestionDto
+        RawQuizQuestionDto rawQuestion = new()
         {
             QuizQuestionId = 2,
-            QuestionName = "Next Question?",
-            QuestionType = "MCQ",
+            QuestionName = "What is 5 + 5?",
+            QuestionType = "Objective",
             Options = JsonSerializer.Serialize(new List<OptionResponseDto>
             {
-                new OptionResponseDto { Key = "A", Value = "Option 1" },
-                new OptionResponseDto { Key = "B", Value = "Option 2" }
+                new() { Key = "answer", Value = "10" }
             })
         };
 
-        _sqlQueryRepoMock.Setup(x => x.SqlQuerySingleAsync<RawQuizQuestionDto>(It.IsAny<string>()))
-            .ReturnsAsync(rawNextQuestion);
+        _sqlQueryRepoMock
+            .Setup(x => x.SqlQuerySingleAsync<RawQuizQuestionDto>(It.IsAny<string>()))
+            .ReturnsAsync(rawQuestion);
 
-        var result = await _quizService.SaveAndNextQuestion(request);
+        QuizQuestionResponseDto response = await _quizService.SaveAndNextQuestion(request);
 
-        Assert.NotNull(result);
-        Assert.Equal(2, result.QuizQuestionId);
-        Assert.Equal("Next Question?", result.QuestionName);
-
-        var answerRecord = _context.AttemptedQuizQuestionsAnswers.FirstOrDefault(a => a.QuizPlayStatusId == 1 && a.QuizQueId == 1);
-        Assert.NotNull(answerRecord);
-        Assert.True(answerRecord.IsCorrect);
-        Assert.Equal("4", answerRecord.GivenAnswer);
+        Assert.NotNull(response);
+        Assert.Equal("What is 5 + 5?", response.QuestionName);
+        Assert.Equal(2, response.QuizQuestionId);
+        Assert.Single(response.Options);
+        Assert.Equal("10", response.Options[0].Value);
     }
 
     [Fact]
-    public async Task SaveAndNextQuestion_SubjectiveAnswer_UsesAiService()
+    public async Task SaveAndNextQuestion_ShouldThrow_WhenQuizNotFoundOrCompleted()
     {
-        var baseQuestion = _context.BaseQuestions.First();
-        baseQuestion.QueTypeId = 3; // Subjective
-        _context.SaveChanges();
+        SaveAndNextQuestionRequestDto request = new()
+        {
+            QuizId = 999,
+            CurrentQuestionId = 1,
+            NextQuestionNumber = 2,
+            GivenAnswer = "4"
+        };
 
-        var request = new SaveAndNextQuestionRequestDto
+        await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.SaveAndNextQuestion(request));
+    }
+
+    [Fact]
+    public async Task SaveAndNextQuestion_ShouldThrow_WhenQuestionNotFound()
+    {
+        SaveAndNextQuestionRequestDto request = new()
+        {
+            QuizId = 1,
+            CurrentQuestionId = 999,
+            NextQuestionNumber = 2,
+            GivenAnswer = "4"
+        };
+
+        await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.SaveAndNextQuestion(request));
+    }
+
+    [Fact]
+    public async Task SaveAndNextQuestion_ShouldMarkIncorrect_ForWrongObjectiveAnswer()
+    {
+        SaveAndNextQuestionRequestDto request = new()
         {
             QuizId = 1,
             CurrentQuestionId = 1,
-            GivenAnswer = "Four",
-            NextQuestionNumber = 2
+            NextQuestionNumber = 2,
+            GivenAnswer = "wrong"
         };
 
-        _aiServiceMock.Setup(x => x.GetResponseAsync(It.IsAny<string>()))
-            .ReturnsAsync("TRUE");
-
-        var rawNextQuestion = new RawQuizQuestionDto
+        RawQuizQuestionDto rawQuestion = new()
         {
             QuizQuestionId = 2,
-            QuestionName = "Next Question?",
-            QuestionType = "MCQ",
-            Options = JsonSerializer.Serialize(new List<OptionResponseDto>())
+            QuestionName = "What is 2 + 2?",
+            QuestionType = "Objective",
+            Options = JsonSerializer.Serialize(new List<OptionResponseDto>
+        {
+            new() { Key = "answer", Value = "4" }
+        })
         };
 
-        _sqlQueryRepoMock.Setup(x => x.SqlQuerySingleAsync<RawQuizQuestionDto>(It.IsAny<string>()))
-            .ReturnsAsync(rawNextQuestion);
+        _sqlQueryRepoMock
+            .Setup(x => x.SqlQuerySingleAsync<RawQuizQuestionDto>(It.IsAny<string>()))
+            .ReturnsAsync(rawQuestion);
 
-        var result = await _quizService.SaveAndNextQuestion(request);
+        await _quizService.SaveAndNextQuestion(request);
 
-        Assert.NotNull(result);
-        Assert.Equal(2, result.QuizQuestionId);
-
-        var answerRecord = _context.AttemptedQuizQuestionsAnswers.FirstOrDefault(a => a.QuizPlayStatusId == 1 && a.QuizQueId == 1);
-        Assert.NotNull(answerRecord);
-        Assert.True(answerRecord.IsCorrect);
-        Assert.Equal("Four", answerRecord.GivenAnswer);
+        AttemptedQuizQuestionsAnswer attempt = _context.AttemptedQuizQuestionsAnswers.First(a => a.QuizQueId == 1);
+        Assert.False(attempt.IsCorrect);
     }
 
     [Fact]
@@ -269,7 +290,7 @@ public class QuizServiceTests
             CorrectAnswer = "4",
             QuestionName = "What is 2 + 2?"
         };
-        var task = (Task<bool>)method?.Invoke(_quizService, new object[] { quizAnswerCheck }) !;
+        var task = (Task<bool>)method?.Invoke(_quizService, new object[] { quizAnswerCheck })!;
         var result = await task;
 
         Assert.False(result);
@@ -288,9 +309,81 @@ public class QuizServiceTests
 
         _aiServiceMock.Setup(x => x.GetResponseAsync(It.IsAny<string>())).ReturnsAsync("TRUE");
 
-        var task = (Task<bool>)method?.Invoke(_quizService, [quizAnswerCheck]) !;
+        var task = (Task<bool>)method?.Invoke(_quizService, [quizAnswerCheck])!;
         var result = await task;
 
         Assert.True(result);
+    }
+
+    [Fact]
+    public async Task SubmitQuiz_ShouldCompleteQuiz_WhenValidRequest()
+    {
+        SubmitQuizRequestDTO request = new()
+        {
+            QuizId = 1,
+            QuizName = "Sample Quiz",
+            TimeTaken = 120,
+            LastVisitedQuestionAndAnswers = new LastVisitedQuestionAndAnswerDTO
+            {
+                QuestionId = 1,
+                GivenAnswer = "4"
+            }
+        };
+
+        _sqlQueryRepoMock
+            .Setup(x => x.SqlQuerySingleAsync<SuccessResponseDTO>(It.IsAny<string>()))
+            .ReturnsAsync(new SuccessResponseDTO { Success = true });
+
+        var tracked = _context.ChangeTracker.Entries<QuizPlayStatus>().ToList();
+        foreach (var entry in tracked)
+        {
+            entry.State = EntityState.Detached;
+        }
+
+        bool result = await _quizService.SubmitQuiz(request);
+
+        Assert.True(result);
+
+        QuizPlayStatus playStatus = await _context.QuizPlayStatuses
+            .AsNoTracking()
+            .FirstAsync(q => q.Id == 1);
+
+        Assert.True(playStatus.IsCompleted);
+    }
+
+    [Fact]
+    public async Task SubmitQuiz_ShouldThrow_WhenQuizNotFoundOrAlreadyCompleted()
+    {
+        SubmitQuizRequestDTO request = new()
+        {
+            QuizId = 999,
+            TimeTaken = 100,
+            LastVisitedQuestionAndAnswers = new LastVisitedQuestionAndAnswerDTO
+            {
+                QuestionId = 1,
+                GivenAnswer = "4"
+            }
+        };
+
+        await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.SubmitQuiz(request));
+    }
+
+    [Fact]
+    public async Task SubmitQuiz_ShouldThrow_WhenQuestionNotFound()
+    {
+        SubmitQuizRequestDTO request = new()
+        {
+            QuizId = 1,
+            TimeTaken = 100,
+            LastVisitedQuestionAndAnswers = new LastVisitedQuestionAndAnswerDTO
+            {
+                QuestionId = 999,
+                GivenAnswer = "4"
+            }
+        };
+
+        await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.SubmitQuiz(request));
     }
 }

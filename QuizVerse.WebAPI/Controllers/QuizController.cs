@@ -38,7 +38,6 @@ namespace QuizVerse.WebAPI.Controllers
         }
 
         // save and next 
-
         [HttpPost("save-and-next-question")]
         public async Task<IActionResult> SaveAndNextQuestion([FromBody] SaveAndNextQuestionRequestDto request)
         {
@@ -49,6 +48,18 @@ namespace QuizVerse.WebAPI.Controllers
                 StatusCode = StatusCodes.Status200OK,
                 Message = "Answer saved and next question fetched successfully",
                 Data = await _quizService.SaveAndNextQuestion(request)
+            });
+        }
+
+        [HttpPost("submit-quiz")]
+        public async Task<IActionResult> SubmitQuiz([FromBody] SubmitQuizRequestDTO request)
+        {
+            return Ok(new ApiResponse<bool>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.QUIZ_SUBMITTED_SUCCESSFULLY,
+                Data = await _quizService.SubmitQuiz(request)
             });
         }
     }
