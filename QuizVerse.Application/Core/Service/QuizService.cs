@@ -13,7 +13,17 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 namespace QuizVerse.Application.Core.Service;
 
-public class QuizService(IGenericRepository<QuizPlayStatus> _quizPlayStatusRepository, IGenericRepository<AttemptedQuizQuestionsAnswer> _attemptedQuizQuestionsAnswerRepository, IGenericRepository<Quiz> _quizRepostory, IGenericRepository<QuizToBaseQuestionMap> _quizToBaseQuestionMapRepository, IMapper _mapper, ISqlQueryRepository _sqlQueryRepository, IHttpContextAccessor _httpContextAccessor, IAiService _aiService) : IQuizService
+
+public class QuizService(
+    IGenericRepository<QuizPlayStatus> _quizPlayStatusRepository,
+    IGenericRepository<AttemptedQuizQuestionsAnswer> _attemptedQuizQuestionsAnswerRepository,
+    IGenericRepository<Quiz> _quizRepostory,
+    IGenericRepository<QuizToBaseQuestionMap> _quizToBaseQuestionMapRepository,
+    IMapper _mapper,
+    ISqlQueryRepository _sqlQueryRepository,
+    IHttpContextAccessor _httpContextAccessor,
+    IAiService _aiService
+) : IQuizService
 {
     public int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
     public async Task<QuizOverviewResponseDto> GetQuizOverviewAsync(int quizId)
@@ -32,9 +42,7 @@ public class QuizService(IGenericRepository<QuizPlayStatus> _quizPlayStatusRepos
 
     public async Task<QuizStartResponseDto?> StartQuizAsync(int quizId)
     {
-        string sql = $"SELECT * FROM start_quiz({quizId}, {UserId})";
-
-        RawStartQuizDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawStartQuizDto>(sql);
+        RawStartQuizDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawStartQuizDto>(string.Format(SqlConstants.START_QUIZ_QUERY_TEMPLATE, quizId, UserId));
         if (raw == null) return null;
 
         List<OptionResponseDto> options = JsonSerializer.Deserialize<List<OptionResponseDto>>(raw.Options ?? "[]") ?? [];
@@ -62,64 +70,12 @@ public class QuizService(IGenericRepository<QuizPlayStatus> _quizPlayStatusRepos
 
         BaseQuestion question = currentQuestionMap.Que;
 
-        bool isCorrect = false;
+        bool isCorrect = await ValidateAnswer(question, request.GivenAnswer);
 
-        // Determine if answer is correct
-        if (question.QueTypeId == 3 || question.QueTypeId == 4) // Subjective
-        {
-            QuizAnswerCheckDto quizAnswerCheck = new()
-            {
-                QuestionName = question.QueText,
-                GivenAnswer = request.GivenAnswer,
-                CorrectAnswer = string.Join(", ", question.QuestionOptionsAnswers
-                                            .Where(o => !o.IsDeleted)
-                                            .Select(o => o.Value))
-            };
-
-            isCorrect = await CheckAnswer(quizAnswerCheck);
-        }
-        else // MCQ / Objective
-        {
-            string correctAnswer = question.QuestionOptionsAnswers
-                                    .Where(o => !o.IsDeleted && o.Key.Equals("answer", StringComparison.OrdinalIgnoreCase))
-                                    .Select(o => o.Value)
-                                    .FirstOrDefault() ?? "";
-
-            isCorrect = string.Equals(request.GivenAnswer?.Trim(), correctAnswer.Trim(), StringComparison.OrdinalIgnoreCase);
-        }
-
-        // Check if question was already attempted
-        AttemptedQuizQuestionsAnswer? attemptedAnswer = await _attemptedQuizQuestionsAnswerRepository
-            .GetAsync(a => a.QuizPlayStatusId == quizPlayStatus.Id && a.QuizQueId == currentQuestionMap.Id);
-
-        if (attemptedAnswer != null)
-        {
-            // Update existing answer
-            attemptedAnswer.GivenAnswer = request.GivenAnswer;
-            attemptedAnswer.IsCorrect = isCorrect;
-            attemptedAnswer.ModifiedDate = DateTime.UtcNow;
-            await _attemptedQuizQuestionsAnswerRepository.UpdateAsync(attemptedAnswer);
-        }
-        else
-        {
-            // Insert new answer
-            attemptedAnswer = new AttemptedQuizQuestionsAnswer()
-            {
-                QuizPlayStatusId = quizPlayStatus.Id,
-                QuizQueId = currentQuestionMap.Id,
-                QueTypeId = question.QueTypeId,
-                GivenAnswer = request.GivenAnswer,
-                IsCorrect = isCorrect,
-                CreatedDate = DateTime.UtcNow
-            };
-            await _attemptedQuizQuestionsAnswerRepository.AddAsync(attemptedAnswer);
-        }
+        await SaveOrUpdateAttempt(quizPlayStatus, currentQuestionMap, question, request.GivenAnswer, isCorrect);
 
         // Fetch next question
-
-        string sql = $"SELECT * FROM get_quiz_questions({request.QuizId}, {request.NextQuestionNumber})";
-
-        RawQuizQuestionDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawQuizQuestionDto>(sql);
+        RawQuizQuestionDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawQuizQuestionDto>(string.Format(SqlConstants.GET_QUIZ_QUESTIONS_QUERY_TEMPLATE, request.QuizId, request.NextQuestionNumber));
 
         List<OptionResponseDto> options = JsonSerializer.Deserialize<List<OptionResponseDto>>(raw.Options ?? "[]") ?? [];
 
@@ -151,5 +107,96 @@ public class QuizService(IGenericRepository<QuizPlayStatus> _quizPlayStatusRepos
         string response = await _aiService.GetResponseAsync(prompt);
 
         return response.Trim().StartsWith("TRUE", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public async Task<bool> SubmitQuiz(SubmitQuizRequestDTO request)
+    {
+        QuizPlayStatus quizPlayStatus = await _quizPlayStatusRepository
+                            .GetAsync(q => q.QuizId == request.QuizId
+                              && q.UserId == UserId
+                              && q.IsCompleted == false)
+                            ?? throw new AppException(Constants.QUIZ_NOT_FOUND_OR_COMPLETED);
+
+        QuizToBaseQuestionMap currentQuestionMap = await _quizToBaseQuestionMapRepository
+            .GetQueryableInclude(q => q.Que)
+            .Include("Que.QuestionOptionsAnswers")
+            .FirstOrDefaultAsync(q => q.Id == request.LastVisitedQuestionAndAnswers.QuestionId && q.QuizId == request.QuizId)
+            ?? throw new AppException(Constants.QUESTION_NOT_FOUND);
+
+        BaseQuestion question = currentQuestionMap.Que;
+        bool isCorrect = await ValidateAnswer(question, request.LastVisitedQuestionAndAnswers.GivenAnswer);
+
+        await SaveOrUpdateAttempt(quizPlayStatus, currentQuestionMap, question, request.LastVisitedQuestionAndAnswers.GivenAnswer, isCorrect);
+
+        quizPlayStatus.IsCompleted = true;
+        quizPlayStatus.ModifiedDate = DateTime.UtcNow;
+        await _quizPlayStatusRepository.UpdateAsync(quizPlayStatus);
+
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.QUIZ_ATTEMPT_COMPLETE_FUNCTION, request.QuizId, UserId, request.TimeTaken));
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.RECALC_USER_STREAK_FUNCTION, UserId));
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(SqlConstants.RECALC_GLOBAL_RANKS_FUNCTION);
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.CHECK_AND_AWARD_BADGES_FUNCTION, UserId));
+
+        return true;
+    }
+
+    private async Task<bool> ValidateAnswer(BaseQuestion question, string? givenAnswer)
+    {
+        if (question.QueTypeId == 3 || question.QueTypeId == 4)
+        {
+            QuizAnswerCheckDto quizAnswerCheck = new()
+            {
+                QuestionName = question.QueText,
+                GivenAnswer = givenAnswer,
+                CorrectAnswer = string.Join(", ", question.QuestionOptionsAnswers
+                                            .Where(o => !o.IsDeleted)
+                                            .Select(o => o.Value))
+            };
+
+            return await CheckAnswer(quizAnswerCheck);
+        }
+
+        // Objective/MCQ
+        string correctAnswer = question.QuestionOptionsAnswers
+                                .Where(o => !o.IsDeleted &&
+                                            o.Key.Equals("answer", StringComparison.OrdinalIgnoreCase))
+                                .Select(o => o.Value)
+                                .FirstOrDefault() ?? "";
+
+        return string.Equals(givenAnswer?.Trim(), correctAnswer.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task SaveOrUpdateAttempt(
+        QuizPlayStatus quizPlayStatus,
+        QuizToBaseQuestionMap currentQuestionMap,
+        BaseQuestion question,
+        string? givenAnswer,
+        bool isCorrect
+    )
+    {
+        AttemptedQuizQuestionsAnswer? attemptedAnswer = await _attemptedQuizQuestionsAnswerRepository
+            .GetAsync(a => a.QuizPlayStatusId == quizPlayStatus.Id
+                        && a.QuizQueId == currentQuestionMap.Id);
+
+        if (attemptedAnswer != null)
+        {
+            attemptedAnswer.GivenAnswer = givenAnswer;
+            attemptedAnswer.IsCorrect = isCorrect;
+            attemptedAnswer.ModifiedDate = DateTime.UtcNow;
+            await _attemptedQuizQuestionsAnswerRepository.UpdateAsync(attemptedAnswer);
+        }
+        else
+        {
+            attemptedAnswer = new AttemptedQuizQuestionsAnswer()
+            {
+                QuizPlayStatusId = quizPlayStatus.Id,
+                QuizQueId = currentQuestionMap.Id,
+                QueTypeId = question.QueTypeId,
+                GivenAnswer = givenAnswer,
+                IsCorrect = isCorrect,
+                CreatedDate = DateTime.UtcNow
+            };
+            await _attemptedQuizQuestionsAnswerRepository.AddAsync(attemptedAnswer);
+        }
     }
 }

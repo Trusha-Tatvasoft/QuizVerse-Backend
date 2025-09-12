@@ -331,4 +331,10 @@ public static class Constants
     public const string QUESTION_DIFFICULTY_DUPLICATE_NAME = "Question Difficulty level with this name already exists.";
     public const string QUESTION_DIFFICULTY_DUPLICATE_XP = "Question Difficulty level with this xp already exists.";
     #endregion
+
+    #region Quiz
+    public const string QUIZ_SUBMITTED_SUCCESSFULLY = "Quiz submitted successfully.";
+    public const string QUIZ_ATTEMPT_NOT_FOUND = "The requested quiz attempt was not found.";
+    public const string QUIZ_COMPLETED_SUMMARY_FETCHED = "Quiz completed summary fetched successfully.";
+    #endregion
 }
