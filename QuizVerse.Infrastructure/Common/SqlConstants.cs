@@ -102,5 +102,6 @@ public class SqlConstants
     public const string RECALC_USER_STREAK_FUNCTION = "SELECT * FROM recalc_user_streak({0})";
     public const string RECALC_GLOBAL_RANKS_FUNCTION = "SELECT * FROM recalc_global_ranks()";
     public const string CHECK_AND_AWARD_BADGES_FUNCTION = "SELECT * FROM check_and_award_badges({0})";
+    public const string GET_QUIZ_QUESTION_REVIEW_FUNCTION = "SELECT * FROM get_quiz_question_review({0}, {1})";
     #endregion
 }

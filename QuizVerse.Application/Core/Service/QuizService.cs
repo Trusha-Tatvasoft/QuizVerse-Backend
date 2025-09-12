@@ -19,6 +19,9 @@ public class QuizService(
     IGenericRepository<AttemptedQuizQuestionsAnswer> _attemptedQuizQuestionsAnswerRepository,
     IGenericRepository<Quiz> _quizRepostory,
     IGenericRepository<QuizToBaseQuestionMap> _quizToBaseQuestionMapRepository,
+    IGenericRepository<QuizAttempted> _quizAttemptedRepository,
+    IGenericRepository<QuestionIssueReport> _questionIssueReportRepository,
+    IGenericRepository<QuizRating> _quizRatingRepo,
     IMapper _mapper,
     ISqlQueryRepository _sqlQueryRepository,
     IHttpContextAccessor _httpContextAccessor,
@@ -198,5 +201,94 @@ public class QuizService(
             };
             await _attemptedQuizQuestionsAnswerRepository.AddAsync(attemptedAnswer);
         }
+    }
+
+    public async Task<QuizCompletedSummaryDTO> GetQuizSummary(int quizId)
+    {
+        QuizAttempted attempt = await _quizAttemptedRepository
+            .GetQueryableInclude(a => a.Quiz, a => a.GradeNavigation)
+            .FirstOrDefaultAsync(a => a.QuizId == quizId && a.UserId == UserId)
+            ?? throw new AppException(Constants.QUIZ_ATTEMPT_NOT_FOUND);
+
+        QuizCompletedSummaryDTO summaryDto = _mapper.Map<QuizCompletedSummaryDTO>(attempt);
+
+        return summaryDto;
+    }
+
+    public async Task<List<QuizQuestionReviewDTO>> GetQuizQuestionReview(int quizId)
+    {
+        List<QuizQuestionReviewDTO> quizQuestionReviews = await _sqlQueryRepository.SqlQueryListAsync<QuizQuestionReviewDTO>(string.Format(
+            SqlConstants.GET_QUIZ_QUESTION_REVIEW_FUNCTION,
+            quizId,
+            UserId));
+
+        return quizQuestionReviews;
+    }
+
+    public async Task<string> ReportQuestionIssue(QuestionIssueReportRequestDTO request)
+    {
+        bool alreadyExists = await _questionIssueReportRepository.Exists(r => r.UserId == UserId
+                                && r.QuestionId == request.QuestionId
+                                && r.QuizId == request.QuizId);
+
+        if (alreadyExists)
+            throw new AppException(Constants.DUPLICATE_QUESTION_ISSUE_REPORT);
+
+        QuestionIssueReport entity = _mapper.Map<QuestionIssueReport>(request);
+        entity.UserId = UserId;
+        entity.CreatedBy = UserId;
+
+        await _questionIssueReportRepository.AddAsync(entity);
+
+        return Constants.QUESTION_ISSUE_REPORTED;
+    }
+
+    public async Task<QuizRatingDTO?> GetMyQuizRating(int quizId)
+    {
+        QuizRating? rating = await _quizRatingRepo.GetAsync(r => r.QuizId == quizId && r.UserId == UserId);
+
+        return rating == null ? null : _mapper.Map<QuizRatingDTO>(rating);
+    }
+
+    public async Task<string> SubmitQuizRating(QuizRatingDTO request)
+    {
+        bool alreadyExists = await _quizRatingRepo.Exists(r => r.UserId == UserId && r.QuizId == request.QuizId);
+
+        if (alreadyExists)
+            throw new AppException(Constants.DUPLICATE_QUIZ_RATING);
+
+        QuizRating entity = _mapper.Map<QuizRating>(request);
+        entity.UserId = UserId;
+
+        await _quizRatingRepo.AddAsync(entity);
+
+        return Constants.QUIZ_RATING_SUBMITTED;
+    }
+
+    public async Task<string> GetAnswerExplanation(AnswerExplanationRequestDTO request)
+    {
+        string answerText  = string.IsNullOrWhiteSpace(request.UserAnswer)
+            ? "No answer was provided."
+            : request.UserAnswer;
+
+        string prompt = $@"
+        You are an AI quiz evaluator. Evaluate the given answer and generate a clear, concise explanation.
+
+        Question: {request.QuestionText}
+        Correct Answer: {request.CorrectAnswer}
+        Answer Answer: {answerText}
+
+        Instructions:
+        - Provide a very short and simple explanation (1-2 sentences).
+        - Do not use quotes around answers.
+        - Do not add extra commentary or greetings.
+        - If the answer is correct, explain simply why.
+        - If the answer is incorrect or missing, explain the correct answer clearly.
+        - Do not include the word 'user' or 'user’s answer'.
+        - Respond only with plain text, nothing else.";
+
+        string response = await _aiService.GetResponseAsync(prompt);
+
+        return response.Trim();
     }
 }
