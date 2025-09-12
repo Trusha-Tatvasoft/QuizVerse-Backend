@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.ApiResponse;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
@@ -60,6 +61,80 @@ namespace QuizVerse.WebAPI.Controllers
                 StatusCode = StatusCodes.Status200OK,
                 Message = Constants.QUIZ_SUBMITTED_SUCCESSFULLY,
                 Data = await _quizService.SubmitQuiz(request)
+            });
+        }
+
+        [HttpGet("quiz-summary/{quizId:int}")]
+        public async Task<IActionResult> GetQuizSummary(int quizId)
+        {
+            return Ok(new ApiResponse<QuizCompletedSummaryDTO>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.QUIZ_COMPLETED_SUMMARY_FETCHED,
+                Data = await _quizService.GetQuizSummary(quizId)
+            });
+        }
+
+        [HttpGet("quiz-question-review/{quizId:int}")]
+        public async Task<IActionResult> GetQuizQuestionReview(int quizId)
+        {
+            return Ok(new ApiResponse<List<QuizQuestionReviewDTO>>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.QUIZ_QUESTION_REVIEW_FETCHED,
+                Data = await _quizService.GetQuizQuestionReview(quizId)
+            });
+        }
+
+        [HttpPost("report-question-issue")]
+        public async Task<IActionResult> ReportQuestionIssue([FromBody] QuestionIssueReportRequestDTO request)
+        {
+            return Ok(new ApiResponse<QuizCompletedSummaryDTO>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = await _quizService.ReportQuestionIssue(request),
+                Data = null
+            });
+        }
+
+        [HttpGet("quiz-rating/{quizId:int}")]
+        public async Task<IActionResult> GetMyQuizRating(int quizId)
+        {
+            QuizRatingDTO? rating = await _quizService.GetMyQuizRating(quizId);
+
+            return Ok(new ApiResponse<QuizRatingDTO?>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = rating == null ? Constants.QUIZ_RATING_NOT_FOUND : Constants.QUIZ_RATING_FETCHED,
+                Data = rating
+            });
+        }
+
+        [HttpPost("submit-quiz-rating")]
+        public async Task<IActionResult> SubmitQuizRating([FromBody] QuizRatingDTO request)
+        {
+            return Ok(new ApiResponse<string>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = await _quizService.SubmitQuizRating(request),
+                Data = null
+            });
+        }
+
+        [HttpPost("get-answer-explanation")]
+        public async Task<IActionResult> GetAnswerExplanation([FromBody] AnswerExplanationRequestDTO request)
+        {
+            return Ok(new ApiResponse<string>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.QUIZ_ANSWER_EXPLANATION_GENERATED,
+                Data = await _quizService.GetAnswerExplanation(request),
             });
         }
     }

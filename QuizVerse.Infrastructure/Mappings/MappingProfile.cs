@@ -308,17 +308,62 @@ public class MappingProfile : Profile
 
         #endregion
 
-        #region Quiz Overview
+        #region Quiz
         CreateMap<Quiz, QuizOverviewResponseDto>()
-            .ForMember(dest => dest.QuizId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.QuizName, opt => opt.MapFrom(src => src.Name))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
-            .ForMember(dest => dest.TotalTime, opt => opt.MapFrom(src => src.TotalTime))
-            .ForMember(dest => dest.TotalQuestion, opt => opt.MapFrom(src => src.TotalQuestion))
-            .ForMember(dest => dest.IsPaid, opt => opt.MapFrom(src => src.IsPaid))
-            .ForMember(dest => dest.QuizPrice, opt => opt.MapFrom(src => src.Price))
-            .ForMember(dest => dest.QuizCategoryName, opt => opt.MapFrom(src => src.Category.CategoryName))
-            .ForMember(dest => dest.QuizDifficultyName, opt => opt.MapFrom(src => src.DifficultyLevel.Name));
+            .ForMember(dest => dest.QuizId,
+                opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.QuizName,
+                opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Description,
+                opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.TotalTime,
+                opt => opt.MapFrom(src => src.TotalTime))
+            .ForMember(dest => dest.TotalQuestion,
+                opt => opt.MapFrom(src => src.TotalQuestion))
+            .ForMember(dest => dest.IsPaid,
+                opt => opt.MapFrom(src => src.IsPaid))
+            .ForMember(dest => dest.QuizPrice,
+                opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.QuizCategoryName,
+                opt => opt.MapFrom(src => src.Category.CategoryName))
+            .ForMember(dest => dest.QuizDifficultyName,
+                opt => opt.MapFrom(src => src.DifficultyLevel.Name));
+
+        CreateMap<QuizAttempted, QuizCompletedSummaryDTO>()
+            .ForMember(dest => dest.QuizName,
+                opt => opt.MapFrom(src => src.Quiz.Name))
+            .ForMember(dest => dest.TotalQuestions,
+                opt => opt.MapFrom(src => src.TotalQue))
+            .ForMember(dest => dest.CorrectAnswers,
+                opt => opt.MapFrom(src => src.CorrectedQue))
+            .ForMember(dest => dest.WrongAnswers,
+                opt => opt.MapFrom(src => src.TotalQue - src.CorrectedQue))
+            .ForMember(dest => dest.ScorePercentage,
+                opt => opt.MapFrom(src => Math.Round((double)src.CorrectedQue / src.TotalQue * 100, 2)))
+            .ForMember(dest => dest.Grade,
+                opt => opt.MapFrom(src => src.GradeNavigation.Grade))
+            .ForMember(dest => dest.TimeSpent,
+                opt => opt.MapFrom(src => src.TimeSpent))
+            .ForMember(dest => dest.XpEarned,
+                opt => opt.MapFrom(src => src.XpEarned));
+
+        CreateMap<QuestionIssueReportRequestDTO, QuestionIssueReport>()
+            .ForMember(dest => dest.IsResolved,
+                opt => opt.MapFrom(_ => false))
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.MapFrom(_ => false))
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.MapFrom(_ => DateTime.UtcNow));
+
+        CreateMap<QuizRatingDTO, QuizRating>()
+            .ForMember(dest => dest.QuizRating1,
+                opt => opt.MapFrom(src => src.QuizRating))
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.MapFrom(_ => DateTime.UtcNow));
+                
+        CreateMap<QuizRating, QuizRatingDTO>()
+            .ForMember(dest => dest.QuizRating,
+                opt => opt.MapFrom(src => src.QuizRating1));
         #endregion
     }
 

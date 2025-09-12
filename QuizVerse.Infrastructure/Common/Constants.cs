@@ -336,5 +336,13 @@ public static class Constants
     public const string QUIZ_SUBMITTED_SUCCESSFULLY = "Quiz submitted successfully.";
     public const string QUIZ_ATTEMPT_NOT_FOUND = "The requested quiz attempt was not found.";
     public const string QUIZ_COMPLETED_SUMMARY_FETCHED = "Quiz completed summary fetched successfully.";
+    public const string QUIZ_QUESTION_REVIEW_FETCHED = "Quiz question review fetched successfully.";
+    public const string DUPLICATE_QUESTION_ISSUE_REPORT = "You have already reported an issue for this question.";
+    public const string QUESTION_ISSUE_REPORTED = "Question issue reported successfully.";
+    public const string DUPLICATE_QUIZ_RATING = "You have already rated this quiz.";
+    public const string QUIZ_RATING_FETCHED = "Quiz rating fetched successfully.";
+    public const string QUIZ_RATING_NOT_FOUND = "No quiz rating found for this quiz.";
+    public const string QUIZ_RATING_SUBMITTED = "Quiz rating submitted successfully.";
+    public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
     #endregion
 }

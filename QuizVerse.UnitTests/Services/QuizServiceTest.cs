@@ -6,6 +6,7 @@ using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Data;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
@@ -56,12 +57,18 @@ public class QuizServiceTests
         var quizPlayStatusRepo = new GenericRepository<QuizPlayStatus>(_context);
         var attemptedQuestionRepo = new GenericRepository<AttemptedQuizQuestionsAnswer>(_context);
         var quizToQuestionMapRepo = new GenericRepository<QuizToBaseQuestionMap>(_context);
+        var quizAttemptedRepo = new GenericRepository<QuizAttempted>(_context);
+        var questionIssueReportRepo = new GenericRepository<QuestionIssueReport>(_context);
+        var quizRatingRepo = new GenericRepository<QuizRating>(_context);
 
         _quizService = new QuizService(
             quizPlayStatusRepo,
             attemptedQuestionRepo,
             quizRepo,
             quizToQuestionMapRepo,
+            quizAttemptedRepo,
+            questionIssueReportRepo,
+            quizRatingRepo,
             _mapper,
             _sqlQueryRepoMock.Object,
             _httpContextAccessorMock.Object,
@@ -129,6 +136,55 @@ public class QuizServiceTests
             QueId = baseQuestion.Id
         };
 
+        var user = new User
+        {
+            Id = 1,
+            UserName = "TestUser",
+            Email = "testuser@example.com",
+            FullName = "Test User",
+            Password = "Password123!"
+        };
+
+        var grade = new GradeForQuizResult
+        {
+            Id = 1,
+            MinPercentage = 80,
+            MaxPercentage = 100,
+            Grade = "A+",
+            CreatedDate = DateTime.UtcNow,
+            CreatedBy = user.Id,
+            CreatedByNavigation = user,
+            IsDeleted = false
+        };
+
+        var quizAttempted = new QuizAttempted
+        {
+            Id = 1,
+            QuizId = quiz.Id,
+            UserId = user.Id,
+            TotalQue = 10,
+            CorrectedQue = 8,
+            TimeSpent = TimeSpan.FromMinutes(15),
+            XpEarned = 50,
+            Grade = 90,
+            CreatedDate = DateTime.UtcNow,
+            Quiz = quiz,
+            GradeNavigation = grade,
+            User = user
+        };
+
+        var quizRating = new QuizRating
+        {
+            Id = 1,
+            QuizId = quiz.Id,
+            UserId = user.Id,
+            QuizRating1 = 5,
+            Feedback = "Excellent quiz!",
+            CreatedDate = DateTime.UtcNow,
+            Quiz = quiz,
+            User = user
+        };
+
         _context.QuizCategories.Add(category);
         _context.QuizDifficulties.Add(difficulty);
         _context.Quizzes.Add(quiz);
@@ -136,6 +192,10 @@ public class QuizServiceTests
         _context.BaseQuestions.Add(baseQuestion);
         _context.QuestionOptionsAnswers.Add(questionOption);
         _context.QuizToBaseQuestionMaps.Add(quizToQuestionMap);
+        _context.GradeForQuizResults.Add(grade);
+        _context.QuizAttempteds.Add(quizAttempted);
+        _context.Users.Add(user);
+        _context.QuizRatings.Add(quizRating);
         _context.SaveChanges();
     }
 
@@ -385,5 +445,286 @@ public class QuizServiceTests
 
         await Assert.ThrowsAsync<AppException>(() =>
             _quizService.SubmitQuiz(request));
+    }
+
+    [Fact]
+    public async Task GetQuizSummary_ShouldReturnSummary_WhenQuizAttemptExists()
+    {
+        var result = await _quizService.GetQuizSummary(1);
+
+        Assert.NotNull(result);
+        Assert.IsType<QuizCompletedSummaryDTO>(result);
+        Assert.Equal("Sample Quiz", result.QuizName);
+        Assert.Equal(10, result.TotalQuestions);
+        Assert.Equal(8, result.CorrectAnswers);
+        Assert.Equal(2, result.WrongAnswers);
+        Assert.Equal(50, result.XpEarned);
+        Assert.Equal("A+", result.Grade);
+        Assert.Equal(TimeSpan.FromMinutes(15), result.TimeSpent);
+    }
+
+    [Fact]
+    public async Task GetQuizSummary_ShouldThrowAppException_WhenQuizAttemptDoesNotExist()
+    {
+        int nonExistentQuizId = 999;
+
+        var exception = await Assert.ThrowsAsync<AppException>(
+            () => _quizService.GetQuizSummary(nonExistentQuizId)
+        );
+
+        Assert.Equal(Constants.QUIZ_ATTEMPT_NOT_FOUND, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetQuizSummary_ShouldCalculateWrongAnswersAndScorePercentageCorrectly()
+    {
+        var result = await _quizService.GetQuizSummary(1);
+
+        int expectedWrong = result.TotalQuestions - result.CorrectAnswers;
+        double expectedScore = (double)result.CorrectAnswers / result.TotalQuestions * 100;
+
+        Assert.Equal(expectedWrong, result.WrongAnswers);
+        Assert.Equal(Math.Round(expectedScore, 2), Math.Round(result.ScorePercentage, 2));
+    }
+
+    [Fact]
+    public async Task GetQuizQuestionReview_ShouldReturnList_WhenDataExists()
+    {
+        int quizId = 1;
+        var expectedList = new List<QuizQuestionReviewDTO>
+        {
+            new QuizQuestionReviewDTO
+            {
+                QuestionId = 1,
+                QuestionText = "What is 2 + 2?",
+                UserAnswer = "4",
+                CorrectAnswer = "4",
+                IsCorrect = true
+            },
+            new QuizQuestionReviewDTO
+            {
+                QuestionId = 2,
+                QuestionText = "Capital of France?",
+                UserAnswer = "Paris",
+                CorrectAnswer = "Paris",
+                IsCorrect = true
+            }
+        };
+
+        _sqlQueryRepoMock
+            .Setup(x => x.SqlQueryListAsync<QuizQuestionReviewDTO>(
+                It.Is<string>(s => s.Contains(quizId.ToString())),
+                It.IsAny<object[]>()))
+            .ReturnsAsync(expectedList);
+
+        var result = await _quizService.GetQuizQuestionReview(quizId);
+
+        Assert.NotNull(result);
+        Assert.IsType<List<QuizQuestionReviewDTO>>(result);
+        Assert.Equal(expectedList.Count, result.Count);
+        Assert.Equal(expectedList[0].QuestionText, result[0].QuestionText);
+        Assert.Equal(expectedList[1].UserAnswer, result[1].UserAnswer);
+
+        _sqlQueryRepoMock.Verify(x => x.SqlQueryListAsync<QuizQuestionReviewDTO>(
+            It.IsAny<string>(),
+            It.IsAny<object[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetQuizQuestionReview_ShouldReturnEmptyList_WhenNoDataExists()
+    {
+        int quizId = 999;
+        _sqlQueryRepoMock
+            .Setup(x => x.SqlQueryListAsync<QuizQuestionReviewDTO>(
+                It.IsAny<string>(),
+                It.IsAny<object[]>()))
+            .ReturnsAsync(new List<QuizQuestionReviewDTO>());
+
+        var result = await _quizService.GetQuizQuestionReview(quizId);
+
+        Assert.NotNull(result);
+        Assert.IsType<List<QuizQuestionReviewDTO>>(result);
+        Assert.Empty(result);
+
+        _sqlQueryRepoMock.Verify(x => x.SqlQueryListAsync<QuizQuestionReviewDTO>(
+            It.IsAny<string>(),
+            It.IsAny<object[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetQuizQuestionReview_ShouldPropagateException_WhenRepositoryThrows()
+    {
+        int quizId = 1;
+        _sqlQueryRepoMock
+            .Setup(x => x.SqlQueryListAsync<QuizQuestionReviewDTO>(
+                It.IsAny<string>(),
+                It.IsAny<object[]>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        var ex = await Assert.ThrowsAsync<Exception>(() => _quizService.GetQuizQuestionReview(quizId));
+        Assert.Equal("Database error", ex.Message);
+
+        _sqlQueryRepoMock.Verify(x => x.SqlQueryListAsync<QuizQuestionReviewDTO>(
+            It.IsAny<string>(),
+            It.IsAny<object[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ReportQuestionIssue_ShouldReturnSuccessMessage_WhenReportDoesNotExist()
+    {
+        var request = new QuestionIssueReportRequestDTO
+        {
+            QuizId = 1,
+            QuestionId = 1,
+            Description = "This question has a typo"
+        };
+
+        var result = await _quizService.ReportQuestionIssue(request);
+
+        Assert.Equal(Constants.QUESTION_ISSUE_REPORTED, result);
+
+        var addedReport = await _context.QuestionIssueReports
+            .FirstOrDefaultAsync(r => r.QuizId == request.QuizId && r.QuestionId == request.QuestionId && r.UserId == 1);
+        Assert.NotNull(addedReport);
+        Assert.Equal(request.Description, addedReport.Description);
+    }
+
+    [Fact]
+    public async Task ReportQuestionIssue_ShouldThrowAppException_WhenReportAlreadyExists()
+    {
+        var existingReport = new QuestionIssueReport
+        {
+            QuizId = 1,
+            QuestionId = 1,
+            UserId = 1,
+            CreatedBy = 1,
+            Description = "Already reported"
+        };
+        _context.QuestionIssueReports.Add(existingReport);
+        await _context.SaveChangesAsync();
+
+        var request = new QuestionIssueReportRequestDTO
+        {
+            QuizId = 1,
+            QuestionId = 1,
+            Description = "Duplicate report attempt"
+        };
+
+        var exception = await Assert.ThrowsAsync<AppException>(() => _quizService.ReportQuestionIssue(request));
+        Assert.Equal(Constants.DUPLICATE_QUESTION_ISSUE_REPORT, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetMyQuizRating_ShouldReturnQuizRating_WhenRatingExists()
+    {
+        int quizId = 1;
+
+        var result = await _quizService.GetMyQuizRating(quizId);
+
+        Assert.NotNull(result);
+        Assert.IsType<QuizRatingDTO>(result);
+        Assert.Equal(5, result!.QuizRating);
+        Assert.Equal("Excellent quiz!", result.Feedback);
+    }
+
+    [Fact]
+    public async Task GetMyQuizRating_ShouldReturnNull_WhenRatingDoesNotExist()
+    {
+        int nonExistentQuizId = 999;
+
+        var result = await _quizService.GetMyQuizRating(nonExistentQuizId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task SubmitQuizRating_ShouldAddRating_WhenNotExists()
+    {
+        var newRating = new QuizRatingDTO
+        {
+            QuizId = 2,
+            QuizRating = 4,
+            Feedback = "Good quiz"
+        };
+
+        var result = await _quizService.SubmitQuizRating(newRating);
+
+        Assert.Equal(Constants.QUIZ_RATING_SUBMITTED, result);
+
+        var addedRating = await _context.QuizRatings.FirstOrDefaultAsync(r => r.QuizId == 2 && r.UserId == 1);
+        Assert.NotNull(addedRating);
+        Assert.Equal(newRating.QuizRating, addedRating!.QuizRating1);
+        Assert.Equal(newRating.Feedback, addedRating.Feedback);
+    }
+
+    [Fact]
+    public async Task SubmitQuizRating_ShouldThrowAppException_WhenRatingAlreadyExists()
+    {
+        var existingRating = new QuizRatingDTO
+        {
+            QuizId = 1,
+            QuizRating = 5,
+            Feedback = "Excellent quiz!"
+        };
+
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.SubmitQuizRating(existingRating)
+        );
+
+        Assert.Equal(Constants.DUPLICATE_QUIZ_RATING, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetAnswerExplanation_ShouldReturnExplanation_ForCorrectAnswer()
+    {
+        var request = new AnswerExplanationRequestDTO
+        {
+            QuestionText = "What is 2 + 2?",
+            CorrectAnswer = "4",
+            UserAnswer = "4"
+        };
+
+        string expectedResponse = "The answer is correct because 2 + 2 equals 4.";
+
+        _aiServiceMock
+            .Setup(s => s.GetResponseAsync(It.IsAny<string>()))
+            .ReturnsAsync(expectedResponse);
+
+        var result = await _quizService.GetAnswerExplanation(request);
+
+        Assert.Equal(expectedResponse, result);
+        _aiServiceMock.Verify(s => s.GetResponseAsync(It.Is<string>(prompt =>
+            prompt.Contains(request.QuestionText) &&
+            prompt.Contains(request.CorrectAnswer) &&
+            prompt.Contains(request.UserAnswer)
+        )), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetAnswerExplanation_ShouldHandleEmptyUserAnswer()
+    {
+        // Arrange
+        var request = new AnswerExplanationRequestDTO
+        {
+            QuestionText = "What is the capital of France?",
+            CorrectAnswer = "Paris",
+            UserAnswer = ""
+        };
+
+        string expectedResponse = "The correct answer is Paris.";
+
+        _aiServiceMock
+            .Setup(s => s.GetResponseAsync(It.IsAny<string>()))
+            .ReturnsAsync(expectedResponse);
+
+        // Act
+        var result = await _quizService.GetAnswerExplanation(request);
+
+        // Assert
+        Assert.Equal(expectedResponse, result);
+        _aiServiceMock.Verify(s => s.GetResponseAsync(It.Is<string>(prompt =>
+            prompt.Contains("No answer was provided.") &&
+            prompt.Contains(request.CorrectAnswer)
+        )), Times.Once);
     }
 }
