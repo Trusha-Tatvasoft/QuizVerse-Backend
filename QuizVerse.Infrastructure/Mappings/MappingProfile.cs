@@ -16,25 +16,6 @@ public class MappingProfile : Profile
     public MappingProfile()
     {
         #region User Management
-        // user create/update
-        CreateMap<UserRequestDto, User>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.Password, opt =>
-            {
-                opt.PreCondition(src =>
-                    !string.IsNullOrWhiteSpace(src.Password) && (src.Id ?? 0) == 0);
-                opt.MapFrom(src => src.Password);
-            })
-            .ForAllMembers(opts =>
-            {
-                opts.Condition((src, dest, srcMember, destMember, ctx) =>
-                srcMember switch
-                {
-                    string str => !string.IsNullOrWhiteSpace(str),
-                    _ => srcMember != null
-                }
-                );
-            });
 
         // user edit info fetch
         CreateMap<User, UserRequestDto>();

@@ -21,28 +21,27 @@ RETURNS TABLE (
     "Achievements" INT
 ) AS $$
 DECLARE
-    v_total_xp INT;
-    v_current_level INT;
-    v_rank_name VARCHAR;
-    v_next_rank_name VARCHAR;
-    v_progress_pct NUMERIC;
+    v_total_xp INT := 0;
+    v_current_level INT := 1;
+    v_rank_name VARCHAR := 'Unranked';
+    v_next_rank_name VARCHAR := 'N/A';
+    v_progress_pct NUMERIC := 0;
 BEGIN
     -- Get total XP and current level
     SELECT upd.total_xp, upd.current_level
     INTO v_total_xp, v_current_level
     FROM "UserPerformanceDetails" upd
-    WHERE upd.user_id = p_user_id
-    LIMIT 1;
+    WHERE upd.user_id = p_user_id;
 
     -- Get current rank name based on current level
-    SELECT r.rank_name
+    SELECT COALESCE(r.rank_name, 'Unranked')
     INTO v_rank_name
     FROM "UserRankByLevel" r
     WHERE v_current_level BETWEEN r.minimum_level AND r.maximum_level
     LIMIT 1;
 
-    -- Get next rank name (if any)
-    SELECT r.rank_name
+    -- Get next rank name
+    SELECT COALESCE(r.rank_name, 'N/A')
     INTO v_next_rank_name
     FROM "UserRankByLevel" r
     WHERE r.minimum_level > v_current_level
@@ -51,11 +50,12 @@ BEGIN
 
     -- Calculate progress percentage within current level
     SELECT ROUND(
-        100.0 * (v_total_xp - l.minimum_exp)::NUMERIC / NULLIF((l.maximum_exp - l.minimum_exp), 0), 2
-    )
+        100.0 * (v_total_xp - COALESCE(l.minimum_exp, 0))::NUMERIC /
+        NULLIF((COALESCE(l.maximum_exp, 0) - COALESCE(l.minimum_exp, 0)), 0), 2)
     INTO v_progress_pct
     FROM "LevelByExp" l
-    WHERE v_total_xp BETWEEN l.minimum_exp AND l.maximum_exp;
+    WHERE v_total_xp BETWEEN l.minimum_exp AND l.maximum_exp
+    LIMIT 1;
 
     -- Return the full user profile row
     RETURN QUERY
@@ -79,7 +79,6 @@ BEGIN
                     100.0 * SUM(
                         CASE
                             WHEN br.winner_id = u.id THEN 1       -- user won
-                            WHEN br.winner_id IS NULL THEN 1      -- draw counted as win
                             ELSE 0
                         END
                     )::NUMERIC / NULLIF(COUNT(*), 0),

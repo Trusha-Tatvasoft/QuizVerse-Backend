@@ -74,12 +74,14 @@ public static class Constants
 
     #region Email Messages
     public const string EMAIL_PATH_NOT_CONFIGURED = "Email template path is not configured.";
+    public const string EMAIL_PLACEHOLDER_MISSING = "Missing required placeholder: {0}";
     public const string EMAIL_SENT_SUCCESS = "Email successfully sent to {0}.";
     public const string USER_REGISTERED_AND_EMAIL_SENT = "User registered successfully. A welcome email has been sent.";
     public const string USER_REGISTERED_BUT_EMAIL_NOT_SENT = "User registered successfully, but email could not be sent.";
     public const string EMAIL_NOT_SENT = "Email not sent.";
     public const string SMTP_CONFIG_MISSING = "SMTP configuration is missing required fields.";
     public const string EMAIL_OTP_SUBJECT = "Your QuizVerse OTP Code";
+    public const string EMAIL_BODY_EMPTY = "Email body is not provided.";
     #endregion
 
     #region EmailTemplateConstants
@@ -273,7 +275,7 @@ public static class Constants
         },
         {
             EmailTemplateType.EmailVerification,
-            new[] { "{{user}}", "{{email}}", "{{verificationLink}}" }
+            new[] { "{{user}}", "{{email}}", "{{otp}}" }
         },
         {
             EmailTemplateType.QuizInvitation,

@@ -23,6 +23,11 @@ BEGIN
     DELETE FROM "UserNotifications" WHERE user_id = p_old_user_id;
     DELETE FROM "UserBadgesEarned" WHERE user_id = p_old_user_id;
     DELETE FROM "PasswordResetTokens" WHERE user_id = p_old_user_id;
+    DELETE FROM "AttemptedQuizQuestionsAnswer"
+    WHERE quiz_play_status_id IN (
+        SELECT id FROM "QuizPlayStatus" WHERE user_id = p_old_user_id
+    );
+    DELETE FROM "QuizPlayStatus" WHERE user_id = p_old_user_id;
 
     -- Soft cleanup
     UPDATE "BattleStatus"

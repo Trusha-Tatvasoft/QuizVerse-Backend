@@ -75,14 +75,14 @@ BEGIN
         GROUP BY qc.category_name
         ORDER BY SUM(qa.xp_earned) DESC
         LIMIT 1
+    ),
+    final_values AS (
+        SELECT
+            COALESCE((SELECT jsonb_agg(activity ORDER BY created_at DESC) FROM recent_activities LIMIT 3), '[]'::jsonb) AS "RecentActivityJson",
+            COALESCE((SELECT global_rank FROM user_perf), 0) AS "GlobalRank",
+            COALESCE((SELECT category_name FROM best_cat), 'N/A') AS "BestCategory",
+            COALESCE((SELECT longest_streak FROM user_perf), 0) AS "LongestStreak"
     )
-    SELECT 
-        (SELECT jsonb_agg(activity ORDER BY created_at DESC) FROM recent_activities) AS "RecentActivityJson",
-        user_perf.global_rank AS "GlobalRank",
-        best_cat.category_name AS "BestCategory",
-        user_perf.longest_streak AS "LongestStreak"
-    FROM user_perf, best_cat;
+    SELECT * FROM final_values;
 END;
 $$ LANGUAGE plpgsql;
-
-SELECT * FROM get_user_overview(2)

@@ -22,19 +22,17 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<ITokenService> _tokenServiceMock = new();
         private readonly Mock<ICommonService> _commonServiceMock = new();
         private readonly Mock<IGenericRepository<User>> _userRepoMock = new();
-        private readonly Mock<IEmailService> _emailServiceMock = new();
         private readonly Mock<IMapper> _mapperMock = new();
         private readonly Mock<IConfiguration> _configurationMock = new();
         private readonly Mock<IGenericRepository<PasswordResetToken>> _passwordResetTokenRepoMock = new();
 
         private AuthService CreateService() =>
-            new(_tokenServiceMock.Object, _commonServiceMock.Object, _userRepoMock.Object, _passwordResetTokenRepoMock.Object, _emailServiceMock.Object, _mapperMock.Object, _configurationMock.Object);
+            new(_tokenServiceMock.Object, _commonServiceMock.Object, _userRepoMock.Object, _passwordResetTokenRepoMock.Object, _mapperMock.Object, _configurationMock.Object);
 
 
         public AuthServiceTests()
         {
             _userRepoMock = new Mock<IGenericRepository<User>>();
-            _emailServiceMock = new Mock<IEmailService>();
             _tokenServiceMock = new Mock<ITokenService>();
 
             // Ensure test email template file exists
@@ -70,7 +68,7 @@ namespace QuizVerse.UnitTests.Services
             return new ClaimsPrincipal(identity);
         }
 
-
+        #region AuthenticateUser/Login
         [Fact]
         public async Task AuthenticateUser_ReturnsTokens_WhenCredentialsAreValid()
         {
@@ -211,7 +209,9 @@ namespace QuizVerse.UnitTests.Services
             var ex = await Assert.ThrowsAsync<Exception>(() => service.AuthenticateUser(dto));
             Assert.Equal(Constants.FAILED_TOKEN_GENERATION_MESSAGE, ex.Message);
         }
+        #endregion
 
+        #region ValidateRefreshTokens
         [Fact]
         public async Task ValidateRefreshTokens_Throws_WhenTokenIsNull()
         {
@@ -357,7 +357,9 @@ namespace QuizVerse.UnitTests.Services
             Password = "SecurePass123",
             Bio = "Tester at QuizVerse"
         };
+        #endregion
 
+        #region RegisterUser
         [Fact]
         public async Task RegisterUser_Should_Throw_When_EmailAlreadyExists()
         {
@@ -399,8 +401,9 @@ namespace QuizVerse.UnitTests.Services
             _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
             _mapperMock.Setup(m => m.Map<User>(It.IsAny<UserRegisterDto>())).Returns(new User { CreatedDate = DateTime.UtcNow });
 
-            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()))
-                             .ThrowsAsync(new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED));
+            _commonServiceMock
+                .Setup(c => c.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
+                .ThrowsAsync(new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED));
 
             AuthService service = CreateService();
 
@@ -419,14 +422,13 @@ namespace QuizVerse.UnitTests.Services
             // Arrange
             var userRegisterDto = CreateValidUserDto();
 
-            // Ensure the template file is deleted if it exists
-            string templateFullPath = Path.Combine(Directory.GetCurrentDirectory(), Constants.REGISTER_USER_TEMPLATE_PATH);
-            if (File.Exists(templateFullPath))
-                File.Delete(templateFullPath);
-
             _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(false);
             _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
             _mapperMock.Setup(m => m.Map<User>(It.IsAny<UserRegisterDto>())).Returns(new User { CreatedDate = DateTime.UtcNow });
+
+            _commonServiceMock
+                .Setup(c => c.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
+                .ThrowsAsync(new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED));
 
             var service = CreateService();
 
@@ -446,13 +448,6 @@ namespace QuizVerse.UnitTests.Services
             // Arrange
             var userRegisterDto = CreateValidUserDto();
 
-            // Create test template file at the exact location used in your service
-            string templateFullPath = Path.Combine(Directory.GetCurrentDirectory(), Constants.REGISTER_USER_TEMPLATE_PATH);
-            string templateDirectory = Path.GetDirectoryName(templateFullPath)!;
-
-            Directory.CreateDirectory(templateDirectory);
-            await File.WriteAllTextAsync(templateFullPath, "Welcome {{userEmail}}!");
-
             _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(false);
             _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
 
@@ -463,58 +458,64 @@ namespace QuizVerse.UnitTests.Services
             };
 
             _mapperMock.Setup(m => m.Map<User>(It.IsAny<UserRegisterDto>())).Returns(mappedUser);
-            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(true);
+
+            _commonServiceMock
+                .Setup(c => c.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
+                .ReturnsAsync((TemplatedEmailRequestDto dto) =>
+                    string.Format(Constants.EMAIL_SENT_SUCCESS, dto.ToEmail));
 
             var service = CreateService();
 
             var (success, message) = await service.RegisterUser(userRegisterDto);
             success.Should().BeTrue();
             message.Should().Contain(Constants.USER_REGISTERED_AND_EMAIL_SENT);
-            _emailServiceMock.Verify(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()), Times.Once);
-        }
 
+            _commonServiceMock.Verify(c => c.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()), Times.Once);
+        }
+        #endregion
+
+        #region ForgotPassword
         [Fact]
         public async Task ForgotPassword_ReturnsTrue_WhenValidUser()
         {
             // Arrange
-            var user = CreateTestUser();
+            var testEmail = "test@example.com";
+            var testUser = new User
+            {
+                Id = 1,
+                Email = testEmail,
+                FullName = "Test User",
+                Status = (int)UserStatus.Active,
+                IsDeleted = false
+            };
 
             _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
-                         .ReturnsAsync(user);
+                         .ReturnsAsync(testUser);
 
-            _tokenServiceMock.Setup(t => t.GenerateSecureToken(32)).Returns("secure_token");
-
-            _configurationMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("30");
-            _configurationMock.Setup(c => c["baseUrl"]).Returns("https://example.com");
+            _tokenServiceMock.Setup(t => t.GenerateSecureToken(32))
+                 .Returns("securetoken123");
 
             _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
-                                       .Returns(Task.CompletedTask)
-                                       .Callback<PasswordResetToken>(token => token.TokenId = 1);
+                                      .Returns(Task.CompletedTask)
+                                      .Callback<PasswordResetToken>(token => token.TokenId = 1);
 
-            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(true);
+            _configurationMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"])
+                              .Returns("30");
+            _configurationMock.Setup(c => c["baseUrl"])
+                              .Returns("https://example.com");
 
-            string projectRoot = Directory.GetCurrentDirectory();
-            string templateRelativePath = Path.Combine("Templates", "ResetPassword.html");
-            string templateFullPath = Path.Combine(projectRoot, templateRelativePath);
-            Directory.CreateDirectory(Path.GetDirectoryName(templateFullPath)!);
+            _commonServiceMock.Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
+                              .ReturnsAsync((TemplatedEmailRequestDto dto) =>
+                                  string.Format(Constants.EMAIL_SENT_SUCCESS, dto.ToEmail));
 
-            string templateContent = "Hi {userName}, use this link to reset: {resetLink}";
-            await File.WriteAllTextAsync(templateFullPath, templateContent);
+            var service = CreateService();
 
-            try
-            {
-                // Act
-                var service = CreateService();
-                var result = await service.ForgotPassword(user.Email);
+            // Act
+            var result = await service.ForgotPassword(testEmail);
 
-                // Assert
-                Assert.True(result);
-            }
-            finally
-            {
-                if (File.Exists(templateFullPath))
-                    File.Delete(templateFullPath);
-            }
+            // Assert
+            result.Should().BeTrue();
+            _commonServiceMock.Verify(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()), Times.Once);
         }
 
         [Fact]
@@ -569,36 +570,28 @@ namespace QuizVerse.UnitTests.Services
         {
             // Arrange
             var user = CreateTestUser();
-            var templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates");
-            var fullFilePath = Path.Combine(templatePath, "ResetPassword.html");
-
-            // Ensure the directory exists
-            Directory.CreateDirectory(templatePath);
-
-            // Create a dummy file with valid placeholders
-            await File.WriteAllTextAsync(fullFilePath, "Hello {userName}, reset your password here: {resetLink}");
-
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
-                         .ReturnsAsync(user);
+            _userRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                .ReturnsAsync(user);
             _tokenServiceMock.Setup(t => t.GenerateSecureToken(32)).Returns("secure_token");
             _configurationMock.Setup(c => c["ResetPasswordTokenExpiryMinutes"]).Returns("30");
             _configurationMock.Setup(c => c["baseUrl"]).Returns("https://example.com");
             _passwordResetTokenRepoMock.Setup(r => r.AddAsync(It.IsAny<PasswordResetToken>()))
                                        .Callback<PasswordResetToken>(t => t.TokenId = 1)
                                        .Returns(Task.CompletedTask);
-            _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(false);
+            _commonServiceMock
+                .Setup(c => c.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
+                .ReturnsAsync("Failed to send email");  
 
             var service = CreateService();
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppException>(() => service.ForgotPassword(user.Email));
             Assert.Equal(Constants.EMAIL_NOT_SENT, ex.Message);
-
-            // Cleanup
-            if (File.Exists(fullFilePath))
-                File.Delete(fullFilePath);
         }
+        #endregion
 
+        #region VerifyTokenResetPassword
         [Fact]
         public async Task VerifyTokenResetPassword_ReturnsTrue_WhenValid()
         {
@@ -652,7 +645,9 @@ namespace QuizVerse.UnitTests.Services
 
             Assert.Equal(Constants.INACTIVE_USER_MESSAGE, ex.Message);
         }
+        #endregion
 
+        #region ResetPassword
         [Fact]
         public async Task ResetPassword_ReturnsTrue_WhenValid()
         {
@@ -708,7 +703,9 @@ namespace QuizVerse.UnitTests.Services
 
             Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
         }
+        #endregion
 
+        #region IsUserNameAvailable
         [Fact]
         public async Task IsUserNameAvailable_ShouldReturnTrue_WhenUserNameDoesNotExist()
         {
@@ -761,45 +758,89 @@ namespace QuizVerse.UnitTests.Services
 
             result.Should().BeTrue();
         }
+        #endregion
 
+        #region IsEmailAvailable
         [Fact]
-        public async Task IsEmailAvailable_ShouldReturnTrue_WhenEmailDoesNotExist()
+        public async Task IsEmailAvailable_ShouldReturnTrue_WhenEmailNotFound()
         {
-            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
-                         .ReturnsAsync(false);
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync((User)null);
 
-            AuthService service = CreateService();
+            var service = CreateService();
 
-            bool result = await service.IsEmailAvailable("unique@example.com");
+            var result = await service.IsEmailAvailable("new@example.com");
 
             result.Should().BeTrue();
         }
 
         [Fact]
-        public async Task IsEmailAvailable_ShouldThrow_WhenEmailExists_ExactMatch()
+        public async Task IsEmailAvailable_ShouldThrow_WhenEmailIsSuspended()
         {
-            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
-                         .ReturnsAsync(true);
+            var user = CreateTestUser(status: (int)UserStatus.Suspended);
 
-            AuthService service = CreateService();
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
 
-            Func<Task<bool>> act = async () => await service.IsEmailAvailable("test@example.com");
+            var service = CreateService();
+
+            Func<Task> act = async () => await service.IsEmailAvailable(user.Email);
 
             await act.Should().ThrowAsync<AppException>()
-                     .WithMessage(Constants.DUPLICATE_EMAIL);
+                .WithMessage(Constants.EMAIL_SUSPENDED);
         }
 
         [Fact]
-        public async Task IsEmailAvailable_ShouldBeCaseSensitive()
+        public async Task IsEmailAvailable_ShouldReturnTrue_WhenUserIsDeleted()
         {
-            _userRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
-                         .ReturnsAsync(false);
+            var user = CreateTestUser(status: (int)UserStatus.Active);
+            user.IsDeleted = true;
 
-            AuthService service = CreateService();
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
 
-            bool result = await service.IsEmailAvailable("TEST@EXAMPLE.COM");
+            var service = CreateService();
+
+            var result = await service.IsEmailAvailable(user.Email);
 
             result.Should().BeTrue();
         }
+
+        [Fact]
+        public async Task IsEmailAvailable_ShouldThrow_WhenUserIsActiveAndNotDeleted()
+        {
+            var user = CreateTestUser(status: (int)UserStatus.Active);
+            user.IsDeleted = false;
+
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            var service = CreateService();
+
+            Func<Task> act = async () => await service.IsEmailAvailable(user.Email);
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.EMAIL_ALREADY_IN_USE);
+        }
+
+        [Fact]
+        public async Task IsEmailAvailable_ShouldThrow_WhenUserStatusIsUnknown()
+        {
+            var user = CreateTestUser(status: 99); // Unknown status
+            user.IsDeleted = false;
+
+            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                         .ReturnsAsync(user);
+
+            var service = CreateService();
+
+            Func<Task> act = async () => await service.IsEmailAvailable(user.Email);
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.EMAIL_ALREADY_IN_USE);
+        }
+
+        #endregion
+
     }
 }
