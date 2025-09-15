@@ -348,4 +348,11 @@ public static class Constants
     public const string QUIZ_RATING_SUBMITTED = "Quiz rating submitted successfully.";
     public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
     #endregion
+
+    #region User Battles
+    public const string SELF_CHALLENGE_NOT_ALLOWED = "Cannot challenge yourself.";
+    public const string ACTIVE_CHALLENGE_EXISTS = "You already have an active challenge sent to this user.";
+    public const string BATTLE_REQUEST_SENT_SUCCESS = "Battle request sent successfully.";
+    public const string BATTLE_ALREADY_ACCEPTED = "You already have an accepted battle for this Battle and cannot send it to another user.";
+    #endregion
 }

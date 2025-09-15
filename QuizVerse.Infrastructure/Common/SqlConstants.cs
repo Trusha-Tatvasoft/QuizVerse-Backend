@@ -93,6 +93,8 @@ public class SqlConstants
     public const string GET_USER_RECENT_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id, @p_status_draw, @p_status_completed)";
     public const string GET_USER_BATTLE_LEADERBOARD_LIST_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}})";
     public const string GET_USER_BATTLE_LEADERBOARD_LIST_FUNCTION = "get_user_battles_leaderboard_list";
+    public const string GET_USER_AVAILABLE_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}})";
+    public const string GET_USER_AVAILABLE_BATTLES_FUNCTION = "get_user_available_battles";
     #endregion
 
     #region Quiz

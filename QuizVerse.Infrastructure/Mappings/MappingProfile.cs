@@ -325,6 +325,20 @@ public class MappingProfile : Profile
         CreateMap<RawQuizQuestionDto, QuizQuestionResponseDto>()
             .ForMember(dest => dest.Options, opt => opt.Ignore());
 
+        CreateMap<SendBattleRequestDTO, BattleRequest>()
+            .ForMember(dest => dest.SenderId,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ReceiverId,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.Status,
+                opt => opt.MapFrom(src => (int)BattleRequestStatus.Pending))
+            .ForMember(dest => dest.SendingDate,
+                opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.MapFrom(src => false))
+            .ForMember(dest => dest.BattleId,
+                opt => opt.MapFrom(src => src.BattleId));
+
         #endregion
 
         #region Quiz
