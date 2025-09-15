@@ -144,14 +144,14 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
 
         if (result.Success)
         {
-            if (result.Message == "User created successfully.")
+            if (result.Message == Constants.USER_CREATE_SUCCESS)
             {
                 var emailDto = new TemplatedEmailRequestDto
                 {
                     ToEmail = dto.Email,
                     TemplateType = EmailTemplateType.NewUser,
                     Placeholders = new Dictionary<string, string>
-                {   
+                {
                     { "{{user}}", dto.Email },
                     { "{{password}}", dto.Password! },
                     { "{{loginUrl}}", configuration["QuizVerse:LoginUrl"] ?? string.Empty },

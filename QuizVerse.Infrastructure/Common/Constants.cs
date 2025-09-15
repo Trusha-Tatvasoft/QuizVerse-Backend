@@ -70,6 +70,7 @@ public static class Constants
     public const string USER_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
     public const string USER_DATA_NULL = "No data available to export.";
     public const string NO_EMAIL_CHANGE = "Email can't be changed";
+    public const string USER_CREATE_SUCCESS = "User created successfully.";
     #endregion
 
     #region Email Messages
@@ -82,12 +83,6 @@ public static class Constants
     public const string SMTP_CONFIG_MISSING = "SMTP configuration is missing required fields.";
     public const string EMAIL_OTP_SUBJECT = "Your QuizVerse OTP Code";
     public const string EMAIL_BODY_EMPTY = "Email body is not provided.";
-    #endregion
-
-    #region EmailTemplateConstants
-    public const string NEW_USER_TEMPLATE_PATH = "Templates/NewUser.html";
-    public const string REGISTER_USER_TEMPLATE_PATH = "Templates/Welcome.html";
-    public const string OTP_TEMPLATE_PATH = "Templates/EmailVerifyOTP.html";
     #endregion
 
     #region CRUD Messages
