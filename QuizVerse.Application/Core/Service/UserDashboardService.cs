@@ -137,6 +137,7 @@ public class UserDashboardService(
             RequestId = br.Id,
             SenderUserName = br.Sender.UserName,
             SenderProfilePic = br.Sender.ProfilePic,
+            SenderFullName = br.Sender.FullName,
             BattleName = br.Battle.Quiz.Name,
             BattleCategory = br.Battle.Quiz.Category.CategoryName,
             BattleDifficulty = br.Battle.Quiz.DifficultyLevel.Name,

@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class CommonService(IGenericRepository<User> userRepository) : ICommonService
+    public class CommonService(IGenericRepository<User> userRepository, IEmailService emailService, IGenericRepository<EmailTemplete> emailTemplateRepository) : ICommonService
     {
         #region PasswordHash
         public string Hash(string password)
@@ -111,6 +113,45 @@ namespace QuizVerse.Application.Core.Service
                 await userRepository.UpdateAsync(user);
             }
             return otp;
+        }
+        #endregion
+
+        #region SendTemplatedEmail
+        public async Task<string> SendEmailFromTemplate(TemplatedEmailRequestDto dto)
+        {
+            var template = await emailTemplateRepository.GetAsync(t => t.TemplateType == (int)dto.TemplateType && t.Status && !t.IsDeleted)
+                ?? throw new AppException(Constants.EMAIL_TEMPLATE_NOT_FOUND);
+
+            if (string.IsNullOrWhiteSpace(template.Body))
+                return Constants.EMAIL_BODY_EMPTY;
+
+            // Validate required placeholders
+            if (Constants.EmailTemplatePlaceholdersRequired.TryGetValue(dto.TemplateType, out var requiredPlaceholders))
+            {
+                foreach (string placeholder in requiredPlaceholders)
+                {
+                    if (!dto.Placeholders.ContainsKey(placeholder))
+                        throw new AppException(string.Format(Constants.EMAIL_PLACEHOLDER_MISSING, placeholder));
+                }
+            }
+
+            // Replace placeholders
+            string body = template.Body;
+            foreach (var kvp in dto.Placeholders)
+            {
+                body = body.Replace(kvp.Key, kvp.Value);
+            }
+
+            var emailSent = await emailService.SendEmailAsync(new EmailRequestDto
+            {
+                To = dto.ToEmail,
+                Subject = template.Subject,
+                Body = body
+            });
+
+            return emailSent
+                ? string.Format(Constants.EMAIL_SENT_SUCCESS, dto.ToEmail)
+                : Constants.EMAIL_NOT_SENT;
         }
         #endregion
     }

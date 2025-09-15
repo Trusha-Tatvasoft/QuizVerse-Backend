@@ -29,9 +29,6 @@ public class RawLeaderboardGlobalRankingDto
     [Column("current_streak")]
     public int CurrentStreak { get; set; }
 
-    [Column("new_global_rank")]
-    public int NewGlobalRank { get; set; }
-
     [Column("trend")]
     public int Trend { get; set; }   // 1 = same, 2 = up, 3 = down
 
@@ -49,7 +46,6 @@ public class LeaderboardGlobalRankingResponseDto
     public int TotalXp { get; set; }
     public int CurrentLevel { get; set; }
     public int CurrentStreak { get; set; }
-    public int NewGlobalRank { get; set; }
     public int Trend { get; set; }   // 1 = same, 2 = up, 3 = down
     public bool Is_loggedin_user { get; set; }
 }

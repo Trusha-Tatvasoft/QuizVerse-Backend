@@ -13,10 +13,13 @@ using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 using System.Linq.Dynamic.Core;
 using ClosedXML.Excel;
+using Npgsql;
+using NpgsqlTypes;
+using Microsoft.Extensions.Configuration;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IEmailService emailService, IMapper mapper, IHttpContextAccessor httpContextAccessor) : IUserService
+public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISqlQueryRepository sqlQueryRepository, IConfiguration configuration) : IUserService
 {
     public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
 
@@ -98,65 +101,90 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #endregion
 
     #region Create Or Update
+
     public async Task<(bool Success, string Message)> CreateOrUpdateUser(UserRequestDto dto)
     {
         string? imagePath = null;
+        string? password = null;
 
         if (dto.ProfilePic != null && dto.ProfilePic.Length > 0)
         {
             imagePath = await commonService.SaveFile(dto.ProfilePic, "users");
         }
 
-        if (dto.Id.HasValue && dto.Id.Value > 0)
+        if (dto.Id == null)
         {
-            // UPDATE
-            var user = await userRepository.GetAsync(u => u.Id == dto.Id && !u.IsDeleted)
-                ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, dto.Id));
-
-            if (!string.Equals(user.Email, dto.Email, StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(dto.Password))
             {
-                throw new AppException(Constants.NO_EMAIL_CHANGE);
+                throw new AppException(Constants.PASSWORD_REQUIRED_FOR_NEW_USER);
             }
 
-            if (await userRepository.Exists(u => u.UserName == dto.UserName && u.Id != dto.Id))
-                throw new AppException(Constants.DUPLICATE_USERNAME);
-
-            mapper.Map(dto, user);
-            if (imagePath != null) user.ProfilePic = imagePath;
-
-            user.ModifiedBy = UserId;
-            user.ModifiedDate = DateTime.UtcNow;
-
-            await userRepository.UpdateAsync(user);
-            return (true, Constants.UPDATE_SUCCESS);
+            password = commonService.Hash(dto.Password);
         }
-        else
+
+        var query = string.Format(SqlConstants.CREATE_OR_UPDATE_USER_QUERY_TEMPLATE, SqlConstants.CREATE_OR_UPDATE_USER_FUNCTION);
+
+        var parameters = new NpgsqlParameter[]
         {
-            // CREATE
-            if (string.IsNullOrWhiteSpace(dto.Password))
-                throw new AppException(Constants.PASSWORD_REQUIRED_FOR_NEW_USER);
+            new("p_id", NpgsqlDbType.Integer) { Value = (object?)dto.Id ?? DBNull.Value },
+            new("p_full_name", NpgsqlDbType.Text) { Value = dto.FullName },
+            new("p_email", NpgsqlDbType.Text) { Value = dto.Email },
+            new("p_username", NpgsqlDbType.Text) { Value = dto.UserName },
+            new("p_password", NpgsqlDbType.Text) { Value = (object?)password ?? DBNull.Value },
+            new("p_profile_pic", NpgsqlDbType.Text) { Value = (object?)imagePath ?? DBNull.Value },
+            new("p_bio", NpgsqlDbType.Text) { Value = (object?)dto.Bio ?? DBNull.Value },
+            new("p_player_role_id", NpgsqlDbType.Integer) { Value = (int)UserRoles.Player },
+            new("p_status_active", NpgsqlDbType.Integer) { Value = (int)UserStatus.Active },
+            new("p_status_inactive", NpgsqlDbType.Integer) { Value = (int)UserStatus.Inactive },
+            new("p_status_suspended", NpgsqlDbType.Integer) { Value = (int)UserStatus.Suspended },
+            new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId.HasValue ? UserId.Value : DBNull.Value },
+            new("p_first_time_login", NpgsqlDbType.Boolean) { Value = !dto.IsRegister }
+        };
 
-            if (await userRepository.Exists(u => u.Email == dto.Email))
-                throw new AppException(Constants.DUPLICATE_EMAIL);
 
-            if (await userRepository.Exists(u => u.UserName == dto.UserName))
-                throw new AppException(Constants.DUPLICATE_USERNAME);
+        var result = await sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
 
-            var user = mapper.Map<User>(dto);
-            user.Password = commonService.Hash(dto.Password);
-            user.ProfilePic = imagePath;
-            user.RoleId = (int)UserRoles.Player;
-            user.Status = (int)UserStatus.Active;
-            user.CreatedDate = DateTime.UtcNow;
-            user.CreatedBy = UserId;
-            user.FirstTimeLogin = true;
+        if (!result.Success)
+            throw new AppException(result.Message);
 
-            await userRepository.AddAsync(user);
+        if (result.Message != Constants.USER_CREATE_SUCCESS)
+            return (true, result.Message);
 
-            string emailStatus = await SendMailToNewUser(user.Email, dto.Password);
+        var placeholders = dto.IsRegister
+            ? new Dictionary<string, string> // Register - welcome email
+            {
+                { "{{user}}", dto.Email },
+                { "{{email}}", dto.Email },
+                { "{{registrationDate}}", DateTime.UtcNow.ToString("MMMM dd, yyyy") },
+                { "{{loginUrl}}", configuration["QuizVerse:LoginUrl"] ?? string.Empty },
+                { "{{companyName}}", Constants.PLATFORM_NAME },
+                { "{{year}}", DateTime.UtcNow.Year.ToString() }
+            }
+            : new Dictionary<string, string> // Admin-created user
+            {
+                { "{{user}}", dto.Email },
+                { "{{password}}", dto.Password! },
+                { "{{loginUrl}}", configuration["QuizVerse:LoginUrl"] ?? string.Empty },
+            };
 
-            return (true, string.Format(Constants.CREATE_SUCCESS + ". " + emailStatus));
-        }
+        var emailDto = new TemplatedEmailRequestDto
+        {
+            ToEmail = dto.Email,
+            TemplateType = dto.IsRegister
+                ? EmailTemplateType.WelComeEmail
+                : EmailTemplateType.NewUser,
+            Placeholders = placeholders
+        };
+
+        string emailResult = await commonService.SendEmailFromTemplate(emailDto);
+        string expectedMessage = string.Format(Constants.EMAIL_SENT_SUCCESS, emailDto.ToEmail);
+        bool emailSent = emailResult == expectedMessage;
+
+        return dto.IsRegister ? emailSent
+                ? (true, Constants.USER_REGISTERED_AND_EMAIL_SENT)
+                : throw new AppException(Constants.USER_REGISTERED_BUT_EMAIL_NOT_SENT)
+            : (true, result.Message + " " + emailResult);
+
     }
     #endregion
 
@@ -191,6 +219,25 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
                 user.ModifiedBy = UserId;
                 user.ModifiedDate = DateTime.UtcNow;
                 resultMessage = string.Format(Constants.USER_STATUS_CHANGED_SUCCESS, user.Id, userActionRequest.NewStatus);
+
+                // send mail to suspended user
+                if (userActionRequest.NewStatus == UserStatus.Suspended)
+                {
+                    var placeholders = new Dictionary<string, string>
+                    {
+                        { "{{user}}", user.UserName ?? user.Email },
+                        { "{{email}}", user.Email }
+                    };
+
+                    var emailDto = new TemplatedEmailRequestDto
+                    {
+                        TemplateType = EmailTemplateType.AccountSuspension,
+                        ToEmail = user.Email,
+                        Placeholders = placeholders
+                    };
+
+                    await commonService.SendEmailFromTemplate(emailDto);
+                }
                 break;
 
             default:
@@ -200,34 +247,6 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         await userRepository.UpdateAsync(user);
 
         return resultMessage;
-    }
-    #endregion
-
-    #region Send mail
-    private async Task<string> SendMailToNewUser(string email, string plainPassword)
-    {
-        string? templatePath = Constants.NEW_USER_TEMPLATE_PATH;
-        if (string.IsNullOrWhiteSpace(templatePath))
-            throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
-
-        string fullPath = Path.Combine(Directory.GetCurrentDirectory(), templatePath);
-        string emailBody = await File.ReadAllTextAsync(fullPath);
-
-        emailBody = emailBody.Replace("{username}", email);
-        emailBody = emailBody.Replace("{password}", plainPassword);
-
-        bool isEmailSent = await emailService.SendEmailAsync(new EmailRequestDto
-        {
-            To = email,
-            Subject = Constants.QUIZVERSE_DEFAULT_QUOTE,
-            Body = emailBody
-        });
-
-        if (isEmailSent)
-            return string.Format(Constants.EMAIL_SENT_SUCCESS, email);
-        else
-            return Constants.EMAIL_NOT_SENT;
-
     }
     #endregion
 

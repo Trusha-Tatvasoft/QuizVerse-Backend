@@ -21,6 +21,8 @@ public partial class QuizToBaseQuestionMap
 
     public DateTime? ModifiedDate { get; set; }
 
+    public virtual ICollection<AttemptedQuizQuestionsAnswer> AttemptedQuizQuestionsAnswers { get; set; } = new List<AttemptedQuizQuestionsAnswer>();
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual User? ModifiedByNavigation { get; set; }

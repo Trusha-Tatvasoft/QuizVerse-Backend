@@ -145,7 +145,11 @@ BEGIN
       AND id = p_category_id
     LIMIT 1;
 
-    v_is_featured := (v_is_recent_category = 1);
+	IF v_is_recent_category = 1 THEN
+		v_is_featured := TRUE;
+	ELSE 
+		v_is_featured := TRUE;
+	END IF;
 
     -- 4. Create or Update Quiz record
     IF p_quiz_id IS NULL THEN

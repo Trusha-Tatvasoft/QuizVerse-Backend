@@ -12,7 +12,9 @@ public class UserRequestDto
     public string FullName { get; set; } = null!;
 
     [Required(ErrorMessage = "Username is required.")]
-    [StringLength(50, ErrorMessage = "Username can't be longer than 50 characters.")]
+    [RegularExpression(@"^[a-zA-Z0-9!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:,.<>\/?\\|`~]+$",
+            ErrorMessage = "Username can only contain letters, numbers, and special characters.")]
+    [StringLength(100, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 100 characters.")]
     public string UserName { get; set; } = null!;
 
     [Required(ErrorMessage = "Email is required.")]
@@ -30,6 +32,8 @@ public class UserRequestDto
 
     [AllowedImage(ErrorMessage = "Invalid profile picture. Only .jpg, .jpeg, .png, and .gif files are allowed, with a maximum size of 5MB.")]
     public IFormFile? ProfilePic { get; set; }
+
+    public bool IsRegister { get; set; } = false;
 }
 
 

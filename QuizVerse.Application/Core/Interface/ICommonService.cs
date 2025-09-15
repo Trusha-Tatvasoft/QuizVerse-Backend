@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 
 namespace QuizVerse.Application.Core.Interface
 {
@@ -12,5 +13,6 @@ namespace QuizVerse.Application.Core.Interface
         Task<string?> SaveFile(IFormFile file, string folderName);
         string EscapeCsv(string input);
         Task<string> GenerateOtp(string email);
+        Task<string> SendEmailFromTemplate(TemplatedEmailRequestDto dto);
     }
 }

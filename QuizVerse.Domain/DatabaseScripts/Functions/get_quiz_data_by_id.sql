@@ -52,7 +52,7 @@ BEGIN
                 )
                 FROM "QuizTagMapping" qtm
                 JOIN "QuizTag" t ON t.id = qtm.tag_id
-                WHERE qtm.quiz_id = q.id
+                WHERE qtm.quiz_id = q.id AND qtm.is_deleted = FALSE
             ), '[]'::jsonb
         ) AS tags,
         COALESCE(

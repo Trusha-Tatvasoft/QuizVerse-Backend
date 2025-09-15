@@ -11,5 +11,7 @@ public partial class QuestionType
 
     public string? Description { get; set; }
 
+    public virtual ICollection<AttemptedQuizQuestionsAnswer> AttemptedQuizQuestionsAnswers { get; set; } = new List<AttemptedQuizQuestionsAnswer>();
+
     public virtual ICollection<BaseQuestion> BaseQuestions { get; set; } = new List<BaseQuestion>();
 }

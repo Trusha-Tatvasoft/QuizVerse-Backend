@@ -99,10 +99,24 @@ namespace QuizVerse.Infrastructure.Enums
         Silver = 4
     }
 
-    
     public enum EmailTemplateActionType
     {
         Delete = 1,
         ChangeStatus = 2
+    }
+
+    public enum BrowseQuizzesSorting
+    {
+        MostPopular = 1,
+        HighestRated = 2,
+        Newest = 3,
+        PriceLowToHigh = 4,
+    }
+
+    public enum BrowseQuizzesFilterByType
+    {
+        Featured = 1,
+        Free = 2,
+        Premium = 3
     }
 }

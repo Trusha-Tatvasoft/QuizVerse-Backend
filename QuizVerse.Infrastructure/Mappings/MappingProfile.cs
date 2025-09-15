@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
@@ -15,25 +16,6 @@ public class MappingProfile : Profile
     public MappingProfile()
     {
         #region User Management
-        // user create/update
-        CreateMap<UserRequestDto, User>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.Password, opt =>
-            {
-                opt.PreCondition(src =>
-                    !string.IsNullOrWhiteSpace(src.Password) && (src.Id ?? 0) == 0);
-                opt.MapFrom(src => src.Password);
-            })
-            .ForAllMembers(opts =>
-            {
-                opts.Condition((src, dest, srcMember, destMember, ctx) =>
-                srcMember switch
-                {
-                    string str => !string.IsNullOrWhiteSpace(str),
-                    _ => srcMember != null
-                }
-                );
-            });
 
         // user edit info fetch
         CreateMap<User, UserRequestDto>();
@@ -61,12 +43,8 @@ public class MappingProfile : Profile
 
         #region Login/Registration User
         // user registration
-        CreateMap<UserRegisterDto, User>()
-           .ForMember(dest => dest.FirstTimeLogin, opt => opt.MapFrom(src => false))
-           .ForMember(dest => dest.Status, opt => opt.MapFrom(src => UserStatus.Active))
-           .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => UserRole.Player))
-           .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => false))
-           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow));
+        CreateMap<UserRegisterDto, UserRequestDto>()
+            .ForMember(dest => dest.IsRegister, opt => opt.MapFrom(src => true));
         #endregion
 
         #region Quiz Difficulty Levels
@@ -117,6 +95,10 @@ public class MappingProfile : Profile
         #region Question Difficulty
         CreateMap<QuestionDifficulty, CommonListDropDownDto>()
             .ForMember(dest => dest.Name, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)));
+
+        CreateMap<QuestionDifficulty, QuestionDifficultyResponseDTO>()
+            .ForMember(dest => dest.TotalQuestions,
+                opt => opt.Ignore());
         #endregion
 
         #region Question Mapping
@@ -222,10 +204,10 @@ public class MappingProfile : Profile
 
         CreateMap<RawLeaderboardGlobalRankingDto, LeaderboardGlobalRankingResponseDto>();
         #endregion
-        
+
         #region Email Templates
         CreateMap<EmailTemplete, EmailTemplatesResponseDto>();
-        
+
         CreateMap<EmailTemplatesRequestDTO, EmailTemplete>()
             .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
@@ -244,7 +226,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => Math.Round((double)src.WinRate, 2)))
             .ForMember(dest => dest.CurrentRank,
                 opt => opt.MapFrom(src => src.CurrentRank));
-                
+
         CreateMap<RawRankProgressDTO, RankProgressDTO>()
             .ForMember(dest => dest.CurrentRank,
                 opt => opt.MapFrom(src => src.CurrentRank))
@@ -255,7 +237,7 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.ProgressPercent,
                 opt => opt.MapFrom(src => src.ProgressPercent));
         #endregion
-        
+
         #region Battle Question Difficulty Mapping
         CreateMap<QuestionDifficulty, QuestionDifficultyXPData>()
           .ForMember(dest => dest.QuestionDifficultyId, opt => opt.MapFrom(src => src.Id))
@@ -286,6 +268,112 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Bio,
                 opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Bio) ? null : src.Bio.Trim()));
 
+        #endregion
+
+        #region UserBattles
+        CreateMap<UserRecentBattleDto, UserRecentBattleDto>()
+            .ForMember(dest => dest.Opponent,
+                opt => opt.MapFrom(src => ToTitleCase(src.Opponent)))
+            .ForMember(dest => dest.Category,
+                opt => opt.MapFrom(src => ToTitleCase(src.Category)));
+
+        CreateMap<UserBattleLeaderboardData, UserBattleLeaderboardData>()
+            .ForMember(dest => dest.UserName,
+                opt => opt.MapFrom(src => src.UserName.Trim()));
+        #endregion
+
+        #region Browse Quizzes
+        CreateMap<BrowseQuizzesResultDTO, BrowseQuizzesResponseDTO>()
+            .ConvertUsing(src => new BrowseQuizzesResponseDTO
+            {
+                HasMore = src.HasMore,
+                Quizzes = string.IsNullOrWhiteSpace(src.QuizzesJSON)
+                    ? new List<BrowseQuizz>()
+                    : JsonSerializer.Deserialize<List<BrowseQuizz>>(src.QuizzesJSON, new JsonSerializerOptions())!,
+                TotalFeatured = src.TotalFeatured,
+                TotalFree = src.TotalFree,
+                TotalPremium = src.TotalPremium,
+                TotalAll = src.TotalAll
+            });
+
+        CreateMap<RawStartQuizDto, QuizStartResponseDto>()
+            .ForMember(dest => dest.Options, opt => opt.Ignore());
+
+        CreateMap<RawQuizQuestionDto, QuizQuestionResponseDto>()
+            .ForMember(dest => dest.Options, opt => opt.Ignore());
+
+        CreateMap<SendBattleRequestDTO, BattleRequest>()
+            .ForMember(dest => dest.SenderId,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.ReceiverId,
+                opt => opt.Ignore())
+            .ForMember(dest => dest.Status,
+                opt => opt.MapFrom(src => (int)BattleRequestStatus.Pending))
+            .ForMember(dest => dest.SendingDate,
+                opt => opt.MapFrom(src => DateTime.UtcNow))
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.MapFrom(src => false))
+            .ForMember(dest => dest.BattleId,
+                opt => opt.MapFrom(src => src.BattleId));
+
+        #endregion
+
+        #region Quiz
+        CreateMap<Quiz, QuizOverviewResponseDto>()
+            .ForMember(dest => dest.QuizId,
+                opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.QuizName,
+                opt => opt.MapFrom(src => src.Name))
+            .ForMember(dest => dest.Description,
+                opt => opt.MapFrom(src => src.Description))
+            .ForMember(dest => dest.TotalTime,
+                opt => opt.MapFrom(src => src.TotalTime))
+            .ForMember(dest => dest.TotalQuestion,
+                opt => opt.MapFrom(src => src.TotalQuestion))
+            .ForMember(dest => dest.IsPaid,
+                opt => opt.MapFrom(src => src.IsPaid))
+            .ForMember(dest => dest.QuizPrice,
+                opt => opt.MapFrom(src => src.Price))
+            .ForMember(dest => dest.QuizCategoryName,
+                opt => opt.MapFrom(src => src.Category.CategoryName))
+            .ForMember(dest => dest.QuizDifficultyName,
+                opt => opt.MapFrom(src => src.DifficultyLevel.Name));
+
+        CreateMap<QuizAttempted, QuizCompletedSummaryDTO>()
+            .ForMember(dest => dest.QuizName,
+                opt => opt.MapFrom(src => src.Quiz.Name))
+            .ForMember(dest => dest.TotalQuestions,
+                opt => opt.MapFrom(src => src.TotalQue))
+            .ForMember(dest => dest.CorrectAnswers,
+                opt => opt.MapFrom(src => src.CorrectedQue))
+            .ForMember(dest => dest.WrongAnswers,
+                opt => opt.MapFrom(src => src.TotalQue - src.CorrectedQue))
+            .ForMember(dest => dest.ScorePercentage,
+                opt => opt.MapFrom(src => Math.Round((double)src.CorrectedQue / src.TotalQue * 100, 2)))
+            .ForMember(dest => dest.Grade,
+                opt => opt.MapFrom(src => src.GradeNavigation.Grade))
+            .ForMember(dest => dest.TimeSpent,
+                opt => opt.MapFrom(src => src.TimeSpent))
+            .ForMember(dest => dest.XpEarned,
+                opt => opt.MapFrom(src => src.XpEarned));
+
+        CreateMap<QuestionIssueReportRequestDTO, QuestionIssueReport>()
+            .ForMember(dest => dest.IsResolved,
+                opt => opt.MapFrom(_ => false))
+            .ForMember(dest => dest.IsDeleted,
+                opt => opt.MapFrom(_ => false))
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.MapFrom(_ => DateTime.UtcNow));
+
+        CreateMap<QuizRatingDTO, QuizRating>()
+            .ForMember(dest => dest.QuizRating1,
+                opt => opt.MapFrom(src => src.QuizRating))
+            .ForMember(dest => dest.CreatedDate,
+                opt => opt.MapFrom(_ => DateTime.UtcNow));
+                
+        CreateMap<QuizRating, QuizRatingDTO>()
+            .ForMember(dest => dest.QuizRating,
+                opt => opt.MapFrom(src => src.QuizRating1));
         #endregion
     }
 

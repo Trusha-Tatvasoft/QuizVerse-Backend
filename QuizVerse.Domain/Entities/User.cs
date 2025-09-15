@@ -141,6 +141,8 @@ public partial class User
 
     public virtual ICollection<Quiz> QuizModifiedByNavigations { get; set; } = new List<Quiz>();
 
+    public virtual ICollection<QuizPlayStatus> QuizPlayStatuses { get; set; } = new List<QuizPlayStatus>();
+
     public virtual ICollection<QuizPurchased> QuizPurchaseds { get; set; } = new List<QuizPurchased>();
 
     public virtual ICollection<QuizRating> QuizRatings { get; set; } = new List<QuizRating>();
@@ -177,5 +179,5 @@ public partial class User
 
     public virtual ICollection<UserNotification> UserNotificationUsers { get; set; } = new List<UserNotification>();
 
-    public virtual ICollection<UserPerformanceDetail> UserPerformanceDetails { get; set; } = new List<UserPerformanceDetail>();
+    public virtual UserPerformanceDetail? UserPerformanceDetail { get; set; }
 }

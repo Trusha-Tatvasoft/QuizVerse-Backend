@@ -70,22 +70,19 @@ public static class Constants
     public const string USER_STATUS_CHANGED_SUCCESS = "User {0} status changed to {1}.";
     public const string USER_DATA_NULL = "No data available to export.";
     public const string NO_EMAIL_CHANGE = "Email can't be changed";
+    public const string USER_CREATE_SUCCESS = "User created successfully.";
     #endregion
 
     #region Email Messages
     public const string EMAIL_PATH_NOT_CONFIGURED = "Email template path is not configured.";
+    public const string EMAIL_PLACEHOLDER_MISSING = "Missing required placeholder: {0}";
     public const string EMAIL_SENT_SUCCESS = "Email successfully sent to {0}.";
     public const string USER_REGISTERED_AND_EMAIL_SENT = "User registered successfully. A welcome email has been sent.";
     public const string USER_REGISTERED_BUT_EMAIL_NOT_SENT = "User registered successfully, but email could not be sent.";
     public const string EMAIL_NOT_SENT = "Email not sent.";
     public const string SMTP_CONFIG_MISSING = "SMTP configuration is missing required fields.";
     public const string EMAIL_OTP_SUBJECT = "Your QuizVerse OTP Code";
-    #endregion
-
-    #region EmailTemplateConstants
-    public const string NEW_USER_TEMPLATE_PATH = "Templates/NewUser.html";
-    public const string REGISTER_USER_TEMPLATE_PATH = "Templates/Welcome.html";
-    public const string OTP_TEMPLATE_PATH = "Templates/EmailVerifyOTP.html";
+    public const string EMAIL_BODY_EMPTY = "Email body is not provided.";
     #endregion
 
     #region CRUD Messages
@@ -134,6 +131,7 @@ public static class Constants
     public const string QUIZ_CATEGORY_ACTIVATED_SUCCESS = "Quiz category activated successfully.";
     public const string QUIZ_CATEGORY_INACTIVATED_SUCCESS = "Quiz category inactivated successfully.";
     public const string QUIZ_CATEGORY_DELETED_SUCCESS = "Quiz category deleted successfully.";
+    public const string QUIZ_CATEGORY_NOT_FOUND_MESSAGE = "The Selected Quiz Category is invalid.";
     #endregion
 
     #region Quiz Management
@@ -196,10 +194,10 @@ public static class Constants
     #endregion
 
     #region User Dashboard
-    public const int BATCH_SIZE = 3;
+    public const int BATCH_SIZE = 5;
     public const int MIN_BATCH = 1;
-    public const int MAX_BATCH = 3;
-    public const int MAX_QUIZZES = 12;
+    public const int MAX_BATCH = 5;
+    public const int MAX_QUIZZES = 15;
     public const string INVALID_BATCH_NUMBER = "Batch number must be between {0} and {1}.";
     public const string USER_DASHBOARD_SUMMARY_FETCH = "User dashboard summary fetched successfully.";
     public const string RECENT_QUIZZES_FETCHED = "Recent Quizzes fetched successfully.";
@@ -223,11 +221,19 @@ public static class Constants
     #region Leaderboard
     public const string GLOBAL_LEADERBOARD_RETRIEVED_SUCCESSFULLY = "Global leaderboard data retrieved successfully.";
     public const string USER_LEADERBOARD_STATS_RETRIEVED = "User leaderboard statistics retrieved successfully.";
+    public const string CATEGORY_WISE_LEADERBOARD_RETRIEVED = "Category-wise leaderboard retrieved successfully.";
+    public const string MONTHLY_CHAMPIONS_RETRIEVED = "Monthly champions retrieved successfully.";
+    public const string WEEKLY_LEADERBOARD_RETRIEVED = "Weekly leaderboard retrieved successfully.";
+    public const string INVALID_MONTH_MESSAGE = "Invalid month. Please provide a value between 1 and 12.";
+    public const string INVALID_YEAR_MESSAGE = "Invalid year. Please provide a valid year between 2023 to present.";
+    public const string INVALID_MONTH_YEAR_COMBINATION_MESSAGE = "Invalid month and year combination. The specified month and year cannot be in the future.";
+    public const string AVAILABLE_YEARS_RETRIEVED = "Available years retrieved successfully.";
+    public const string AVAILABLE_MONTHS_RETRIEVED = "Available months for {0} retrieved successfully.";
     #endregion
 
     #region Battle Management
     public const string CREATE_OR_UPDATE_BATTLE_FAILED = "Failed to create or update battle.";
-    public const string BATTLE_NOT_FOUND = "Battle with ID {0} not found.";
+    public const string BATTLE_NOT_FOUND = "Battle not found.";
     public const string BATTLE_ALREADY_DELETED = "Battle with ID {0} is already deleted.";
     #endregion
 
@@ -264,7 +270,7 @@ public static class Constants
         },
         {
             EmailTemplateType.EmailVerification,
-            new[] { "{{user}}", "{{email}}", "{{verificationLink}}" }
+            new[] { "{{user}}", "{{email}}", "{{otp}}" }
         },
         {
             EmailTemplateType.QuizInvitation,
@@ -292,5 +298,58 @@ public static class Constants
     public const string EMAIL_TEMPLATE_DELETE = "Email template deleted successfully.";
     public const string EMAIL_TEMPLATE_STATUS_UPDATED = "Email template's status updated successfully.";
     public const string INVALID_ACTION = "Invalid action.";
+    #endregion
+
+    #region Browse Quizzes
+    public const string MIN_PRICE_LESS_THAN_MAX_PRICE = "Min Price cannot be greater than Max Price.";
+    public const string MIN_RATING_LESS_THAN_MAX_RATING = "Min Rating cannot be greater than Max Rating.";
+    public const string MIN_TOTAL_TIME_LESS_THAN_MAX_TOTAL_TIME = "Min Total Time cannot be greater than Max Total Time.";
+    public const int MAX_QUIZ_TOTAL_TIME_MINUTES = 180;
+    public const int MIN_QUIZ_TOTAL_TIME_MINUTES = 2;
+    public const int MAX_RATING = 5;
+    public const string QUIZ_NOT_FOUND = "Quiz not found.";
+    public const string QUIZ_NOT_FOUND_OR_COMPLETED = "Quiz not found or already completed.";
+    public const string QUIZ_ALREADY_COMPLETED = "Quiz already completed.";
+    public const string QUESTION_NOT_FOUND = "Question not found";
+
+    #endregion
+
+    #region 
+    public const string OPTIONS_NOT_CONFIGURED = "AI service options are not configured.";
+    public const string BASE_URL_CANNOT_BE_EMPTY = "BaseUrl cannot be empty.";
+    public const string MODEL_CANNOT_BE_EMPTY = "Model cannot be empty.";
+    public const string PROMPT_CANNOT_BE_EMPTY = "Prompt cannot be empty.";
+
+    #endregion
+
+    #region Question Difficulty
+    public const string QUESTION_DIFFICULTY_NOT_FOUND = "Question Difficulty not found.";
+    public const string QUESTION_DIFFICULTY_ALREADY_EXISTS = "Question Difficulty with name '{0}' already exists.";
+    public const string QUESTION_DIFFICULTY_UPDATED = "Question Difficulty updated successfully.";
+    public const string QUESTION_DIFFICULTY_ADDED = "Question Difficulty added successfully.";
+    public const string QUESTION_DIFFICULTY_DELETED = "Question Difficulty deleted successfully.";
+    public const string QUESTION_DIFFICULTY_DUPLICATE_NAME = "Question Difficulty level with this name already exists.";
+    public const string QUESTION_DIFFICULTY_DUPLICATE_XP = "Question Difficulty level with this xp already exists.";
+    #endregion
+
+    #region Quiz
+    public const string QUIZ_SUBMITTED_SUCCESSFULLY = "Quiz submitted successfully.";
+    public const string QUIZ_ATTEMPT_NOT_FOUND = "The requested quiz attempt was not found.";
+    public const string QUIZ_COMPLETED_SUMMARY_FETCHED = "Quiz completed summary fetched successfully.";
+    public const string QUIZ_QUESTION_REVIEW_FETCHED = "Quiz question review fetched successfully.";
+    public const string DUPLICATE_QUESTION_ISSUE_REPORT = "You have already reported an issue for this question.";
+    public const string QUESTION_ISSUE_REPORTED = "Question issue reported successfully.";
+    public const string DUPLICATE_QUIZ_RATING = "You have already rated this quiz.";
+    public const string QUIZ_RATING_FETCHED = "Quiz rating fetched successfully.";
+    public const string QUIZ_RATING_NOT_FOUND = "No quiz rating found for this quiz.";
+    public const string QUIZ_RATING_SUBMITTED = "Quiz rating submitted successfully.";
+    public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
+    #endregion
+
+    #region User Battles
+    public const string SELF_CHALLENGE_NOT_ALLOWED = "Cannot challenge yourself.";
+    public const string ACTIVE_CHALLENGE_EXISTS = "You already have an active challenge sent to this user.";
+    public const string BATTLE_REQUEST_SENT_SUCCESS = "Battle request sent successfully.";
+    public const string BATTLE_ALREADY_ACCEPTED = "You already have an accepted battle for this Battle and cannot send it to another user.";
     #endregion
 }

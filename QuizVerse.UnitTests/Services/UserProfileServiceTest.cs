@@ -240,52 +240,47 @@ public class UserProfileServiceTests
 
     #region SendOtpToUser
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, false)]
-    public async Task SendOtpToUser_ShouldBehaveAccordingly(bool emailAvailable, bool emailSent)
+    [InlineData(true, "Email successfully sent")]
+    [InlineData(true, "Email not sent")]
+    [InlineData(false, "")]
+    public async Task SendOtpToUser_ShouldBehaveAccordingly(bool emailAvailable, string expectedResponse)
     {
+        // Arrange
         var dto = new UserProfileSettingDto { Email = "test@test.com" };
 
-        var userById = new User { Id = 2, Email = "old@test.com", Status = (int)UserStatus.Active, IsDeleted = false };
-        _userRepositoryMock
-            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
-            .ReturnsAsync(userById);
+        var userById = new User
+        {
+            Id = 2,
+            Email = "old@test.com",
+            FullName = "Test User",
+            Status = (int)UserStatus.Active,
+            IsDeleted = false
+        };
 
         _userRepositoryMock
             .SetupSequence(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
-            .ReturnsAsync(userById)
-            .ReturnsAsync(emailAvailable ? null : new User { Id = 3, Email = dto.Email, Status = (int)UserStatus.Active, IsDeleted = false });
+            .ReturnsAsync(new User { Id = 2, Email = "old@test.com", IsDeleted = false })
+            .ReturnsAsync(emailAvailable ? null : new User { Id = 3, Email = dto.Email });
 
-        _commonServiceMock.Setup(c => c.GenerateOtp(dto.Email)).ReturnsAsync("1234");
-        _emailServiceMock.Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>())).ReturnsAsync(emailSent);
 
-        string templatePath = Path.Combine(Directory.GetCurrentDirectory(), "Templates", "EmailVerifyOTP.html");
-        Directory.CreateDirectory(Path.GetDirectoryName(templatePath)!);
-        await File.WriteAllTextAsync(templatePath, "Hi {username}, OTP: {otp}");
+        _commonServiceMock
+            .Setup(c => c.GenerateOtp(dto.Email))
+            .ReturnsAsync("1234");
 
-        try
+        _commonServiceMock
+            .Setup(c => c.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
+            .ReturnsAsync(expectedResponse);
+
+
+        if (!emailAvailable)
         {
-            if (!emailAvailable)
-            {
-                var ex = await Assert.ThrowsAsync<AppException>(() => _service.SendOtpToUser(dto));
-                Assert.Equal(Constants.EMAIL_ALREADY_IN_USE, ex.Message);
-            }
-            else if (!emailSent)
-            {
-                var result = await _service.SendOtpToUser(dto);
-                Assert.Equal(Constants.EMAIL_NOT_SENT, result);
-            }
-            else
-            {
-                var result = await _service.SendOtpToUser(dto);
-                Assert.Contains("email successfully sent", result.ToLower());
-            }
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.SendOtpToUser(dto));
+            Assert.Equal(Constants.EMAIL_ALREADY_IN_USE, ex.Message);
         }
-        finally
+        else
         {
-            if (File.Exists(templatePath))
-                File.Delete(templatePath);
+            var result = await _service.SendOtpToUser(dto);
+            Assert.Equal(expectedResponse, result);
         }
     }
     #endregion

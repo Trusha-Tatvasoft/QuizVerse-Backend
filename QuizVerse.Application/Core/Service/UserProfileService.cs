@@ -180,7 +180,19 @@ public class UserProfileService(
 
         var otp = await commonService.GenerateOtp(user.Email);
 
-        var responseMessage = await SendOtpEmail(userProfileSettingDto.Email, otp);
+        var placeholders = new Dictionary<string, string>
+        {
+            { "{{user}}", user.FullName ?? user.Email },
+            { "{{email}}", userProfileSettingDto.Email },
+            { "{{otp}}", otp }
+        };
+
+        var responseMessage = await commonService.SendEmailFromTemplate(new TemplatedEmailRequestDto
+        {
+            ToEmail = userProfileSettingDto.Email,
+            TemplateType = EmailTemplateType.EmailVerification,
+            Placeholders = placeholders
+        });
 
         return responseMessage;
     }
@@ -203,33 +215,6 @@ public class UserProfileService(
             throw new AppException(Constants.OTP_INVALID);
 
         return true;
-    }
-    #endregion
-
-    #region SendOtpEmail
-    private async Task<string> SendOtpEmail(string email, string otp)
-    {
-        string? templatePath = Constants.OTP_TEMPLATE_PATH;
-        if (string.IsNullOrWhiteSpace(templatePath))
-            throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
-
-        string fullPath = Path.Combine(Directory.GetCurrentDirectory(), templatePath);
-        string emailBody = await File.ReadAllTextAsync(fullPath);
-
-        emailBody = emailBody.Replace("{username}", email);
-        emailBody = emailBody.Replace("{otp}", otp);
-
-        bool isEmailSent = await emailService.SendEmailAsync(new EmailRequestDto
-        {
-            To = email,
-            Subject = Constants.EMAIL_OTP_SUBJECT,
-            Body = emailBody
-        });
-
-        if (isEmailSent)
-            return string.Format(Constants.EMAIL_SENT_SUCCESS, email);
-        else
-            return Constants.EMAIL_NOT_SENT;
     }
     #endregion
 }
