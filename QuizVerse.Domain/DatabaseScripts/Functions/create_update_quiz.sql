@@ -306,23 +306,36 @@ BEGIN
         AS q(id INT, "categoryId" INT, "queDifficultyId" INT, "queText" TEXT, "queTypeId" INT, "queOptionsAns" JSONB)
     LOOP
         IF v_q.id IS NULL THEN
-            INSERT INTO "BaseQuestions" (category_id, que_difficulty_id, que_text, que_type_id, created_by)
-            VALUES (v_q."categoryId", v_q."queDifficultyId", v_q."queText", v_q."queTypeId", p_created_by)
-            RETURNING id INTO v_question_id;
+            -- If question already exists, fetch its ID instead of ignoring
+            SELECT id INTO v_question_id
+            FROM "BaseQuestions"
+            WHERE category_id = v_q."categoryId"
+            AND que_difficulty_id = v_q."queDifficultyId"
+            AND que_text = v_q."queText"
+            AND que_type_id = v_q."queTypeId"
+            LIMIT 1;
 
-            FOR v_opt IN
-                SELECT * FROM jsonb_to_recordset(v_q."queOptionsAns")
-                AS o(id INT, "questionId" INT, key TEXT, value TEXT)
-            LOOP
-                INSERT INTO "QuestionOptionsAnswers" (question_id, key, value, created_by)
-                VALUES (v_question_id, v_opt.key, v_opt.value, p_created_by);
-            END LOOP;
+            -- Insert new if not found
+            IF v_question_id IS NULL THEN
+                INSERT INTO "BaseQuestions" (category_id, que_difficulty_id, que_text, que_type_id, created_by)
+                VALUES (v_q."categoryId", v_q."queDifficultyId", v_q."queText", v_q."queTypeId", p_created_by)
+                RETURNING id INTO v_question_id;
+
+                -- Insert options only for new questions
+                FOR v_opt IN
+                    SELECT * FROM jsonb_to_recordset(v_q."queOptionsAns")
+                    AS o(id INT, "questionId" INT, key TEXT, value TEXT)
+                LOOP
+                    INSERT INTO "QuestionOptionsAnswers" (question_id, key, value, created_by)
+                    VALUES (v_question_id, v_opt.key, v_opt.value, p_created_by);
+                END LOOP;
+            END IF;
         ELSE
             v_question_id := v_q.id;
         END IF;
 
         -- Add mapping if not exists
-        INSERT INTO "QuizToBaseQuestionMap" (quiz_id, que_id,created_by)
+        INSERT INTO "QuizToBaseQuestionMap" (quiz_id, que_id, created_by)
         SELECT v_quiz_id, v_question_id, p_created_by
         WHERE NOT EXISTS (
             SELECT 1 FROM "QuizToBaseQuestionMap"
