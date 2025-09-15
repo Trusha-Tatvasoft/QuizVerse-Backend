@@ -1,10 +1,16 @@
+using System.Linq.Expressions;
 using System.Text;
 using ClosedXML.Excel;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
+using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.DTOs.RequestDTOs;
+using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 using Xunit;
 
@@ -12,13 +18,18 @@ namespace QuizVerse.UnitTests.Services
 {
     public class CommonServiceTests
     {
-        private readonly Mock<IGenericRepository<User>> _userRepositoryMock;
+        private readonly Mock<IGenericRepository<User>> _userRepositoryMock = new();
+        private readonly Mock<IEmailService> _emailServiceMock = new();
+        private readonly Mock<IGenericRepository<EmailTemplete>> _emailTemplateRepositoryMock = new();
         private readonly CommonService _service;
 
         public CommonServiceTests()
         {
-            _userRepositoryMock = new Mock<IGenericRepository<User>>();
-            _service = new CommonService(_userRepositoryMock.Object);
+            _service = new CommonService(
+                _userRepositoryMock.Object,
+                _emailServiceMock.Object,
+                _emailTemplateRepositoryMock.Object
+            );
         }
 
         #region PasswordHash
@@ -433,6 +444,195 @@ namespace QuizVerse.UnitTests.Services
 
             _userRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<User>()), Times.Never);
         }
+        #endregion
+
+        #region SendEmailFromTemplate
+
+        [Fact]
+        public async Task SendEmailFromTemplate_TemplateNotFound_ThrowsAppException()
+        {
+            var dto = new TemplatedEmailRequestDto
+            {
+                TemplateType = EmailTemplateType.NewUser,
+                ToEmail = "test@example.com",
+                Placeholders = new Dictionary<string, string>()
+            };
+
+            _emailTemplateRepositoryMock.Setup(r => r.GetAsync(
+                It.IsAny<Expression<Func<EmailTemplete, bool>>>(),
+                It.IsAny<Func<IQueryable<EmailTemplete>, IQueryable<EmailTemplete>>?>()));
+
+            var act = () => _service.SendEmailFromTemplate(dto);
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.EMAIL_TEMPLATE_NOT_FOUND);
+        }
+
+        [Fact]
+        public async Task SendEmailFromTemplate_EmptyTemplateBody_ReturnsBodyEmptyConstant()
+        {
+            var template = new EmailTemplete
+            {
+                TemplateType = (int)EmailTemplateType.NewUser,
+                Body = "",
+                Status = true,
+                IsDeleted = false
+            };
+
+            var dto = new TemplatedEmailRequestDto
+            {
+                TemplateType = EmailTemplateType.NewUser,
+                ToEmail = "test@example.com",
+                Placeholders = new Dictionary<string, string>()
+            };
+
+            _emailTemplateRepositoryMock
+      .Setup(r => r.GetAsync(
+          It.IsAny<Expression<Func<EmailTemplete, bool>>>(),
+          It.IsAny<Func<IQueryable<EmailTemplete>, IQueryable<EmailTemplete>>?>()))
+      .ReturnsAsync(template);
+
+
+            var result = await _service.SendEmailFromTemplate(dto);
+
+            result.Should().Be(Constants.EMAIL_BODY_EMPTY);
+        }
+
+        public static IEnumerable<object[]> MissingPlaceholderCases =>
+            [
+        [
+            new TemplatedEmailRequestDto
+            {
+                TemplateType = EmailTemplateType.NewUser,
+                ToEmail = "test@example.com",
+                Placeholders = new Dictionary<string, string> { { "{{user}}", "john@example.com" } }
+            },
+            "{{password}}"
+        ],
+        [
+            new TemplatedEmailRequestDto
+            {
+                TemplateType = EmailTemplateType.NewUser,
+                ToEmail = "test@example.com",
+                Placeholders = new Dictionary<string, string> { { "{{password}}", "1234" } }
+            },
+            "{{user}}"
+        ]
+            ];
+
+        [Theory]
+        [MemberData(nameof(MissingPlaceholderCases))]
+        public async Task SendEmailFromTemplate_MissingRequiredPlaceholders_ThrowsAppException(
+            TemplatedEmailRequestDto dto, string missingPlaceholder)
+        {
+            var template = new EmailTemplete
+            {
+                TemplateType = (int)EmailTemplateType.NewUser,
+                Body = "Hello {{user}}, your password is {{password}}.",
+                Subject = "Welcome",
+                Status = true,
+                IsDeleted = false
+            };
+
+            Constants.EmailTemplatePlaceholdersRequired[EmailTemplateType.NewUser] =
+                ["{{user}}", "{{password}}"];
+
+            _emailTemplateRepositoryMock
+                .Setup(r => r.GetAsync(
+                    It.IsAny<Expression<Func<EmailTemplete, bool>>>(),
+                    It.IsAny<Func<IQueryable<EmailTemplete>, IQueryable<EmailTemplete>>?>()))
+                .ReturnsAsync(template);
+
+
+            var act = () => _service.SendEmailFromTemplate(dto);
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(string.Format(Constants.EMAIL_PLACEHOLDER_MISSING, missingPlaceholder));
+        }
+
+        [Fact]
+        public async Task SendEmailFromTemplate_EmailSendFails_ReturnsFailureMessage()
+        {
+            var dto = new TemplatedEmailRequestDto
+            {
+                TemplateType = EmailTemplateType.NewUser,
+                ToEmail = "test@example.com",
+                Placeholders = new Dictionary<string, string>
+        {
+            { "{{user}}", "john@example.com" },
+            { "{{password}}", "1234" }
+        }
+            };
+
+            var template = new EmailTemplete
+            {
+                TemplateType = (int)EmailTemplateType.NewUser,
+                Body = "Hello {{user}}, your password is {{password}}.",
+                Subject = "Welcome",
+                Status = true,
+                IsDeleted = false
+            };
+
+            Constants.EmailTemplatePlaceholdersRequired[EmailTemplateType.NewUser] =
+                ["{{user}}", "{{password}}"];
+
+            _emailTemplateRepositoryMock
+                .Setup(r => r.GetAsync(
+                    It.IsAny<Expression<Func<EmailTemplete, bool>>>(),
+                    It.IsAny<Func<IQueryable<EmailTemplete>, IQueryable<EmailTemplete>>?>()))
+                .ReturnsAsync(template);
+
+            _emailServiceMock
+                .Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()))
+                .ReturnsAsync(false);
+
+            var result = await _service.SendEmailFromTemplate(dto);
+
+            result.Should().Be(Constants.EMAIL_NOT_SENT);
+        }
+
+        [Fact]
+        public async Task SendEmailFromTemplate_EmailSendSuccess_ReturnsSuccessMessage()
+        {
+            var dto = new TemplatedEmailRequestDto
+            {
+                TemplateType = EmailTemplateType.NewUser,
+                ToEmail = "test@example.com",
+                Placeholders = new Dictionary<string, string>
+                {
+                    { "{{user}}", "john@example.com" },
+                    { "{{password}}", "1234" }
+                }
+            };
+
+            var template = new EmailTemplete
+            {
+                TemplateType = (int)EmailTemplateType.NewUser,
+                Body = "Hello {{user}}, your password is {{password}}.",
+                Subject = "Welcome",
+                Status = true,
+                IsDeleted = false
+            };
+
+            Constants.EmailTemplatePlaceholdersRequired[EmailTemplateType.NewUser] =
+                ["{{user}}", "{{password}}"];
+
+            _emailTemplateRepositoryMock
+                .Setup(r => r.GetAsync(
+                    It.IsAny<Expression<Func<EmailTemplete, bool>>>(),
+                    It.IsAny<Func<IQueryable<EmailTemplete>, IQueryable<EmailTemplete>>?>()))
+                .ReturnsAsync(template);
+
+
+            _emailServiceMock
+                .Setup(e => e.SendEmailAsync(It.IsAny<EmailRequestDto>()))
+                .ReturnsAsync(true);
+
+            var result = await _service.SendEmailFromTemplate(dto);
+
+            result.Should().Be(string.Format(Constants.EMAIL_SENT_SUCCESS, dto.ToEmail));
+        }
+
         #endregion
     }
 }

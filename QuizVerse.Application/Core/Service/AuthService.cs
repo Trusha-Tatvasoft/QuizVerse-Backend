@@ -13,8 +13,9 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService(ITokenService _tokenService, ICommonService _commonService, IGenericRepository<User> _genericUserRepository, IGenericRepository<PasswordResetToken> _genericPasswordResetTokenRepository, IEmailService _emailService, IMapper _mapper, IConfiguration _configuration) : IAuthService
+    public class AuthService(ITokenService _tokenService, ICommonService _commonService, IGenericRepository<User> _genericUserRepository, IGenericRepository<PasswordResetToken> _genericPasswordResetTokenRepository, IMapper _mapper, IConfiguration _configuration) : IAuthService
     {
+        #region AuthenticateUser
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
         {
             if (userLoginDto == null || string.IsNullOrEmpty(userLoginDto.Email) || string.IsNullOrEmpty(userLoginDto.Password))
@@ -62,7 +63,9 @@ namespace QuizVerse.Application.Core.Service
 
             return (accessToken, refreshToken);
         }
+        #endregion
 
+        #region ValidateRefreshTokens
         public async Task<(string accessToken, string refreshToken)> ValidateRefreshTokens(string refreshToken)
         {
             if (string.IsNullOrEmpty(refreshToken))
@@ -151,7 +154,9 @@ namespace QuizVerse.Application.Core.Service
             TimeSpan totalDuration = TimeSpan.FromDays(30);
             return totalDuration - elapsed;
         }
+        #endregion
 
+        #region ForgotPassword
         public async Task<bool> ForgotPassword(string email)
         {
             //User input validation
@@ -189,25 +194,28 @@ namespace QuizVerse.Application.Core.Service
             // email configuration
             string baseUrl = _configuration["baseUrl"]!;
             string resetLink = $"{baseUrl}/{Constants.RESET_PASSWORD_FE_PATH}?token={resetPasswordToken}";
-            string templatePath = Constants.ResetPasswordTemplatePath;
-            string fullPath = Path.Combine(Directory.GetCurrentDirectory(), templatePath);
-            string emailBody = await File.ReadAllTextAsync(fullPath);
 
-            //email body replacement
-            emailBody = emailBody.Replace("{userName}", userName);
-            emailBody = emailBody.Replace("{userEmail}", email);
-            emailBody = emailBody.Replace("{resetLink}", resetLink);
-
-            // Send email
-            EmailRequestDto mail = new EmailRequestDto
+            var placeholders = new Dictionary<string, string>
             {
-                To = email,
-                Subject = Constants.RESET_PASSWORD_EMAIL_HEADING,
-                Body = emailBody
+                { "{{user}}", userName },
+                { "{{email}}", email },
+                { "{{resetLink}}", resetLink }
             };
-            return await _emailService.SendEmailAsync(mail);
-        }
 
+            var dto = new TemplatedEmailRequestDto
+            {
+                ToEmail = email,
+                TemplateType = EmailTemplateType.ResetPassword,
+                Placeholders = placeholders
+            };
+
+            var result = await _commonService.SendEmailFromTemplate(dto);
+            string expectedMessage = string.Format(Constants.EMAIL_SENT_SUCCESS, dto.ToEmail);
+            return result == expectedMessage;
+        }
+        #endregion
+
+        #region VerifyTokenResetPassword
         public async Task<bool> VerifyTokenResetPassword(string token)
         {
             if (string.IsNullOrEmpty(token))
@@ -229,7 +237,9 @@ namespace QuizVerse.Application.Core.Service
             }
             return true;
         }
+        #endregion
 
+        #region ResetPassword
         public async Task<bool> ResetPassword(ResetPasswordDTO resetPasswordDto)
         {
             // Validate the input data
@@ -259,7 +269,9 @@ namespace QuizVerse.Application.Core.Service
             await _genericPasswordResetTokenRepository.DeleteRangeAsync(tokensToDelete);
             return true;
         }
+        #endregion
 
+        #region RegisterUser
         public async Task<(bool success, string message)> RegisterUser(UserRegisterDto userRegisterDto)
         {
             if (await _genericUserRepository.Exists(u => u.Email == userRegisterDto.Email && !u.IsDeleted))
@@ -288,33 +300,30 @@ namespace QuizVerse.Application.Core.Service
 
         private async Task<bool> SendWelcomeEmailAsync(User user)
         {
-            string? templatePath = Constants.REGISTER_USER_TEMPLATE_PATH;
-            if (string.IsNullOrWhiteSpace(templatePath))
-                throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
-
-            string fullPath = Path.Combine(Directory.GetCurrentDirectory(), templatePath);
-            if (!File.Exists(fullPath))
-                throw new AppException(Constants.EMAIL_PATH_NOT_CONFIGURED);
-
-            string emailBody = await File.ReadAllTextAsync(fullPath);
-
-            emailBody = emailBody
-                    .Replace("{{userEmail}}", user.Email)
-                    .Replace("{{registrationDate}}", user.CreatedDate.ToString("MMMM dd, yyyy"))
-                    .Replace("{{loginUrl}}", _configuration["AppSettings:LoginUrl"])
-                    .Replace("{{companyName}}", Constants.PLATFORM_NAME)
-                    .Replace("{{year}}", DateTime.UtcNow.Year.ToString());
-
-            EmailRequestDto emailRequest = new()
+            var placeholders = new Dictionary<string, string>
             {
-                To = user.Email,
-                Subject = "Welcome to QuizVerse",
-                Body = emailBody
+                { "{{user}}", user.Email },
+                { "{{email}}", user.Email },
+                { "{{registrationDate}}", user.CreatedDate.ToString("MMMM dd, yyyy") },
+                { "{{loginUrl}}", _configuration["QuizVerse:LoginUrl"] ?? string.Empty },
+                { "{{companyName}}", Constants.PLATFORM_NAME },
+                { "{{year}}", DateTime.UtcNow.Year.ToString() }
             };
 
-            return await _emailService.SendEmailAsync(emailRequest);
-        }
+            var dto = new TemplatedEmailRequestDto
+            {
+                ToEmail = user.Email,
+                TemplateType = EmailTemplateType.WelComeEmail,
+                Placeholders = placeholders
+            };
 
+            var result = await _commonService.SendEmailFromTemplate(dto);
+            string expectedMessage = string.Format(Constants.EMAIL_SENT_SUCCESS, dto.ToEmail);
+            return result == expectedMessage;
+        }
+        #endregion
+
+        #region IsUserNameAvailable
         public async Task<bool> IsUserNameAvailable(string userName, int? id = null)
         {
             if (await _genericUserRepository.Exists(u => u.UserName.Trim() == userName.Trim() && !u.IsDeleted && (id == null || u.Id != id)))
@@ -322,13 +331,34 @@ namespace QuizVerse.Application.Core.Service
 
             return true;
         }
+        #endregion
 
+        #region IsEmailAvailable
         public async Task<bool> IsEmailAvailable(string email)
         {
-            if (await _genericUserRepository.Exists(u => u.Email.Trim() == email.Trim() && !u.IsDeleted))
-                throw new AppException(Constants.DUPLICATE_EMAIL);
+            var normalizedEmail = email.ToLower().Trim();
+            var user = await _genericUserRepository.GetAsync(u => u.Email.ToLower().Trim() == normalizedEmail);
 
-            return true;
+            if (user == null)
+                return true;
+
+            switch ((UserStatus)user.Status)
+            {
+                case UserStatus.Suspended:
+                    throw new AppException(Constants.EMAIL_SUSPENDED);
+
+                case UserStatus.Active:
+                case UserStatus.Inactive:
+                    if (user.IsDeleted)
+                        return true;
+
+                    throw new AppException(Constants.EMAIL_ALREADY_IN_USE);
+
+                default:
+                    throw new AppException(Constants.EMAIL_ALREADY_IN_USE);
+            }
         }
+        #endregion
+
     }
 }

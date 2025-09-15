@@ -41,7 +41,7 @@ BEGIN
         UPDATE "Users"
         SET email = p_new_email,
             full_name = COALESCE(p_new_name, full_name),
-            bio = COALESCE(p_new_bio, bio),
+            bio = p_new_bio,
             modified_date = CURRENT_TIMESTAMP
         WHERE id = p_current_user_id;
 
@@ -54,7 +54,7 @@ BEGIN
         UPDATE "Users"
         SET email = p_new_email,
             full_name = COALESCE(p_new_name, full_name),
-            bio = COALESCE(p_new_bio, bio),
+            bio = p_new_bio,
             modified_date = CURRENT_TIMESTAMP
         WHERE id = p_current_user_id;
 
@@ -69,7 +69,7 @@ BEGIN
     UPDATE "Users"
     SET email = p_new_email,
         full_name = COALESCE(p_new_name, full_name),
-        bio = COALESCE(p_new_bio, bio),
+        bio = p_new_bio,
         modified_date = CURRENT_TIMESTAMP
     WHERE id = p_current_user_id;
 

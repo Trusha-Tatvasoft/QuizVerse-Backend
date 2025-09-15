@@ -10,6 +10,11 @@ public class SqlConstants
     public const string CHART_FUNCTION_CALL_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}})";
     #endregion
 
+    #region User CRUD
+    public const string CREATE_OR_UPDATE_USER_FUNCTION = "create_or_update_user";
+    public const string CREATE_OR_UPDATE_USER_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_id, @p_full_name, @p_email, @p_username, @p_password, @p_profile_pic, @p_bio, @p_player_role_id, @p_status_active, @p_status_inactive, @p_status_suspended, @p_modified_by)";
+    #endregion
+
     #region QuestionPool
     public const string GET_QUESTION_POOL_LIST_FUNCTION = "get_question_pool_list";
     public const string GET_QUESTION_POOL_TOTAL_COUNT_FUNCTION = "get_question_pool_total_count";
