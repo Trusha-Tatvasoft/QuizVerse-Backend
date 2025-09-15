@@ -13,7 +13,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService(ITokenService _tokenService, ICommonService _commonService, IGenericRepository<User> _genericUserRepository, IGenericRepository<PasswordResetToken> _genericPasswordResetTokenRepository, IMapper _mapper, IConfiguration _configuration) : IAuthService
+    public class AuthService(ITokenService _tokenService, ICommonService _commonService, IGenericRepository<User> _genericUserRepository, IGenericRepository<PasswordResetToken> _genericPasswordResetTokenRepository, IMapper _mapper, IConfiguration _configuration, IUserService userService, IGenericRepository<UserPerformanceDetail> _genericPerformanceRepository) : IAuthService
     {
         #region AuthenticateUser
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
@@ -60,6 +60,35 @@ namespace QuizVerse.Application.Core.Service
             user.LastLogin = DateTime.UtcNow;
 
             await _genericUserRepository.UpdateAsync(user);
+
+            // streak calc
+            var perfDetails = await _genericPerformanceRepository.GetAsync(p => p.UserId == user.Id);
+
+            if (perfDetails != null)
+            {
+                DateTime today = DateTime.UtcNow.Date;
+                DateTime lastModified = perfDetails.ModifiedDate?.Date ?? DateTime.MinValue.Date;
+
+                int daysDiff = (today - lastModified).Days;
+
+                if (perfDetails.CurrentStreak == 0 && perfDetails.HighestStreak == 0)
+                {
+                    perfDetails.CurrentStreak = 1;
+                    perfDetails.HighestStreak = 1;
+                    perfDetails.ModifiedDate = DateTime.UtcNow;
+                    await _genericPerformanceRepository.UpdateAsync(perfDetails);
+                }
+                else if (daysDiff > 0)
+                {
+                    perfDetails.CurrentStreak = (daysDiff == 1)
+                        ? perfDetails.CurrentStreak + 1
+                        : 1;
+
+                    perfDetails.HighestStreak = Math.Max(perfDetails.HighestStreak, perfDetails.CurrentStreak);
+                    perfDetails.ModifiedDate = DateTime.UtcNow;
+                    await _genericPerformanceRepository.UpdateAsync(perfDetails);
+                }
+            }
 
             return (accessToken, refreshToken);
         }
@@ -274,52 +303,8 @@ namespace QuizVerse.Application.Core.Service
         #region RegisterUser
         public async Task<(bool success, string message)> RegisterUser(UserRegisterDto userRegisterDto)
         {
-            if (await _genericUserRepository.Exists(u => u.Email == userRegisterDto.Email && !u.IsDeleted))
-                throw new AppException(Constants.DUPLICATE_EMAIL);
-
-            if (await _genericUserRepository.Exists(u => u.UserName == userRegisterDto.UserName && !u.IsDeleted))
-                throw new AppException(Constants.DUPLICATE_USERNAME);
-
-            User newUser = _mapper.Map<User>(userRegisterDto);
-            newUser.Password = _commonService.Hash(userRegisterDto.Password);
-
-            await _genericUserRepository.AddAsync(newUser);
-
-            bool emailSent = await SendWelcomeEmailAsync(newUser);
-
-            if (emailSent)
-            {
-                return (true, Constants.USER_REGISTERED_AND_EMAIL_SENT);
-            }
-            else
-            {
-                throw new AppException(Constants.USER_REGISTERED_BUT_EMAIL_NOT_SENT);
-            }
-        }
-
-
-        private async Task<bool> SendWelcomeEmailAsync(User user)
-        {
-            var placeholders = new Dictionary<string, string>
-            {
-                { "{{user}}", user.Email },
-                { "{{email}}", user.Email },
-                { "{{registrationDate}}", user.CreatedDate.ToString("MMMM dd, yyyy") },
-                { "{{loginUrl}}", _configuration["QuizVerse:LoginUrl"] ?? string.Empty },
-                { "{{companyName}}", Constants.PLATFORM_NAME },
-                { "{{year}}", DateTime.UtcNow.Year.ToString() }
-            };
-
-            var dto = new TemplatedEmailRequestDto
-            {
-                ToEmail = user.Email,
-                TemplateType = EmailTemplateType.WelComeEmail,
-                Placeholders = placeholders
-            };
-
-            var result = await _commonService.SendEmailFromTemplate(dto);
-            string expectedMessage = string.Format(Constants.EMAIL_SENT_SUCCESS, dto.ToEmail);
-            return result == expectedMessage;
+            var requestDto = _mapper.Map<UserRequestDto>(userRegisterDto);
+            return await userService.CreateOrUpdateUser(requestDto);
         }
         #endregion
 

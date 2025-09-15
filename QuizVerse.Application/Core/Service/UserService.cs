@@ -137,41 +137,55 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
             new("p_status_active", NpgsqlDbType.Integer) { Value = (int)UserStatus.Active },
             new("p_status_inactive", NpgsqlDbType.Integer) { Value = (int)UserStatus.Inactive },
             new("p_status_suspended", NpgsqlDbType.Integer) { Value = (int)UserStatus.Suspended },
-            new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId }
+            new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId.HasValue ? UserId.Value : DBNull.Value },
+            new("p_first_time_login", NpgsqlDbType.Boolean) { Value = !dto.IsRegister }
         };
+
 
         var result = await sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
 
-        if (result.Success)
-        {
-            if (result.Message == Constants.USER_CREATE_SUCCESS)
-            {
-                var emailDto = new TemplatedEmailRequestDto
-                {
-                    ToEmail = dto.Email,
-                    TemplateType = EmailTemplateType.NewUser,
-                    Placeholders = new Dictionary<string, string>
-                {
-                    { "{{user}}", dto.Email },
-                    { "{{password}}", dto.Password! },
-                    { "{{loginUrl}}", configuration["QuizVerse:LoginUrl"] ?? string.Empty },
-                }
-                };
-
-                string emailResult = await commonService.SendEmailFromTemplate(emailDto);
-                return (true, result.Message + " " + emailResult);
-            }
-            else
-            {
-                return (true, result.Message);
-            }
-        }
-        else
-        {
+        if (!result.Success)
             throw new AppException(result.Message);
-        }
-    }
 
+        if (result.Message != Constants.USER_CREATE_SUCCESS)
+            return (true, result.Message);
+
+        var placeholders = dto.IsRegister
+            ? new Dictionary<string, string> // Register - welcome email
+            {
+                { "{{user}}", dto.Email },
+                { "{{email}}", dto.Email },
+                { "{{registrationDate}}", DateTime.UtcNow.ToString("MMMM dd, yyyy") },
+                { "{{loginUrl}}", configuration["QuizVerse:LoginUrl"] ?? string.Empty },
+                { "{{companyName}}", Constants.PLATFORM_NAME },
+                { "{{year}}", DateTime.UtcNow.Year.ToString() }
+            }
+            : new Dictionary<string, string> // Admin-created user
+            {
+                { "{{user}}", dto.Email },
+                { "{{password}}", dto.Password! },
+                { "{{loginUrl}}", configuration["QuizVerse:LoginUrl"] ?? string.Empty },
+            };
+
+        var emailDto = new TemplatedEmailRequestDto
+        {
+            ToEmail = dto.Email,
+            TemplateType = dto.IsRegister
+                ? EmailTemplateType.WelComeEmail
+                : EmailTemplateType.NewUser,
+            Placeholders = placeholders
+        };
+
+        string emailResult = await commonService.SendEmailFromTemplate(emailDto);
+        string expectedMessage = string.Format(Constants.EMAIL_SENT_SUCCESS, emailDto.ToEmail);
+        bool emailSent = emailResult == expectedMessage;
+
+        return dto.IsRegister ? emailSent
+                ? (true, Constants.USER_REGISTERED_AND_EMAIL_SENT)
+                : throw new AppException(Constants.USER_REGISTERED_BUT_EMAIL_NOT_SENT)
+            : (true, result.Message + " " + emailResult);
+
+    }
     #endregion
 
     #region Update by Action

@@ -323,19 +323,20 @@ public class UserServiceTests
     #region CreateUser
 
     [Fact]
-    public async Task CreateUser_NewUser_SendsWelcomeEmail()
+    public async Task CreateUser_AdminCreatedUser_SendsNewUserEmail()
     {
         var dto = new UserRequestDto
         {
             FullName = "Test User",
             Email = "testuser@example.com",
             UserName = "testuser",
-            Password = "Test@123"
+            Password = "Test@123",
+            IsRegister = false
         };
 
         _commonServiceMock
             .Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
-            .ReturnsAsync("Email sent successfully");
+            .ReturnsAsync($"Email successfully sent to {dto.Email}");
 
         _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
             It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
@@ -345,20 +346,61 @@ public class UserServiceTests
                 Message = "User created successfully."
             });
 
-
         var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
 
         Assert.True(Success);
-        Assert.Contains("user created successfully", Message.ToLower());
+        Assert.Contains(Constants.USER_CREATE_SUCCESS, Message);
 
         _commonServiceMock.Verify(s =>
             s.SendEmailFromTemplate(It.Is<TemplatedEmailRequestDto>(email =>
                 email.TemplateType == EmailTemplateType.NewUser &&
                 email.ToEmail == dto.Email &&
                 email.Placeholders["{{user}}"] == dto.Email &&
-                email.Placeholders.ContainsKey("{{password}}")
+                email.Placeholders["{{password}}"] == dto.Password &&
+                email.Placeholders.ContainsKey("{{loginUrl}}")
             )), Times.Once);
+    }
 
+    [Fact]
+    public async Task CreateUser_RegisterUser_SendsWelcomeEmail()
+    {
+        var dto = new UserRequestDto
+        {
+            FullName = "Test User",
+            Email = "testuser1@example.com",
+            UserName = "testuser",
+            Password = "Test@123",
+            IsRegister = true
+        };
+
+        _commonServiceMock
+            .Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
+            .ReturnsAsync(string.Format(Constants.EMAIL_SENT_SUCCESS, dto.Email));
+
+        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+            It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(new CreateUpdateResponseDto
+            {
+                Success = true,
+                Message = "User created successfully."
+            });
+
+        var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
+
+        Assert.True(Success);
+        Assert.Contains(Constants.USER_REGISTERED_AND_EMAIL_SENT, Message);
+
+        _commonServiceMock.Verify(s =>
+            s.SendEmailFromTemplate(It.Is<TemplatedEmailRequestDto>(email =>
+                email.TemplateType == EmailTemplateType.WelComeEmail &&
+                email.ToEmail == dto.Email &&
+                email.Placeholders["{{user}}"] == dto.Email &&
+                email.Placeholders["{{email}}"] == dto.Email &&
+                email.Placeholders.ContainsKey("{{registrationDate}}") &&
+                email.Placeholders.ContainsKey("{{companyName}}") &&
+                email.Placeholders.ContainsKey("{{year}}") &&
+                email.Placeholders.ContainsKey("{{loginUrl}}")
+            )), Times.Once);
     }
 
     [Fact]
@@ -379,7 +421,8 @@ public class UserServiceTests
             Email = "imageuser@example.com",
             UserName = "imageuser",
             Password = "pass123",
-            ProfilePic = fileMock.Object
+            ProfilePic = fileMock.Object,
+            IsRegister = false
         };
 
         _commonServiceMock
@@ -444,6 +487,36 @@ public class UserServiceTests
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
         Assert.Equal(Constants.PASSWORD_REQUIRED_FOR_NEW_USER, ex.Message);
     }
+
+    [Fact]
+    public async Task CreateUser_RegisterEmailFails_ThrowsException()
+    {
+        var dto = new UserRequestDto
+        {
+            FullName = "Test User",
+            Email = "failuser@example.com",
+            UserName = "failuser",
+            Password = "Test@123",
+            IsRegister = true
+        };
+
+        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+            It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(new CreateUpdateResponseDto
+            {
+                Success = true,
+                Message = "User created successfully."
+            });
+
+        _commonServiceMock
+            .Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
+            .ReturnsAsync("Some failure message");
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+
+        Assert.Equal(Constants.USER_REGISTERED_BUT_EMAIL_NOT_SENT, ex.Message);
+    }
+
     #endregion
 
     #region UpdateUser
@@ -526,7 +599,7 @@ public class UserServiceTests
         {
             Id = 1,
             FullName = "Name",
-            Email = "newemail@example.com",  
+            Email = "newemail@example.com",
             UserName = "username",
             ProfilePic = null,
             Password = null
@@ -555,7 +628,7 @@ public class UserServiceTests
             Id = 1,
             FullName = "Name",
             Email = "user@example.com",
-            UserName = "duplicateusername",  
+            UserName = "duplicateusername",
             ProfilePic = null,
             Password = null
         };
@@ -574,6 +647,35 @@ public class UserServiceTests
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
         Assert.Equal("User with this username already exists.", ex.Message);
     }
+
+    [Fact]
+    public async Task UpdateUser_DoesNotSendEmail()
+    {
+        var dto = new UserRequestDto
+        {
+            Id = 1,
+            FullName = "Updated Name",
+            Email = "user@example.com",
+            UserName = "updateduser",
+            Password = null,
+            IsRegister = false
+        };
+
+        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+            It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(new CreateUpdateResponseDto
+            {
+                Success = true,
+                Message = "User updated successfully."
+            });
+
+        var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
+
+        Assert.True(Success);
+        Assert.Equal("User updated successfully.", Message);
+        _commonServiceMock.Verify(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()), Times.Never);
+    }
+
     #endregion
 
     #region UpdateUserByAction
@@ -677,7 +779,7 @@ public class UserServiceTests
 
         // Assert
         Assert.Contains("changed", result.ToLower());
-        _commonServiceMock.Verify();  
+        _commonServiceMock.Verify();
     }
 
     #endregion

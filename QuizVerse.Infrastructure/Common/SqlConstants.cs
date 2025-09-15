@@ -12,7 +12,7 @@ public class SqlConstants
 
     #region User CRUD
     public const string CREATE_OR_UPDATE_USER_FUNCTION = "create_or_update_user";
-    public const string CREATE_OR_UPDATE_USER_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_id, @p_full_name, @p_email, @p_username, @p_password, @p_profile_pic, @p_bio, @p_player_role_id, @p_status_active, @p_status_inactive, @p_status_suspended, @p_modified_by)";
+    public const string CREATE_OR_UPDATE_USER_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_id, @p_full_name, @p_email, @p_username, @p_password, @p_profile_pic, @p_bio, @p_player_role_id, @p_status_active, @p_status_inactive, @p_status_suspended, @p_modified_by, @p_first_time_login)";
     #endregion
 
     #region QuestionPool

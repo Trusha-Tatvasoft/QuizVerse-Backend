@@ -43,12 +43,8 @@ public class MappingProfile : Profile
 
         #region Login/Registration User
         // user registration
-        CreateMap<UserRegisterDto, User>()
-           .ForMember(dest => dest.FirstTimeLogin, opt => opt.MapFrom(src => false))
-           .ForMember(dest => dest.Status, opt => opt.MapFrom(src => UserStatus.Active))
-           .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => UserRole.Player))
-           .ForMember(dest => dest.IsDeleted, opt => opt.MapFrom(src => false))
-           .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow));
+        CreateMap<UserRegisterDto, UserRequestDto>()
+            .ForMember(dest => dest.IsRegister, opt => opt.MapFrom(src => true));
         #endregion
 
         #region Quiz Difficulty Levels

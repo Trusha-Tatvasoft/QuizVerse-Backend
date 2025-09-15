@@ -1,6 +1,6 @@
 -- =========================================================================================
 -- Author:       Devisha Gajjar
--- Create Date:  26-August-2025
+-- Create Date:  11-September-2025
 -- Description:  Creates a new user or updates an existing user.
 --               Handles uniqueness constraints on email and username, 
 --               prevents email changes during update,
@@ -20,7 +20,25 @@
 --         1,                                  -- p_status_active
 --         2,                                  -- p_status_inactive
 --         3,                                  -- p_status_suspended
---         1                                   -- p_modified_by
+--         1,                                  -- p_modified_by
+--         TRUE                                -- p_first_time_login 
+--     );
+--
+--     -- Create a new user with first_time_login = FALSE (registration)
+--     SELECT * FROM create_or_update_user(
+--         NULL,
+--         'Bob Jones',
+--         'bob@gmail.com',
+--         'bobjones',
+--         'hashedpass',
+--         'profile_pic2.jpg',
+--         'New user bio',
+--         2,
+--         1,
+--         2,
+--         3,
+--         1,
+--         FALSE                            
 --     );
 --
 --     -- Update an existing user (only username, bio, and profile pic)
@@ -52,7 +70,8 @@ CREATE OR REPLACE FUNCTION create_or_update_user(
     p_status_active INT,
     p_status_inactive INT,
     p_status_suspended INT,
-    p_modified_by INT
+    p_modified_by INT DEFAULT NULL,
+    p_first_time_login BOOLEAN DEFAULT TRUE
 )
 RETURNS TABLE (
     p_success BOOLEAN,
@@ -63,7 +82,16 @@ DECLARE
     v_user RECORD;
     v_existing_user RECORD;
     v_new_user_id INT;
+    v_trimmed_email TEXT;
+    v_trimmed_full_name TEXT;
+    v_trimmed_username TEXT;
+    v_trimmed_bio TEXT;
 BEGIN
+    v_trimmed_email := TRIM(p_email);
+    v_trimmed_full_name := TRIM(p_full_name);
+    v_trimmed_username := TRIM(p_username);
+    v_trimmed_bio := CASE WHEN p_bio IS NOT NULL THEN TRIM(p_bio) ELSE NULL END;
+
     IF p_id IS NOT NULL AND p_id > 0 THEN
         -- UPDATE 
         SELECT * INTO v_user FROM "Users" WHERE id = p_id AND NOT is_deleted;
@@ -72,21 +100,21 @@ BEGIN
             RETURN;
         END IF;
 
-        IF LOWER(v_user.email) <> LOWER(p_email) THEN
+        IF LOWER(v_user.email) <> LOWER(v_trimmed_email) THEN
             RETURN QUERY SELECT FALSE, 'Email can''t be changed';
             RETURN;
         END IF;
 
-        IF EXISTS(SELECT 1 FROM "Users" WHERE user_name = p_username AND id <> p_id) THEN
+        IF EXISTS(SELECT 1 FROM "Users" WHERE user_name = v_trimmed_username AND id <> p_id) THEN
             RETURN QUERY SELECT FALSE, 'User with this username already exists.';
             RETURN;
         END IF;
 
         UPDATE "Users"
-        SET user_name = p_username,
-            bio = p_bio,
-            profile_pic = COALESCE(p_profile_pic,v_user.profile_pic),
-            full_name = p_full_name,              
+        SET user_name = v_trimmed_username,
+            bio = v_trimmed_bio,
+            profile_pic = COALESCE(p_profile_pic, v_user.profile_pic),
+            full_name = v_trimmed_full_name,              
             modified_by = p_modified_by,
             modified_date = NOW()
         WHERE id = p_id;
@@ -96,14 +124,14 @@ BEGIN
 
     ELSE
         -- CREATE 
-        SELECT * INTO v_existing_user FROM "Users" WHERE LOWER(email) = LOWER(TRIM(p_email));
+        SELECT * INTO v_existing_user FROM "Users" WHERE LOWER(email) = LOWER(v_trimmed_email);
 
         IF FOUND THEN
-            IF v_existing_user.is_deleted OR
+            IF v_existing_user.is_deleted AND
                v_existing_user.status IN (p_status_active, p_status_inactive) THEN
                PERFORM cleanup_old_user(v_existing_user.id, p_modified_by);
             ELSIF v_existing_user.status = p_status_suspended THEN
-                RETURN QUERY SELECT FALSE, 'Email suspended.';
+                RETURN QUERY SELECT FALSE, 'This account has been suspended. Please contact support.';
                 RETURN;
             ELSE
                 RETURN QUERY SELECT FALSE, 'User with this email already exists.';
@@ -111,7 +139,7 @@ BEGIN
             END IF;
         END IF;
 
-        IF EXISTS(SELECT 1 FROM "Users" WHERE user_name = p_username) THEN
+        IF EXISTS(SELECT 1 FROM "Users" WHERE user_name = v_trimmed_username) THEN
             RETURN QUERY SELECT FALSE, 'User with this username already exists.';
             RETURN;
         END IF;
@@ -122,17 +150,17 @@ BEGIN
             created_date, created_by, first_time_login, is_deleted
         )
         VALUES (
-			p_full_name,
-            p_email,
-            p_username,
+            v_trimmed_full_name,
+            v_trimmed_email,
+            v_trimmed_username,
             p_password,
-            p_bio,
+            v_trimmed_bio,
             p_profile_pic,              
             p_player_role_id,
             p_status_active,
             NOW(),
             p_modified_by,
-            TRUE,
+            p_first_time_login,
             FALSE
         )
         RETURNING id INTO v_new_user_id;
