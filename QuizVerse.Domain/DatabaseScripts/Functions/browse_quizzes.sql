@@ -86,6 +86,7 @@ BEGIN
         LEFT JOIN "Users" u ON u.id = qa.user_id
         WHERE q.is_deleted = FALSE
           AND q.quiz_type = 1
+          AND q.status = 1
           AND (p_search_text IS NULL OR q.name ILIKE '%' || p_search_text || '%' OR q.description ILIKE '%' || p_search_text || '%')
           AND (p_quiz_category_id IS NULL OR q.category_id = p_quiz_category_id)
           AND (p_quiz_difficulty_level_id IS NULL OR q.difficulty_level_id = p_quiz_difficulty_level_id)

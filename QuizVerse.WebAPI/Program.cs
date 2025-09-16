@@ -29,7 +29,7 @@ builder.Services.AddCors(options =>
 
 // Configure AI service settings
 builder.Services.Configure<AiServiceOptions>(
-    builder.Configuration.GetSection("AiServiceSettings")
+    builder.Configuration.GetSection(SystemConstants.AI_SERVICE_SETTINGS)
 );
 
 builder.Services.RegisterDependency();

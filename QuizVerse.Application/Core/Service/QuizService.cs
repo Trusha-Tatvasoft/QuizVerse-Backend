@@ -93,19 +93,12 @@ public class QuizService(
         if (string.IsNullOrWhiteSpace(quizAnswerCheck.GivenAnswer))
             return false;
 
-        string prompt = $@"
-        Evaluate the answer for a quiz question.
-
-        Question: {quizAnswerCheck.QuestionName}
-
-        Expected Answer: {quizAnswerCheck.CorrectAnswer}
-        Provided Answer: {quizAnswerCheck.GivenAnswer}
-
-        Instructions:
-        - Consider the context of the question.
-        - If the provided answer correctly answers the question and conveys the same meaning as the expected answer (even with different wording), return TRUE.
-        - If the provided answer is incorrect, incomplete, or unrelated to the question, return FALSE.
-        - Respond only with TRUE or FALSE.";
+        string prompt = string.Format(
+            PromptConstants.CHECK_ANSWER_PROMPT,
+            quizAnswerCheck.QuestionName,
+            quizAnswerCheck.CorrectAnswer,
+            quizAnswerCheck.GivenAnswer
+        );
 
         string response = await _aiService.GetResponseAsync(prompt);
 
@@ -268,24 +261,15 @@ public class QuizService(
     public async Task<string> GetAnswerExplanation(AnswerExplanationRequestDTO request)
     {
         string answerText  = string.IsNullOrWhiteSpace(request.UserAnswer)
-            ? "No answer was provided."
+            ? Constants.NO_ANSWER_PROVIDED
             : request.UserAnswer;
 
-        string prompt = $@"
-        You are an AI quiz evaluator. Evaluate the given answer and generate a clear, concise explanation.
-
-        Question: {request.QuestionText}
-        Correct Answer: {request.CorrectAnswer}
-        Answer Answer: {answerText}
-
-        Instructions:
-        - Provide a very short and simple explanation (1-2 sentences).
-        - Do not use quotes around answers.
-        - Do not add extra commentary or greetings.
-        - If the answer is correct, explain simply why.
-        - If the answer is incorrect or missing, explain the correct answer clearly.
-        - Do not include the word 'user' or 'user’s answer'.
-        - Respond only with plain text, nothing else.";
+        string prompt = string.Format(
+            PromptConstants.GET_EXPLANATION_PROMPT,
+            request.QuestionText,
+            request.CorrectAnswer,
+            answerText
+        );
 
         string response = await _aiService.GetResponseAsync(prompt);
 

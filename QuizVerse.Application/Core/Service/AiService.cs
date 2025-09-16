@@ -5,7 +5,6 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.DTOs;
 using AngleSharp.Dom;
-using System.Security.AccessControl;
 using QuizVerse.Infrastructure.Common;
 
 namespace QuizVerse.Application.Core.Service
@@ -32,7 +31,7 @@ namespace QuizVerse.Application.Core.Service
         public async Task<string> GetResponseAsync(string prompt)
         {
             if (string.IsNullOrWhiteSpace(prompt))
-                throw new AppException("Prompt cannot be empty.");
+                throw new AppException(Constants.PROMPT_CANNOT_BE_EMPTY);
 
             StringBuilder responseBuilder = new();
 
