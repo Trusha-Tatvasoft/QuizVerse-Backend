@@ -27,6 +27,7 @@ public class QuizServiceTests
     private readonly Mock<ISqlQueryRepository> _sqlQueryRepoMock;
     private readonly Mock<IAiService> _aiServiceMock;
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
+    private readonly Mock<ILeaderboardService> _leaderboardServiceMock;
 
     public QuizServiceTests()
     {
@@ -52,6 +53,7 @@ public class QuizServiceTests
 
         _sqlQueryRepoMock = new Mock<ISqlQueryRepository>();
         _aiServiceMock = new Mock<IAiService>();
+        _leaderboardServiceMock = new Mock<ILeaderboardService>();
 
         var quizRepo = new GenericRepository<Quiz>(_context);
         var quizPlayStatusRepo = new GenericRepository<QuizPlayStatus>(_context);
@@ -72,7 +74,8 @@ public class QuizServiceTests
             _mapper,
             _sqlQueryRepoMock.Object,
             _httpContextAccessorMock.Object,
-            _aiServiceMock.Object
+            _aiServiceMock.Object,
+            _leaderboardServiceMock.Object
         );
     }
 
