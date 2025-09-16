@@ -25,7 +25,8 @@ public class QuizService(
     IMapper _mapper,
     ISqlQueryRepository _sqlQueryRepository,
     IHttpContextAccessor _httpContextAccessor,
-    IAiService _aiService
+    IAiService _aiService,
+    ILeaderboardService _leaderboardService
 ) : IQuizService
 {
     public int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
@@ -139,6 +140,9 @@ public class QuizService(
         await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.RECALC_USER_STREAK_FUNCTION, UserId));
         await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(SqlConstants.RECALC_GLOBAL_RANKS_FUNCTION);
         await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.CHECK_AND_AWARD_BADGES_FUNCTION, UserId));
+
+        _leaderboardService.ClearAvailableYearsCache();
+        _leaderboardService.ClearAvailableMonthsCache(DateTime.UtcNow.Year);
 
         return true;
     }
