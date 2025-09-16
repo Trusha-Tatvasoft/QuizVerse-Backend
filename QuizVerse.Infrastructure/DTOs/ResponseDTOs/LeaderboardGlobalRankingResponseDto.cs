@@ -33,7 +33,7 @@ public class RawLeaderboardGlobalRankingDto
     public int Trend { get; set; }   // 1 = same, 2 = up, 3 = down
 
     [Column("is_loggedin_user")]
-    public bool Is_loggedin_user { get; set; }  // true if this row is the requested user
+    public bool IsLoggedInUser { get; set; }  // true if this row is the requested user
 }
 
 public class LeaderboardGlobalRankingResponseDto
@@ -47,5 +47,5 @@ public class LeaderboardGlobalRankingResponseDto
     public int CurrentLevel { get; set; }
     public int CurrentStreak { get; set; }
     public int Trend { get; set; }   // 1 = same, 2 = up, 3 = down
-    public bool Is_loggedin_user { get; set; }
+    public bool IsLoggedInUser { get; set; }
 }

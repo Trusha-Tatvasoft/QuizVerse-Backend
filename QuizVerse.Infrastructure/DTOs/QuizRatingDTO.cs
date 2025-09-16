@@ -9,7 +9,7 @@ public class QuizRatingDTO
     public int QuizId { get; set; }
 
     [Required(ErrorMessage = "QuizRating is required.")]
-    [Range(1, 5, ErrorMessage = "QuizRating must be between 1 and 5.")]
+    [Range(0, 5, ErrorMessage = "QuizRating must be between 0 and 5.")]
     public int QuizRating { get; set; }
     
     public string? Feedback { get; set; }
