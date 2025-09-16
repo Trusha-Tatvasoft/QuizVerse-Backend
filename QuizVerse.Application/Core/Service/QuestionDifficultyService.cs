@@ -151,7 +151,7 @@ public class QuestionDifficultyService(IGenericRepository<QuestionDifficulty> _q
     public async Task<bool> IsQuestionDifficultyXPAvailable(int xp)
     {
         if (await _questionDifficultyRepository.Exists(u => u.XpGained == xp && !u.IsDeleted))
-            throw new AppException(Constants.QUESTION_DIFFICULTY_DUPLICATE_XP);
+            throw new AppException(Constants.QUESTION_DIFFICULTY_DUPLICATE_XP, xp);
 
         return true;
     }

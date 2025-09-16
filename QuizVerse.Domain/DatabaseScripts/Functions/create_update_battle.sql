@@ -217,32 +217,47 @@ BEGIN
             AS q(id INT, "categoryId" INT, "queDifficultyId" INT, "queText" TEXT, "queTypeId" INT, "queOptionsAns" JSONB)
         LOOP
             IF v_q.id IS NULL THEN
-                INSERT INTO "BaseQuestions" (
-                    category_id, que_difficulty_id, que_text, que_type_id, created_by
-                )
-                VALUES (
-                    v_q."categoryId", v_q."queDifficultyId", v_q."queText", v_q."queTypeId", p_created_by
-                )
-                RETURNING id INTO v_question_id;
+                -- Check if the same type of question already exists
+                SELECT id INTO v_question_id
+                FROM "BaseQuestions"
+                WHERE category_id       = v_q."categoryId"
+                AND que_difficulty_id = v_q."queDifficultyId"
+                AND que_text          = v_q."queText"
+                AND que_type_id       = v_q."queTypeId"
+                AND is_deleted        = FALSE
+                LIMIT 1;
 
-                IF v_q."queOptionsAns" IS NOT NULL AND jsonb_array_length(v_q."queOptionsAns") > 0 THEN
-                    FOR v_opt IN
-                        SELECT * FROM jsonb_to_recordset(v_q."queOptionsAns") AS o(id INT, key TEXT, value TEXT)
-                    LOOP
-                        INSERT INTO "QuestionOptionsAnswers"(question_id, key, value, created_by)
-                        VALUES (v_question_id, v_opt.key, v_opt.value, p_created_by);
-                    END LOOP;
+                IF v_question_id IS NULL THEN
+                    -- Insert new if not found
+                    INSERT INTO "BaseQuestions" (
+                        category_id, que_difficulty_id, que_text, que_type_id, created_by
+                    )
+                    VALUES (
+                        v_q."categoryId", v_q."queDifficultyId", v_q."queText", v_q."queTypeId", p_created_by
+                    )
+                    RETURNING id INTO v_question_id;
+
+                    -- Insert options if provided
+                    IF v_q."queOptionsAns" IS NOT NULL AND jsonb_array_length(v_q."queOptionsAns") > 0 THEN
+                        FOR v_opt IN
+                            SELECT * FROM jsonb_to_recordset(v_q."queOptionsAns") AS o(id INT, key TEXT, value TEXT)
+                        LOOP
+                            INSERT INTO "QuestionOptionsAnswers"(question_id, key, value, created_by)
+                            VALUES (v_question_id, v_opt.key, v_opt.value, p_created_by);
+                        END LOOP;
+                    END IF;
                 END IF;
             ELSE
                 v_question_id := v_q.id;
             END IF;
 
+            -- Now ensure mapping exists or is restored
             UPDATE "QuizToBaseQuestionMap"
             SET is_deleted   = FALSE,
                 modified_by  = p_created_by,
                 modified_date= NOW()
             WHERE quiz_id = v_quiz_id
-              AND que_id  = v_question_id;
+            AND que_id  = v_question_id;
 
             IF NOT FOUND THEN
                 INSERT INTO "QuizToBaseQuestionMap"(quiz_id, que_id, created_by)

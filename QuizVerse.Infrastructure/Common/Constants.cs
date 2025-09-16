@@ -329,7 +329,7 @@ public static class Constants
     public const string QUESTION_DIFFICULTY_ADDED = "Question Difficulty added successfully.";
     public const string QUESTION_DIFFICULTY_DELETED = "Question Difficulty deleted successfully.";
     public const string QUESTION_DIFFICULTY_DUPLICATE_NAME = "Question Difficulty level with this name already exists.";
-    public const string QUESTION_DIFFICULTY_DUPLICATE_XP = "Question Difficulty level with this xp already exists.";
+    public const string QUESTION_DIFFICULTY_DUPLICATE_XP = "Question Difficulty level with {0} xp already exists.";
     #endregion
 
     #region Quiz
