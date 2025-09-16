@@ -28,5 +28,5 @@ public class SystemConstants
         "{\"PlatformQuote\":\"Create, share, and compete in quizzes powered by AI. Challenge friends, join tournaments, and climb the leaderboards in the ultimate quiz experience.\"}";
     public const string DEFAULT_PLATFORM_LOGO_JSON =
         "{\"Path\":\"default-logo/default-logo.png\"}";
-
+    public const string AI_SERVICE_SETTINGS = "AiServiceSettings";
 }
