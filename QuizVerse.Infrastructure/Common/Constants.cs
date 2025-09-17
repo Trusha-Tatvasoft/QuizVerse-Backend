@@ -90,6 +90,7 @@ public static class Constants
     public const string CREATE_SUCCESS = "Created successfully";
     public const string UPDATE_SUCCESS = "Updated successfully";
     public const string DELETE_SUCCESS = "Deleted successfully";
+    public const string CAN_NOT_DELETE_BATTLE  = "Battle is being played. So you cannot delete it.";
     public const string NO_DATA_Found = "No data found";
     #endregion
 

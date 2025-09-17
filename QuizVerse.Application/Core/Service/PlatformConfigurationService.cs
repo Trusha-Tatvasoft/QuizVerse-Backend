@@ -27,10 +27,14 @@ public class PlatformConfigurationService(IGenericRepository<PlatformConfigurati
         // LOGO
         var platformLogoJson = platformConfigurationList
             .FirstOrDefault(p => p.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME)
-            ?.Values
-            ?? SystemConstants.DEFAULT_PLATFORM_LOGO_JSON;
-        var platformLogoDoc = JsonDocument.Parse(platformLogoJson);
-        string logoPath = platformLogoDoc.RootElement.GetProperty(Constants.PATH_KEY).GetString() ?? throw new AppException(Constants.PLATFORM_CONFIGURATION_NULL_ERROR);
+            ?.Values;
+        string logoPath;
+        if (platformLogoJson == null) logoPath = null;
+        else
+        {
+            var platformLogoDoc = JsonDocument.Parse(platformLogoJson);
+            logoPath = platformLogoDoc.RootElement.GetProperty(Constants.PATH_KEY).GetString() ?? throw new AppException(Constants.PLATFORM_CONFIGURATION_NULL_ERROR);
+        }
 
         string logoBase64;
         if (!string.IsNullOrEmpty(logoPath) && File.Exists(logoPath))
@@ -60,9 +64,9 @@ public class PlatformConfigurationService(IGenericRepository<PlatformConfigurati
         PlateformConfigurationResponseDTO response = new PlateformConfigurationResponseDTO()
         {
             Quote = platformQuote,
-            Logo = logoPath,
             DefaultsColors = defaultsColors
         };
+        if (logoPath != null) response.Logo = logoPath;
 
         return response;
     }
@@ -79,22 +83,48 @@ public class PlatformConfigurationService(IGenericRepository<PlatformConfigurati
         configsToUpdate.Add(quoteConfig);
 
         // LOGO
+        string? imagePath;
         if (platformConfigurationRequest.Logo != null)
         {
-            string? imagePath;
             imagePath = await commonService.SaveFile(platformConfigurationRequest.Logo, SystemConstants.LOGO_FOLDER_NAME) ?? throw new AppException(Constants.IMAGE_SAVE_ERROR);
-            var logoConfig = platformConfigurationList
-                .First(p => p.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME);
-            logoConfig.Values = JsonSerializer.Serialize(new { Path = imagePath });
-            configsToUpdate.Add(logoConfig);
-
-            var files = Directory.GetFiles(SystemConstants.LOGO_PATH);
-            foreach (var file in files)
+            PlatformConfiguration? logoConfig = platformConfigurationList
+                .FirstOrDefault(p => p.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME);
+            if (logoConfig == null)
             {
-                if (!file.EndsWith(Path.GetFileName(imagePath)!, StringComparison.OrdinalIgnoreCase))
+                logoConfig = new PlatformConfiguration
                 {
-                    System.IO.File.Delete(file);
-                }
+                    ConfigurationName = SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME,
+                    Description = SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME,
+                    Values = JsonSerializer.Serialize(new { Path = imagePath })
+                };
+                await platformConfigurationRepository.AddAsync(logoConfig);
+            }
+            else
+            {
+                logoConfig.Values = JsonSerializer.Serialize(new { Path = imagePath });
+                configsToUpdate.Add(logoConfig);
+            }
+        }
+        else
+        {
+            imagePath = null;
+            PlatformConfiguration? logoConfig = platformConfigurationList
+                    .FirstOrDefault(p => p.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME);
+            if (logoConfig != null)
+                await platformConfigurationRepository.DeleteAsync(logoConfig);
+        }
+
+        var files = Directory.GetFiles(SystemConstants.LOGO_PATH);
+        foreach (var file in files)
+        {
+            if (imagePath == null)
+            {
+                System.IO.File.Delete(file);
+                continue;
+            }
+            if (!file.EndsWith(Path.GetFileName(imagePath), StringComparison.OrdinalIgnoreCase))
+            {
+                System.IO.File.Delete(file);
             }
         }
 

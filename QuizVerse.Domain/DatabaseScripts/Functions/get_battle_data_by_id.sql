@@ -31,6 +31,27 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 AS $$
 BEGIN
+    -- First check if quiz exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "BattleList" b
+        WHERE b.id = p_battle_id
+        AND b.is_deleted = FALSE
+    ) THEN
+        RAISE EXCEPTION 'Battle not found.'
+            USING ERRCODE = 'P0001';
+    END IF;
+
+	-- Checks if quiz is being played right now
+	IF EXISTS (
+		SELECT 1 
+		FROM "BattleStatus" bs
+		where bs.battle_id = p_battle_id AND bs.battle_status = 3
+	) THEN 
+        RAISE EXCEPTION 'Someone is playing this battle currently. So you can not edit it.'
+            USING ERRCODE = 'P0001';
+	END IF;
+    
     RETURN QUERY
     SELECT
         b.id AS "Id",

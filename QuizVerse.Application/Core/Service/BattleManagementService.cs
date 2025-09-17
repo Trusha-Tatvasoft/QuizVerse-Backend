@@ -20,7 +20,8 @@ public class BattleManagementService(
     ISqlQueryRepository _sqlQueryRepository,
     IMapper mapper,
     IHttpContextAccessor httpContextAccessor,
-    IGenericRepository<BattleList> battleListRepository
+    IGenericRepository<BattleList> battleListRepository,
+    IGenericRepository<Domain.Entities.BattleStatus> battleStatusRepository
 ) : IBattleManagementService
 {
     public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
@@ -132,6 +133,11 @@ public class BattleManagementService(
     #region Delete Battle
     public async Task<string> DeleteBattle(int battleId)
     {
+        var isBattleBeingPlayed = await battleStatusRepository.Exists(b => b.BattleId == battleId && b.BattleStatus1 == (int)Infrastructure.Enums.BattleStatus.Running);
+        if (isBattleBeingPlayed)
+        {
+            throw new AppException(Constants.CAN_NOT_DELETE_BATTLE);
+        }
         var battle = await battleListRepository.GetAsync(b => b.Id == battleId && !b.IsDeleted)
             ?? throw new AppException(string.Format(Constants.BATTLE_NOT_FOUND));
 
