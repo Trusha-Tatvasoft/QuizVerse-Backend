@@ -29,12 +29,25 @@ namespace QuizVerse.WebAPI.Configurations
                     ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero,
-                    RoleClaimType = ClaimTypes.Role 
+                    RoleClaimType = ClaimTypes.Role
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        if (string.IsNullOrEmpty(context.Token) &&
+                            context.Request.Query.TryGetValue("access_token", out var token))
+                        {
+                            context.Token = token;
+                        }
+                        return Task.CompletedTask;
+                    }
                 };
             });
 
             services.AddAuthorization(options =>
-            {});
+            { });
 
             return services;
         }

@@ -1,3 +1,14 @@
+-- =============================================
+-- Author:      Zeel Vaghasiya
+-- Create date: 11-September-2025
+-- Description: Retrieves the list of questions for a given quiz and user.
+--              Returns user answers, correct answers, and correctness status.
+--              Only includes questions that existed at the time the user started 
+--              the quiz, preventing newly added questions from appearing.
+-- Usage:       SELECT * FROM get_quiz_question_review(p_quiz_id, p_user_id);
+-- Example:     SELECT * FROM get_quiz_question_review(101, 202);
+-- =============================================
+
 CREATE OR REPLACE FUNCTION public.get_quiz_question_review(
     p_quiz_id INT,
     p_user_id INT
@@ -38,5 +49,6 @@ BEGIN
     WHERE qbm.quiz_id = p_quiz_id
       AND qbm.is_deleted = false
       AND bq.is_deleted = false;
+      AND qbm.created_date <= qps.created_date;
 END;
 $$ LANGUAGE plpgsql STABLE;
