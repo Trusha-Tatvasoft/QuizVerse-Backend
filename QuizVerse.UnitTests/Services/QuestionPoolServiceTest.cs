@@ -13,8 +13,6 @@ using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Domain.Entities;
 
@@ -31,6 +29,10 @@ public class QuestionPoolServiceTest
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly QuestionPoolService _service;
+    private readonly Mock<IGenericRepository<QuizToBaseQuestionMap>> _quizToBaseQuestionMapRepoMock;
+    private readonly Mock<IGenericRepository<QuizPlayStatus>> _quizPlayStatusRepoMock;
+    private readonly Mock<IGenericRepository<BattleList>> _battleListRepoMock;
+    private readonly Mock<IGenericRepository<BattleStatus>> _battleStatusRepoMock;
 
     public QuestionPoolServiceTest()
     {
@@ -42,6 +44,10 @@ public class QuestionPoolServiceTest
         _categoryRepoMock = new Mock<IGenericRepository<QuizCategory>>();
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         _mapperMock = new Mock<IMapper>();
+        _quizToBaseQuestionMapRepoMock = new Mock<IGenericRepository<QuizToBaseQuestionMap>>();
+        _quizPlayStatusRepoMock = new Mock<IGenericRepository<QuizPlayStatus>>();
+        _battleListRepoMock = new Mock<IGenericRepository<BattleList>>();
+        _battleStatusRepoMock = new Mock<IGenericRepository<BattleStatus>>();
 
         DefaultHttpContext httpContext = new()
         {
@@ -51,6 +57,10 @@ public class QuestionPoolServiceTest
         _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
 
         _service = new QuestionPoolService(
+            _quizToBaseQuestionMapRepoMock.Object,
+            _quizPlayStatusRepoMock.Object,
+            _battleListRepoMock.Object,
+            _battleStatusRepoMock.Object,
             _baseQuestionRepoMock.Object,
             _optionsRepoMock.Object,
             _typeRepoMock.Object,
