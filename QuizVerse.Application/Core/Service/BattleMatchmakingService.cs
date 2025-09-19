@@ -23,7 +23,6 @@ public class BattleMatchmakingService(
             ConnectionId = connectionId,
             UserId = userId,
             BattleId = battleId,
-            CurrentLevel = playerProfile!.CurrentLevel,
             EnqueuedAt = DateTime.UtcNow
         };
 

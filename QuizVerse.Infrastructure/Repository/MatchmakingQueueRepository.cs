@@ -30,11 +30,7 @@ public class MatchmakingQueueRepository : IMatchmakingQueueRepository
         {
             players.RemoveAll(p => DateTime.UtcNow - p.EnqueuedAt > _timeout);
 
-            int allowedLevelGap = 3;
-
-            MatchmakingPlayerDTO? opponent = players.FirstOrDefault(p =>
-                p.UserId != newPlayer.UserId &&
-                Math.Abs(p.CurrentLevel - newPlayer.CurrentLevel) <= allowedLevelGap);
+            MatchmakingPlayerDTO? opponent = players.FirstOrDefault(p => p.UserId != newPlayer.UserId );
 
             if (opponent != null)
             {
