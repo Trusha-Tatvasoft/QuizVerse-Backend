@@ -11,4 +11,5 @@ public class UserAvailableBattleDto
     public int TotalQuestions { get; set; }
     public TimeSpan Duration { get; set; }
     public int Participants { get; set; }
+    public bool IsBattleRunning { get; set; }
 }

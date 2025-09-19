@@ -111,4 +111,9 @@ public class SqlConstants
     public const string CHECK_AND_AWARD_BADGES_FUNCTION = "SELECT * FROM check_and_award_badges({0})";
     public const string GET_QUIZ_QUESTION_REVIEW_FUNCTION = "SELECT * FROM get_quiz_question_review({0}, {1})";
     #endregion
+
+    #region User Battles
+    public const string GET_USER_BATTLE_RESULT_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
+    public const string GET_USER_BATTLE_RESULT_FUNCTION = "get_user_battle_result";
+    #endregion
 }
