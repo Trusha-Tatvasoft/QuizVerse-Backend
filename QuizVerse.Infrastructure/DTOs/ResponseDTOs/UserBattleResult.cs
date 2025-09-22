@@ -11,4 +11,6 @@ public class UserBattleResult
     public int PlayerAttemptedQuestions { get; set; }
     public int OpponentAttemptedQuestions { get; set; }
     public int PlayerEarnedXP { get; set; }
+    public string OpponentFullName { get; set; } = null!;
+    public string PlayerFullName { get; set; } = null!;
 }

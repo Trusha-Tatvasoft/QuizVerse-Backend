@@ -28,7 +28,9 @@ RETURNS TABLE (
     "IsWin" BOOLEAN,
     "PlayerAttemptedQuestions" INT,
     "OpponentAttemptedQuestions" INT,
-    "PlayerEarnedXP" INT
+    "PlayerEarnedXP" INT,
+    "OpponentFullName" VARCHAR,
+    "PlayerFullName" VARCHAR
 )
 LANGUAGE plpgsql
 AS $$
@@ -75,16 +77,16 @@ BEGIN
     is_user1 := (bs.user1_id = p_login_user_id);
 
     IF is_user1 THEN
-        SELECT user_name, profile_pic INTO player_user 
+        SELECT user_name, profile_pic, full_name INTO player_user 
         FROM "Users" WHERE id = bs.user1_id;
 
-        SELECT user_name, profile_pic INTO opponent_user 
+        SELECT user_name, profile_pic, full_name INTO opponent_user 
         FROM "Users" WHERE id = bs.user2_id;
     ELSE
-        SELECT user_name, profile_pic INTO player_user 
+        SELECT user_name, profile_pic, full_name INTO player_user 
         FROM "Users" WHERE id = bs.user2_id;
 
-        SELECT user_name, profile_pic INTO opponent_user 
+        SELECT user_name, profile_pic, full_name INTO opponent_user 
         FROM "Users" WHERE id = bs.user1_id;
     END IF;
 
@@ -112,6 +114,8 @@ BEGIN
                           WHEN br.winner_id = p_login_user_id THEN br.winner_gained_xp
                           ELSE br.looser_gained_xp
                         END;
+    "OpponentFullName" := opponent_user.full_name;
+    "PlayerFullName" := player_user.full_name;
 
     RETURN NEXT;
 END;
