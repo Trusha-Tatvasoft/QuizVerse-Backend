@@ -22,6 +22,9 @@ public class UserProfileServiceTests
 {
     private readonly Mock<ISqlQueryRepository> _sqlQueryRepositoryMock = new();
     private readonly Mock<IGenericRepository<User>> _userRepositoryMock = new();
+    private readonly Mock<IGenericRepository<UserPerformanceDetail>> _userPerformanceDetailRepositoryMock = new();
+    private readonly Mock<IGenericRepository<UserNotification>> _userNotificationRepositoryMock = new();
+    private readonly Mock<IGenericRepository<LevelByExp>> _levelByExpRepositoryMock = new();
     private readonly Mock<ICommonService> _commonServiceMock = new();
     private readonly Mock<IGenericRepository<Badge>> _badgeRepositoryMock = new();
     private readonly Mock<IGenericRepository<UserBadgesEarned>> _userBadgeRepositoryMock = new();
@@ -51,6 +54,9 @@ public class UserProfileServiceTests
         _service = new UserProfileService(
             _sqlQueryRepositoryMock.Object,
             _userRepositoryMock.Object,
+            _userPerformanceDetailRepositoryMock.Object,
+            _userNotificationRepositoryMock.Object,
+            _levelByExpRepositoryMock.Object,
             _commonServiceMock.Object,
             _badgeRepositoryMock.Object,
             _userBadgeRepositoryMock.Object,
@@ -120,6 +126,92 @@ public class UserProfileServiceTests
 
             await Assert.ThrowsAsync<AppException>(() => _service.GetUserOverview());
         }
+    }
+    #endregion
+
+    #region GetUserNavbarData
+    [Theory]
+    [InlineData(true, 2, 100)]
+    [InlineData(false, 0, 0)]
+    public async Task GetUserNavbarData_ShouldReturnCorrectDataOrThrow(bool userExists, int notificationCount, int maxExp)
+    {
+        // Arrange
+        var userPerformanceDetail = userExists
+            ? new UserPerformanceDetail
+            {
+                UserId = 2,
+                TotalXp = 500,
+                CurrentLevel = 3,
+                User = new User { ProfilePic = "path/to/profile.jpg" }
+            }
+            : null;
+
+        _userPerformanceDetailRepositoryMock
+            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<UserPerformanceDetail, bool>>>(), It.IsAny<Func<IQueryable<UserPerformanceDetail>, IQueryable<UserPerformanceDetail>>>()))
+            .ReturnsAsync(userPerformanceDetail);
+
+        var notifications = notificationCount > 0
+            ? Enumerable.Range(1, notificationCount).Select(i => new UserNotification
+            {
+                IsRead = false,
+                IsDeleted = false,
+                GlobalNotification = new Notification() { IsDeleted = false }
+            }).ToList()
+            : new List<UserNotification>();
+
+        _userNotificationRepositoryMock
+            .Setup(r => r.GetQueryableInclude())
+            .Returns(notifications.AsQueryable());
+
+        var levelData = maxExp > 0
+            ? new List<LevelByExp> { new LevelByExp { LevelOrder = 3, MaximumExp = maxExp } }
+            : new List<LevelByExp>();
+
+        _levelByExpRepositoryMock
+            .Setup(r => r.GetQueryableInclude())
+            .Returns(levelData.AsQueryable());
+
+        // Act & Assert
+        if (!userExists)
+        {
+            await Assert.ThrowsAsync<AppException>(() => _service.GetUserNavbarData());
+        }
+        else
+        {
+            var result = await _service.GetUserNavbarData();
+            Assert.Equal(500, result.CurrentUserXp);
+            Assert.Equal("path/to/profile.jpg", result.ProfilePic);
+            Assert.Equal(notificationCount, result.NotificationCount);
+            Assert.Equal(maxExp, result.CurrentLevelMaxUserXp);
+        }
+    }
+
+    [Fact]
+    public async Task GetUserNavbarData_ShouldThrowIfLevelDataNotFound()
+    {
+        // Arrange
+        var userPerformanceDetail = new UserPerformanceDetail
+        {
+            UserId = 2,
+            TotalXp = 500,
+            CurrentLevel = 3,
+            User = new User { ProfilePic = "path/to/profile.jpg" }
+        };
+
+        _userPerformanceDetailRepositoryMock
+            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<UserPerformanceDetail, bool>>>(), It.IsAny<Func<IQueryable<UserPerformanceDetail>, IQueryable<UserPerformanceDetail>>>()))
+            .ReturnsAsync(userPerformanceDetail);
+
+        _userNotificationRepositoryMock
+            .Setup(r => r.GetQueryableInclude())
+            .Returns(new List<UserNotification>().AsQueryable());
+
+        _levelByExpRepositoryMock
+            .Setup(r => r.GetQueryableInclude())
+            .Returns(new List<LevelByExp>().AsQueryable());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetUserNavbarData());
     }
     #endregion
 

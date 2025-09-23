@@ -1,13 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Moq;
-using Npgsql;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
@@ -26,11 +21,11 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<IMapper> _mockMapper = new();
         private readonly Mock<IHttpContextAccessor> _mockHttpContext = new();
         private readonly Mock<IGenericRepository<BattleList>> _mockBattleRepo = new();
+        private readonly Mock<IGenericRepository<Domain.Entities.BattleStatus>> _mockBattleStatusRepo = new();
         private readonly BattleManagementService _service;
 
         public BattleManagementServiceTests()
         {
-
             var httpContext = new DefaultHttpContext();
             httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
                 [new Claim(ClaimTypes.UserData, "1")], "mock"));
@@ -41,7 +36,9 @@ namespace QuizVerse.UnitTests.Services
                 _mockSqlRepo.Object,
                 _mockMapper.Object,
                 _mockHttpContext.Object,
-                _mockBattleRepo.Object);
+                _mockBattleRepo.Object,
+                _mockBattleStatusRepo.Object
+            );
         }
 
         #region GetBattleList
@@ -174,10 +171,24 @@ namespace QuizVerse.UnitTests.Services
         #endregion
 
         #region DeleteBattle
+        [Fact]
+        public async Task DeleteBattle_ShouldThrow_WhenBattleIsBeingPlayed()
+        {
+            _mockBattleStatusRepo
+                .Setup(r => r.Exists(It.IsAny<Expression<Func<Domain.Entities.BattleStatus, bool>>>()))
+                .ReturnsAsync(true);
+
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.DeleteBattle(10));
+            Assert.Equal(Constants.CAN_NOT_DELETE_BATTLE, ex.Message);
+        }
 
         [Fact]
         public async Task DeleteBattle_ShouldSoftDelete()
         {
+            _mockBattleStatusRepo
+                .Setup(r => r.Exists(It.IsAny<Expression<Func<Domain.Entities.BattleStatus, bool>>>()))
+                .ReturnsAsync(false);
+
             var b = new BattleList { Id = 5, IsDeleted = false };
             _mockBattleRepo
                 .Setup(r => r.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
@@ -194,6 +205,10 @@ namespace QuizVerse.UnitTests.Services
         [Fact]
         public async Task DeleteBattle_ShouldThrow_WhenNotFound()
         {
+            _mockBattleStatusRepo
+                .Setup(r => r.Exists(It.IsAny<Expression<Func<Domain.Entities.BattleStatus, bool>>>()))
+                .ReturnsAsync(false);
+                
             _mockBattleRepo
                 .Setup(r => r.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
                 .ReturnsAsync((BattleList)null!);

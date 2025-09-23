@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
@@ -17,6 +18,9 @@ namespace QuizVerse.Application.Core.Service;
 public class UserProfileService(
     ISqlQueryRepository sqlQueryRepository,
     IGenericRepository<User> userRepository,
+    IGenericRepository<UserPerformanceDetail> userPerformanceDetailRepository,
+    IGenericRepository<UserNotification> userNotificationRepository,
+    IGenericRepository<LevelByExp> levelByExpRepository,
     ICommonService commonService,
     IGenericRepository<Badge> badgeRepository,
     IGenericRepository<UserBadgesEarned> userBadgeRepository,
@@ -55,6 +59,24 @@ public class UserProfileService(
         return await sqlQueryRepository.SqlQuerySingleAsync<UserOverviewDto>(query, parameters)
            ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, UserId));
 
+    }
+
+    public async Task<UserNavbarDataDto> GetUserNavbarData()
+    {
+        UserPerformanceDetail? userPerformanceDetail = await userPerformanceDetailRepository.GetAsync(upd => upd.UserId == UserId
+                        , query => query.Include(u => u.User)) ?? throw new AppException(Constants.USER_NOT_FOUND_MESSAGE);
+        List<UserNotification>? userNotifications = userNotificationRepository.GetQueryableInclude().Where(un => un.IsRead == false && un.IsDeleted == false
+                        && un.GlobalNotification.IsDeleted == false).ToList();
+        IQueryable<int> currentLevelMaxUserXp = levelByExpRepository.GetQueryableInclude().Where(lpe => lpe.LevelOrder == userPerformanceDetail.CurrentLevel)
+                        .Select(lpe => lpe.MaximumExp);
+
+        return new UserNavbarDataDto()
+        {
+            CurrentUserXp = userPerformanceDetail.TotalXp,
+            ProfilePic = userPerformanceDetail.User.ProfilePic,
+            NotificationCount = userNotifications.Any() ? userNotifications.Count() : 0,
+            CurrentLevelMaxUserXp = currentLevelMaxUserXp.Single()
+        };
     }
     #endregion
 

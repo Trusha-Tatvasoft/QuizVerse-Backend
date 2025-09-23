@@ -90,6 +90,7 @@ public static class Constants
     public const string CREATE_SUCCESS = "Created successfully";
     public const string UPDATE_SUCCESS = "Updated successfully";
     public const string DELETE_SUCCESS = "Deleted successfully";
+    public const string CAN_NOT_DELETE_BATTLE  = "Battle is being played. So you cannot delete it.";
     public const string NO_DATA_Found = "No data found";
     #endregion
 
@@ -191,6 +192,7 @@ public static class Constants
     public const string EXCEL_PREVIEW_LOADED_SUCCESSFULLY = "Excel preview loaded successfully.";
     public const string NO_QUESTIONS_TO_SAVE = "No questions to save.";
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
+    public const string QUESTION_IN_USE_ERROR = "This question is part of an active quiz or battle and cannot be changed.";
     #endregion
 
     #region User Dashboard

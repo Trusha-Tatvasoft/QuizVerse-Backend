@@ -39,6 +39,18 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
             Data = await userProfileService.GetUserOverview()
         });
     }
+
+    [HttpGet("get-user-navbar-data")]
+    public async Task<IActionResult> GetUserNavbarData()
+    {
+        return Ok(new ApiResponse<UserNavbarDataDto>
+        {
+            Result = true,
+            Message= Constants.FETCH_SUCCESS,
+            StatusCode = StatusCodes.Status200OK,
+            Data = await userProfileService.GetUserNavbarData()
+        });
+    }
     #endregion
 
     #region Update ProfilePic

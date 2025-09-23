@@ -13,12 +13,95 @@ using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace QuizVerse.UnitTests.Services;
+
+// Async Query Provider Support Classes
+public class TestAsyncQueryProvider<TEntity> : IAsyncQueryProvider
+{
+    private readonly IQueryProvider _inner;
+
+    public TestAsyncQueryProvider(IQueryProvider inner)
+    {
+        _inner = inner;
+    }
+
+    public IQueryable CreateQuery(Expression expression)
+    {
+        return new TestAsyncEnumerable<TEntity>(expression);
+    }
+
+    public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
+    {
+        return new TestAsyncEnumerable<TElement>(expression);
+    }
+
+    public object Execute(Expression expression)
+    {
+        return _inner.Execute(expression)!;
+    }
+
+    public TResult Execute<TResult>(Expression expression)
+    {
+        return _inner.Execute<TResult>(expression);
+    }
+
+    public TResult ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken = default)
+    {
+        var resultType = typeof(TResult).GetGenericArguments()[0];
+        var executionResult = typeof(IQueryProvider)
+            .GetMethod(
+                name: nameof(IQueryProvider.Execute),
+                genericParameterCount: 1,
+                types: [typeof(Expression)])?
+            .MakeGenericMethod(resultType)
+            .Invoke(this, [expression]);
+
+        return (TResult)typeof(Task).GetMethod(nameof(Task.FromResult))?
+            .MakeGenericMethod(resultType)!
+            .Invoke(null, [executionResult])!;
+    }
+}
+
+public class TestAsyncEnumerable<T> : EnumerableQuery<T>, IAsyncEnumerable<T>, IQueryable<T>
+{
+    public TestAsyncEnumerable(IEnumerable<T> enumerable) : base(enumerable) { }
+    public TestAsyncEnumerable(Expression expression) : base(expression) { }
+
+    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        return new TestAsyncEnumerator<T>(this.AsEnumerable().GetEnumerator());
+    }
+
+    IQueryProvider IQueryable.Provider => new TestAsyncQueryProvider<T>(this);
+}
+
+public class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
+{
+    private readonly IEnumerator<T> _inner;
+
+    public TestAsyncEnumerator(IEnumerator<T> inner)
+    {
+        _inner = inner;
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _inner.Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask<bool> MoveNextAsync()
+    {
+        return ValueTask.FromResult(_inner.MoveNext());
+    }
+
+    public T Current => _inner.Current;
+}
 
 public class QuestionPoolServiceTest
 {
@@ -31,6 +114,10 @@ public class QuestionPoolServiceTest
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly Mock<IMapper> _mapperMock;
     private readonly QuestionPoolService _service;
+    private readonly Mock<IGenericRepository<QuizToBaseQuestionMap>> _quizToBaseQuestionMapRepoMock;
+    private readonly Mock<IGenericRepository<QuizPlayStatus>> _quizPlayStatusRepoMock;
+    private readonly Mock<IGenericRepository<BattleList>> _battleListRepoMock;
+    private readonly Mock<IGenericRepository<BattleStatus>> _battleStatusRepoMock;
 
     public QuestionPoolServiceTest()
     {
@@ -42,6 +129,10 @@ public class QuestionPoolServiceTest
         _categoryRepoMock = new Mock<IGenericRepository<QuizCategory>>();
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         _mapperMock = new Mock<IMapper>();
+        _quizToBaseQuestionMapRepoMock = new Mock<IGenericRepository<QuizToBaseQuestionMap>>();
+        _quizPlayStatusRepoMock = new Mock<IGenericRepository<QuizPlayStatus>>();
+        _battleListRepoMock = new Mock<IGenericRepository<BattleList>>();
+        _battleStatusRepoMock = new Mock<IGenericRepository<BattleStatus>>();
 
         DefaultHttpContext httpContext = new()
         {
@@ -50,7 +141,14 @@ public class QuestionPoolServiceTest
         };
         _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
 
+        // Setup async queryable for repositories that use GetQueryableInclude()
+        SetupAsyncQueryableForRepositories();
+
         _service = new QuestionPoolService(
+            _quizToBaseQuestionMapRepoMock.Object,
+            _quizPlayStatusRepoMock.Object,
+            _battleListRepoMock.Object,
+            _battleStatusRepoMock.Object,
             _baseQuestionRepoMock.Object,
             _optionsRepoMock.Object,
             _typeRepoMock.Object,
@@ -60,6 +158,38 @@ public class QuestionPoolServiceTest
             _mapperMock.Object,
             _sqlQueryRepoMock.Object
         );
+    }
+
+    private void SetupAsyncQueryableForRepositories()
+    {
+        // Create async queryable for each repository
+        var emptyQuizToBaseQuestionMap = CreateAsyncQueryable(new List<QuizToBaseQuestionMap>());
+        var emptyQuizPlayStatus = CreateAsyncQueryable(new List<QuizPlayStatus>());
+        var emptyBattleList = CreateAsyncQueryable(new List<BattleList>());
+        var emptyBattleStatus = CreateAsyncQueryable(new List<BattleStatus>());
+
+        _quizToBaseQuestionMapRepoMock
+            .Setup(r => r.GetQueryableInclude())
+            .Returns(emptyQuizToBaseQuestionMap);
+
+        _quizPlayStatusRepoMock
+            .Setup(r => r.GetQueryableInclude())
+            .Returns(emptyQuizPlayStatus);
+
+        _battleListRepoMock
+            .Setup(r => r.GetQueryableInclude())
+            .Returns(emptyBattleList);
+
+        _battleStatusRepoMock
+            .Setup(r => r.GetQueryableInclude())
+            .Returns(emptyBattleStatus);
+    }
+
+    private IQueryable<T> CreateAsyncQueryable<T>(List<T> data) where T : class
+    {
+        var queryable = data.AsQueryable();
+        var asyncQueryable = new TestAsyncEnumerable<T>(queryable);
+        return asyncQueryable;
     }
 
     private static QuestionRequestDTO GetValidCreateDto() => new()
@@ -118,7 +248,6 @@ public class QuestionPoolServiceTest
             .Setup(m => m.Map<BaseQuestion>(dto))
             .Returns(new BaseQuestion { Id = 10 });
 
-
         string result = await _service.CreateOrUpdateQuestion(0, dto);
 
         Assert.Equal(Constants.QUESTION_CREATION_SUCCESS_MESSAGE, result);
@@ -157,7 +286,7 @@ public class QuestionPoolServiceTest
     }
 
     [Fact]
-    public async Task CreateOrUpdateQuestion_QuestionTypeNotFound_ThrowsAppException()
+    public async Task CreateOrUpdateQuestion_QuestionTypeNotFound_ThowsAppException()
     {
         QuestionRequestDTO dto = GetValidCreateDto();
         _categoryRepoMock.Setup(r => r.Exists(It.IsAny<Expression<Func<QuizCategory, bool>>>())).ReturnsAsync(true);

@@ -2,6 +2,7 @@ namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 public class UserRecentBattleDto
 {
+    public string BattleName { get; set; } = null!;
     public string Opponent { get; set; } = null!;
     public string? ProfilePic { get; set; } = string.Empty;
     public string Category { get; set; } = null!;

@@ -60,17 +60,17 @@ BEGIN
     active_quizzes := (
 		SELECT COUNT(*)
 		FROM "Quiz"
-		WHERE status = 2 AND is_deleted = false
+		WHERE status = 1 AND is_deleted = false AND quiz_type = 1
 	);
     this_month_quizzes := (
 		SELECT COUNT(*)
 		FROM "Quiz"
-		WHERE status = 2 AND is_deleted = false AND created_date >= start_of_this_month
+		WHERE status = 1 AND is_deleted = false AND created_date >= start_of_this_month AND quiz_type = 1
 	);
     last_month_quizzes := (
 		SELECT COUNT(*)
 		FROM "Quiz"
-		WHERE status = 2 AND is_deleted = false AND created_date >= start_of_last_month AND created_date < start_of_this_month
+		WHERE status = 1 AND is_deleted = false AND created_date >= start_of_last_month AND created_date < start_of_this_month AND quiz_type = 1
 	);
     quiz_growth_percent := CASE
 		WHEN last_month_quizzes = 0 AND this_month_quizzes = 0 THEN 0

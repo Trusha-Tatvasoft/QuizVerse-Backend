@@ -8,6 +8,7 @@ public interface IUserProfileService
 {
     Task<UserBasicProfileDto> GetUserBasicProfile();
     Task<UserOverviewDto> GetUserOverview();
+    Task<UserNavbarDataDto> GetUserNavbarData();
     Task<bool> UpdateProfilePicture(UpdateProfilePicRequestDto updateProfilePicRequestDto);
     Task<List<UserBadgesResponseDto>> GetUserBadges();
     Task<UserProfileSettingDto> GetUserProfileSetting();

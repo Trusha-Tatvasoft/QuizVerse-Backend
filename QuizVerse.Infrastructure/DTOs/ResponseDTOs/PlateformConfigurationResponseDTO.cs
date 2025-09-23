@@ -4,7 +4,7 @@ public class PlateformConfigurationResponseDTO
 {
     public string Quote { get; set; } = null!;
     public DefaultsColors DefaultsColors { get; set; } = null!;
-    public string Logo { get; set; } = null!;
+    public string? Logo { get; set; } = null!;
 }
 
 public class DefaultsColors

@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION get_user_recent_battles(
     p_status_completed INT     -- Enum value for Completed (BattleStatus.Completed)
 )
 RETURNS TABLE (
+    "BattleName" VARCHAR,
     "Opponent" VARCHAR,
     "ProfilePic" VARCHAR,
     "Category" VARCHAR,
@@ -24,6 +25,7 @@ AS $$
 BEGIN
     RETURN QUERY
     SELECT 
+        q.name::VARCHAR AS "BattleName",
         -- Opponent name and profile pic
         CASE WHEN bs.user1_id = p_user_id THEN u2.full_name ELSE u1.full_name END::VARCHAR AS "Opponent",
         CASE WHEN bs.user1_id = p_user_id THEN u2.profile_pic ELSE u1.profile_pic END::VARCHAR AS "ProfilePic",

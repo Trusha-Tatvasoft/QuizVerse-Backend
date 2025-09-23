@@ -30,6 +30,27 @@ RETURNS TABLE (
 ) AS
 $$
 BEGIN
+    -- First check if quiz exists
+    IF NOT EXISTS (
+        SELECT 1
+        FROM "Quiz" q
+        WHERE q.id = p_quiz_id
+        AND q.is_deleted = FALSE
+    ) THEN
+        RAISE EXCEPTION 'Quiz not found.'
+            USING ERRCODE = 'P0001';
+    END IF;
+
+	-- Checks if quiz is being played right now
+	IF EXISTS (
+		SELECT 1 
+		FROM "QuizPlayStatus"
+		where quiz_id = p_quiz_id AND is_completed = FALSE
+	) THEN 
+        RAISE EXCEPTION 'Someone is playing this quiz currently. So you can not edit it.'
+            USING ERRCODE = 'P0001';
+	END IF;
+
     RETURN QUERY
     SELECT
         q.id,

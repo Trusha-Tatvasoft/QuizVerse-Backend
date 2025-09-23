@@ -10,219 +10,258 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 using Xunit;
 
-namespace QuizVerse.UnitTests.Services;
-
-public class PlatformConfigurationServiceTests
+namespace QuizVerse.UnitTests.Services
 {
-    private readonly Mock<IGenericRepository<PlatformConfiguration>> _repositoryMock;
-    private readonly Mock<ICommonService> _commonServiceMock;
-    private readonly PlatformConfigurationService _service;
-
-    public PlatformConfigurationServiceTests()
+    public class PlatformConfigurationServiceTests
     {
-        _repositoryMock = new Mock<IGenericRepository<PlatformConfiguration>>();
-        _commonServiceMock = new Mock<ICommonService>();
-        _service = new PlatformConfigurationService(_repositoryMock.Object, _commonServiceMock.Object);
-    }
+        private readonly Mock<IGenericRepository<PlatformConfiguration>> _repositoryMock;
+        private readonly Mock<ICommonService> _commonServiceMock;
+        private readonly PlatformConfigurationService _service;
 
-    private List<PlatformConfiguration> GetValidConfigs(string logoPath = "logo.png")
-    {
-        return new List<PlatformConfiguration>
+        public PlatformConfigurationServiceTests()
         {
-            new PlatformConfiguration
+            _repositoryMock = new Mock<IGenericRepository<PlatformConfiguration>>();
+            _commonServiceMock = new Mock<ICommonService>();
+            _service = new PlatformConfigurationService(_repositoryMock.Object, _commonServiceMock.Object);
+        }
+
+        private List<PlatformConfiguration> GetValidConfigs(string logoPath = "logo.png")
+        {
+            return new List<PlatformConfiguration>
             {
-                ConfigurationName = SystemConstants.PLATFORM_QUOTE_CONFIGURATION_NAME,
-                Values = JsonSerializer.Serialize(new { PlatformQuote = "Test Quote" })
-            },
-            new PlatformConfiguration
+                new PlatformConfiguration
+                {
+                    ConfigurationName = SystemConstants.PLATFORM_QUOTE_CONFIGURATION_NAME,
+                    Values = JsonSerializer.Serialize(new { PlatformQuote = "Test Quote" })
+                },
+                new PlatformConfiguration
+                {
+                    ConfigurationName = SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME,
+                    Values = JsonSerializer.Serialize(new { Path = logoPath })
+                },
+                new PlatformConfiguration
+                {
+                    ConfigurationName = SystemConstants.PLATFORM_COLOR_CONFIGURATION_NAME,
+                    Values = JsonSerializer.Serialize(new { PrimaryColor = "#111111", SecondaryColor = "#222222" })
+                }
+            };
+        }
+
+        [Fact]
+        public async Task GetPlatformConfigurations_ShouldReturnConfig_WhenDataIsValid()
+        {
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(GetValidConfigs());
+            var result = await _service.GetPlatformConfigurations();
+
+            Assert.NotNull(result);
+            Assert.Equal("Test Quote", result.Quote);
+            Assert.Equal("logo.png", result.Logo);
+            Assert.Equal("#111111", result.DefaultsColors.PrimaryColor);
+            Assert.Equal("#222222", result.DefaultsColors.SecondaryColor);
+        }
+
+        [Fact]
+        public async Task GetPlatformConfigurations_ShouldReturnLogoBase64_WhenFileExists()
+        {
+            var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "logo.png");
+            File.WriteAllBytes(logoPath, new byte[] { 1, 2, 3 });
+
+            var configs = GetValidConfigs(logoPath);
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
+
+            var result = await _service.GetPlatformConfigurations();
+
+            Assert.NotNull(result.Logo);
+            Assert.Equal(logoPath, result.Logo);
+
+            File.Delete(logoPath);
+        }
+
+        [Fact]
+        public async Task GetPlatformConfigurations_ShouldThrow_WhenLogoPathMissing()
+        {
+            var configs = GetValidConfigs();
+            configs[1].Values = JsonSerializer.Serialize(new { });
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
+
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetPlatformConfigurations());
+        }
+
+        [Fact]
+        public async Task GetPlatformConfigurations_ShouldThrow_WhenPrimaryColorMissing()
+        {
+            var configs = GetValidConfigs();
+            configs[2].Values = JsonSerializer.Serialize(new { SecondaryColor = "#222222" });
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
+
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetPlatformConfigurations());
+        }
+
+        [Fact]
+        public async Task GetPlatformConfigurations_ShouldUseDefaultQuote_WhenQuoteConfigMissing()
+        {
+            var configs = GetValidConfigs();
+            configs.RemoveAt(0);
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
+
+            var result = await _service.GetPlatformConfigurations();
+
+            Assert.NotNull(result.Quote);
+        }
+
+        [Fact]
+        public async Task GetPlatformConfigurations_ShouldReturnNullLogo_WhenLogoConfigNotPresent()
+        {
+            var configs = GetValidConfigs();
+            configs.RemoveAt(1);
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
+
+            var result = await _service.GetPlatformConfigurations();
+
+            Assert.Null(result.Logo);
+        }
+
+        [Fact]
+        public async Task GetPlatformConfigurations_ShouldSkipBase64_WhenFileNotExists()
+        {
+            var nonExisting = Path.Combine(Directory.GetCurrentDirectory(), "nofile.png");
+            var configs = GetValidConfigs(nonExisting);
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
+
+            var result = await _service.GetPlatformConfigurations();
+
+            Assert.Equal(nonExisting, result.Logo);
+        }
+
+        [Fact]
+        public async Task UpdatePlatformConfigurations_ShouldAddNewLogoConfig_WhenLogoConfigIsNull()
+        {
+            // Arrange: no logo record in repo
+            var configs = GetValidConfigs();
+            configs.RemoveAll(c => c.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME);
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
+
+            var req = new PlatformConfigurationRequestDTO
             {
-                ConfigurationName = SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME,
-                Values = JsonSerializer.Serialize(new { Path = logoPath })
-            },
-            new PlatformConfiguration
+                Quote = "With New Logo",
+                DefaultsColors = new DefaultsColors { PrimaryColor = "#111", SecondaryColor = "#222" },
+                Logo = new FormFileMock()
+            };
+
+            var savedPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "logo", "newlogo.png");
+            _commonServiceMock.Setup(c => c.SaveFile(It.IsAny<IFormFile>(), "logo")).ReturnsAsync(savedPath);
+
+            // Act
+            var result = await _service.UpdatePlatformConfigurations(req);
+
+            // Assert
+            Assert.Equal(Constants.PLATFORM_CONFIGURATION_UPDATE_SUCCESS, result);
+            _repositoryMock.Verify(
+                r => r.AddAsync(It.Is<PlatformConfiguration>(pc =>
+                    pc.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME &&
+                    pc.Values.Contains("newlogo")
+                )),
+                Times.Once
+            );
+        }
+
+        [Fact]
+        public async Task UpdatePlatformConfigurations_ShouldSaveLogo_WhenLogoProvided()
+        {
+            var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "logo");
+            Directory.CreateDirectory(folder);
+
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(GetValidConfigs("oldLogo.png"));
+
+            var req = new PlatformConfigurationRequestDTO
             {
-                ConfigurationName = SystemConstants.PLATFORM_COLOR_CONFIGURATION_NAME,
-                Values = JsonSerializer.Serialize(new { PrimaryColor = "#111111", SecondaryColor = "#222222" })
-            }
-        };
-    }
+                Quote = "With Logo",
+                DefaultsColors = new DefaultsColors { PrimaryColor = "#555", SecondaryColor = "#666" },
+                Logo = new FormFileMock()
+            };
 
-    [Fact]
-    public async Task GetPlatformConfigurations_ShouldReturnConfig_WhenDataIsValid()
-    {
-        // Arrange
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(GetValidConfigs());
+            var newPath = Path.Combine(folder, "newLogo.png");
+            _commonServiceMock.Setup(c => c.SaveFile(It.IsAny<IFormFile>(), "logo")).ReturnsAsync(newPath);
 
-        // Act
-        var result = await _service.GetPlatformConfigurations();
+            var result = await _service.UpdatePlatformConfigurations(req);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal("Test Quote", result.Quote);
-        Assert.Equal("logo.png", result.Logo);
-        Assert.Equal("#111111", result.DefaultsColors.PrimaryColor);
-        Assert.Equal("#222222", result.DefaultsColors.SecondaryColor);
-    }
+            Assert.Equal(Constants.PLATFORM_CONFIGURATION_UPDATE_SUCCESS, result);
+            _commonServiceMock.Verify(c => c.SaveFile(It.IsAny<IFormFile>(), "logo"), Times.Once);
+        }
 
-    [Fact]
-    public async Task UpdatePlatformConfigurations_ShouldUpdateQuoteAndColors_WhenLogoNotProvided()
-    {
-        // Arrange
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(GetValidConfigs());
-
-        var request = new PlatformConfigurationRequestDTO
+        [Fact]
+        public async Task UpdatePlatformConfigurations_ShouldDeleteOldFiles_WhenNewLogoProvided()
         {
-            Quote = "Updated Quote",
-            DefaultsColors = new DefaultsColors { PrimaryColor = "#333333", SecondaryColor = "#444444" }
-        };
+            var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "logo");
+            Directory.CreateDirectory(folder);
 
-        // Act
-        var result = await _service.UpdatePlatformConfigurations(request);
+            var oldFile = Path.Combine(folder, "old.png");
+            File.WriteAllBytes(oldFile, new byte[] { 1 });
 
-        // Assert
-        Assert.Equal(Constants.PLATFORM_CONFIGURATION_UPDATE_SUCCESS, result);
-        _repositoryMock.Verify(r => r.UpdateRangeAsync(It.IsAny<List<PlatformConfiguration>>()), Times.Once);
-    }
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(GetValidConfigs("old.png"));
 
-    [Fact]
-    public async Task UpdatePlatformConfigurations_ShouldSaveLogo_WhenLogoProvided()
-    {
-        // Arrange
-        var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "logo");
-        Directory.CreateDirectory(uploadsPath); // make sure path exists
+            var req = new PlatformConfigurationRequestDTO
+            {
+                Quote = "New",
+                DefaultsColors = new DefaultsColors { PrimaryColor = "#1", SecondaryColor = "#2" },
+                Logo = new FormFileMock()
+            };
 
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(GetValidConfigs("oldLogo.png"));
+            var newPath = Path.Combine(folder, "new.png");
+            _commonServiceMock.Setup(c => c.SaveFile(It.IsAny<IFormFile>(), "logo")).ReturnsAsync(newPath);
 
-        var request = new PlatformConfigurationRequestDTO
+            var result = await _service.UpdatePlatformConfigurations(req);
+
+            Assert.Equal(Constants.PLATFORM_CONFIGURATION_UPDATE_SUCCESS, result);
+            Assert.False(File.Exists(oldFile));
+        }
+
+        [Fact]
+        public async Task UpdatePlatformConfigurations_ShouldDeleteLogoConfig_WhenLogoNull()
         {
-            Quote = "Quote with Logo",
-            DefaultsColors = new DefaultsColors { PrimaryColor = "#555555", SecondaryColor = "#666666" },
-            Logo = new FormFileMock() // custom mock file
-        };
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(GetValidConfigs("some.png"));
 
-        _commonServiceMock
-            .Setup(c => c.SaveFile(It.IsAny<IFormFile>(), "logo"))
-            .ReturnsAsync("wwwroot/uploads/logo/newLogo.png");
+            var req = new PlatformConfigurationRequestDTO
+            {
+                Quote = "Q",
+                DefaultsColors = new DefaultsColors { PrimaryColor = "#1", SecondaryColor = "#2" },
+                Logo = null
+            };
 
-        // Act
-        var result = await _service.UpdatePlatformConfigurations(request);
+            var result = await _service.UpdatePlatformConfigurations(req);
 
-        // Assert
-        Assert.Equal(Constants.PLATFORM_CONFIGURATION_UPDATE_SUCCESS, result);
-        _repositoryMock.Verify(r => r.UpdateRangeAsync(It.IsAny<List<PlatformConfiguration>>()), Times.Once);
-        _commonServiceMock.Verify(c => c.SaveFile(It.IsAny<IFormFile>(), "logo"), Times.Once);
-    }
+            Assert.Equal(Constants.PLATFORM_CONFIGURATION_UPDATE_SUCCESS, result);
+            _repositoryMock.Verify(r => r.DeleteAsync(It.IsAny<PlatformConfiguration>()), Times.Once);
+        }
 
-    [Fact]
-    public async Task GetPlatformConfigurations_ShouldReturnLogoBase64_WhenFileExists()
-    {
-        // Arrange
-        var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "logo.png");
-        File.WriteAllBytes(logoPath, new byte[] { 1, 2, 3 }); // create dummy file
-
-        var configs = GetValidConfigs(logoPath);
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
-
-        // Act
-        var result = await _service.GetPlatformConfigurations();
-
-        // Assert
-        Assert.NotNull(result.Logo);
-        Assert.NotNull(result);
-        Assert.NotNull(result.Logo);
-        Assert.NotNull(result.DefaultsColors);
-        Assert.NotNull(result.Logo); // base64 should be generated
-
-        // Cleanup
-        File.Delete(logoPath);
-    }
-
-    [Fact]
-    public async Task GetPlatformConfigurations_ShouldThrow_WhenLogoPathMissing()
-    {
-        // Arrange: config has no Path property
-        var configs = GetValidConfigs();
-        configs[1].Values = JsonSerializer.Serialize(new { }); // empty logo config
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetPlatformConfigurations());
-    }
-
-    [Fact]
-    public async Task GetPlatformConfigurations_ShouldThrow_WhenPrimaryColorMissing()
-    {
-        // Arrange: remove PrimaryColor
-        var configs = GetValidConfigs();
-        configs[2].Values = JsonSerializer.Serialize(new { SecondaryColor = "#222222" });
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
-
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetPlatformConfigurations());
-    }
-
-    [Fact]
-    public async Task UpdatePlatformConfigurations_ShouldDeleteOldFiles_WhenNewLogoProvided()
-    {
-        // Arrange
-        var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "logo");
-        Directory.CreateDirectory(uploadsPath);
-
-        var oldFile = Path.Combine(uploadsPath, "oldLogo.png");
-        File.WriteAllBytes(oldFile, new byte[] { 1, 2, 3 });
-
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(GetValidConfigs("oldLogo.png"));
-
-        var request = new PlatformConfigurationRequestDTO
+        [Fact]
+        public async Task UpdatePlatformConfigurations_ShouldThrow_WhenColorConfigMissing()
         {
-            Quote = "New Quote",
-            DefaultsColors = new DefaultsColors { PrimaryColor = "#123456", SecondaryColor = "#654321" },
-            Logo = new FormFileMock()
-        };
+            var configs = GetValidConfigs();
+            configs.RemoveAt(2);
+            _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
 
-        var newFilePath = Path.Combine(uploadsPath, "newLogo.png");
-        _commonServiceMock.Setup(c => c.SaveFile(It.IsAny<IFormFile>(), "logo"))
-            .ReturnsAsync(newFilePath);
+            var req = new PlatformConfigurationRequestDTO
+            {
+                Quote = "X",
+                DefaultsColors = new DefaultsColors { PrimaryColor = "#A", SecondaryColor = "#B" }
+            };
 
-        // Act
-        var result = await _service.UpdatePlatformConfigurations(request);
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _service.UpdatePlatformConfigurations(req));
+        }
 
-        // Assert
-        Assert.Equal(Constants.PLATFORM_CONFIGURATION_UPDATE_SUCCESS, result);
-        Assert.False(File.Exists(oldFile)); // old file deleted
-    }
-
-    [Fact]
-    public async Task UpdatePlatformConfigurations_ShouldThrow_WhenColorConfigMissing()
-    {
-        // Arrange: remove color config
-        var configs = GetValidConfigs();
-        configs.RemoveAt(2);
-        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(configs);
-
-        var request = new PlatformConfigurationRequestDTO
+        // --------- helper IFormFile ---------
+        private class FormFileMock : IFormFile
         {
-            Quote = "Some Quote",
-            DefaultsColors = new DefaultsColors { PrimaryColor = "#AAA", SecondaryColor = "#BBB" }
-        };
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _service.UpdatePlatformConfigurations(request));
-    }
-
-
-    // helper class for mocking IFormFile
-    private class FormFileMock : Microsoft.AspNetCore.Http.IFormFile
-    {
-        public string ContentType => "image/png";
-        public string ContentDisposition => "inline";
-        public IHeaderDictionary Headers => new HeaderDictionary();
-        public long Length => 10;
-        public string Name => "logo";
-        public string FileName => "logo.png";
-        public void CopyTo(Stream target) { }
-        public Task CopyToAsync(Stream target, CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Stream OpenReadStream() => new MemoryStream(new byte[10]);
+            public string ContentType => "image/png";
+            public string ContentDisposition => "inline";
+            public IHeaderDictionary Headers => new HeaderDictionary();
+            public long Length => 10;
+            public string Name => "logo";
+            public string FileName => "logo.png";
+            public void CopyTo(Stream target) { }
+            public Task CopyToAsync(Stream target, CancellationToken cancellationToken = default) => Task.CompletedTask;
+            public Stream OpenReadStream() => new MemoryStream(new byte[10]);
+        }
     }
 }

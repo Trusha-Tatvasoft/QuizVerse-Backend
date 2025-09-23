@@ -18,6 +18,10 @@ using ClosedXML.Excel;
 namespace QuizVerse.Application.Core.Service;
 
 public class QuestionPoolService(
+    IGenericRepository<QuizToBaseQuestionMap> _quizToBaseQuestionMapRepository,
+    IGenericRepository<QuizPlayStatus> _quizPlayStatusRepository,
+    IGenericRepository<BattleList> _battleListRepository,
+    IGenericRepository<BattleStatus> _battleStatusRepository,
     IGenericRepository<BaseQuestion> _baseQuestionRepository,
     IGenericRepository<QuestionOptionsAnswer> _questionOptionsAnswerRepository,
     IGenericRepository<QuestionType> _questionTypeRepository,
@@ -62,6 +66,19 @@ public class QuestionPoolService(
         }
         else
         {
+            bool isInUse = await _quizToBaseQuestionMapRepository
+                .GetQueryableInclude()
+                .Where(map => map.QueId == id && !map.IsDeleted)
+                .AnyAsync(map =>
+                    _quizPlayStatusRepository.GetQueryableInclude().Any(qps => qps.QuizId == map.QuizId && qps.IsCompleted == false) ||
+                    _battleListRepository.GetQueryableInclude().Any(bl => bl.QuizId == map.QuizId && !bl.IsDeleted &&
+                        _battleStatusRepository.GetQueryableInclude().Any(bs => bs.BattleId == bl.Id && !bs.IsDeleted &&
+                            bs.BattleStatus1 == (int)Infrastructure.Enums.BattleStatus.Running))
+            );
+
+            if (isInUse)
+                throw new AppException(Constants.QUESTION_IN_USE_ERROR, StatusCodes.Status400BadRequest);
+
             question = await _baseQuestionRepository.GetAsync(q => q.Id == id && !q.IsDeleted);
 
             if (question == null)
@@ -129,6 +146,21 @@ public class QuestionPoolService(
 
         if (question == null)
             throw new AppException(string.Format(Constants.QUESTION_NOT_FOUND_ERROR, id), StatusCodes.Status404NotFound);
+
+        // Check if question is part of any ongoing quiz or live battle
+        bool isInUse = await _quizToBaseQuestionMapRepository
+            .GetQueryableInclude()
+            .Where(map => map.QueId == id && !map.IsDeleted)
+            .AnyAsync(map =>
+                _quizPlayStatusRepository.GetQueryableInclude().Any(qps => qps.QuizId == map.QuizId && qps.IsCompleted == false) ||
+                _battleListRepository.GetQueryableInclude().Any(bl => bl.QuizId == map.QuizId && !bl.IsDeleted &&
+                    _battleStatusRepository.GetQueryableInclude().Any(bs => bs.BattleId == bl.Id && !bs.IsDeleted &&
+                        bs.BattleStatus1 == (int)Infrastructure.Enums.BattleStatus.Running))
+            );
+
+        if (isInUse)
+            throw new AppException(Constants.QUESTION_IN_USE_ERROR, StatusCodes.Status400BadRequest);
+
 
         question.IsDeleted = true;
         question.ModifiedBy = UserId;
