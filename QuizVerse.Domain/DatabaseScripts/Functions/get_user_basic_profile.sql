@@ -26,6 +26,8 @@ DECLARE
     v_rank_name VARCHAR := 'Unranked';
     v_next_rank_name VARCHAR := 'N/A';
     v_progress_pct NUMERIC := 0;
+    current_level_min_exp INT;
+    next_level_min_exp INT;
 BEGIN
     -- Get total XP and current level
     SELECT upd.total_xp, upd.current_level
@@ -49,13 +51,28 @@ BEGIN
     LIMIT 1;
 
     -- Calculate progress percentage within current level
-    SELECT ROUND(
-        100.0 * (v_total_xp - COALESCE(l.minimum_exp, 0))::NUMERIC /
-        NULLIF((COALESCE(l.maximum_exp, 0) - COALESCE(l.minimum_exp, 0)), 0), 2)
-    INTO v_progress_pct
-    FROM "LevelByExp" l
-    WHERE v_total_xp BETWEEN l.minimum_exp AND l.maximum_exp
+    SELECT minimum_exp
+    INTO current_level_min_exp
+    FROM "LevelByExp"
+    WHERE minimum_exp <= v_total_xp
+    ORDER BY level_order DESC
     LIMIT 1;
+
+    SELECT minimum_exp
+    INTO next_level_min_exp
+    FROM "LevelByExp"
+    WHERE minimum_exp > v_total_xp
+    ORDER BY level_order ASC
+    LIMIT 1;
+
+    IF next_level_min_exp IS NULL THEN
+        v_progress_pct := 100;
+    ELSE
+        v_progress_pct := ROUND(
+            (v_total_xp - current_level_min_exp)::NUMERIC /
+            (next_level_min_exp - current_level_min_exp) * 100, 2
+        );
+    END IF;
 
     -- Return the full user profile row
     RETURN QUERY

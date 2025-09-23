@@ -39,23 +39,34 @@ public class UserBattlesService(
     #endregion
 
     #region User Recent Battles
-    public async Task<List<UserRecentBattleDto>> GetUserRecentBattles()
+    public async Task<UserBattleHistoryResponseDto> GetUserBattleHistory(UserBattleHistoryRequestDto dto)
     {
-        var query = string.Format(SqlConstants.GET_USER_RECENT_BATTLES_QUERY_TEMPLATE,
-                                  SqlConstants.GET_USER_RECENT_BATTLES_FUNCTION);
+        var query = string.Format(SqlConstants.GET_USER_BATTLES_HISTORY_QUERY_TEMPLATE,
+                                  SqlConstants.GET_USER_BATTLES_HISTORY_FUNCTION);
 
         var parameters = new NpgsqlParameter[]
         {
         new("p_user_id", NpgsqlDbType.Integer) { Value = UserId },
         new("p_status_draw", NpgsqlDbType.Integer) { Value = (int)Infrastructure.Enums.BattleStatus.Draw },
-        new("p_status_completed", NpgsqlDbType.Integer) { Value = (int)Infrastructure.Enums.BattleStatus.Completed }
+        new("p_status_completed", NpgsqlDbType.Integer) { Value = (int)Infrastructure.Enums.BattleStatus.Completed },
+        new("p_batch_number", NpgsqlDbType.Integer) { Value = dto.BatchNumber },
+        new("p_filter_by", NpgsqlDbType.Integer) { Value = dto.FilterBy.HasValue ? (int)dto.FilterBy.Value : DBNull.Value },
+        new("p_time_filter_by", NpgsqlDbType.Integer) { Value = dto.TimeFilterBy.HasValue ? (int)dto.TimeFilterBy : DBNull.Value }
         };
 
-        var rawResult = await sqlQueryRepository.SqlQueryListAsync<UserRecentBattleDto>(query, parameters);
+        var rawResult = await sqlQueryRepository
+            .SqlQuerySingleAsync<UserBattleHistoryRawResult>(query, parameters);
 
-        return mapper.Map<List<UserRecentBattleDto>>(rawResult);
+        //Map (HasMore + raw JSON → List<UserBattleHistoryDto>)
+        var response = mapper.Map<UserBattleHistoryResponseDto>(rawResult);
+
+        // Map for ToTitleCase
+        response.Battles = [.. response.Battles.Select(mapper.Map<UserBattleHistoryDto>)];
+
+        return response;
     }
     #endregion
+
 
     #region Battle Leaderboard Data 
     public async Task<List<UserBattleLeaderboardData>> GetBattleLeaderboardList()

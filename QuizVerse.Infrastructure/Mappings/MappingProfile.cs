@@ -271,7 +271,16 @@ public class MappingProfile : Profile
         #endregion
 
         #region UserBattles
-        CreateMap<UserRecentBattleDto, UserRecentBattleDto>()
+        CreateMap<UserBattleHistoryRawResult, UserBattleHistoryResponseDto>()
+            .ConvertUsing(src => new UserBattleHistoryResponseDto
+            {
+                HasMore = src.HasMore,
+                Battles = string.IsNullOrWhiteSpace(src.Battles)
+                    ? new List<UserBattleHistoryDto>()
+                    : JsonSerializer.Deserialize<List<UserBattleHistoryDto>>(src.Battles, new JsonSerializerOptions())!
+            });
+
+        CreateMap<UserBattleHistoryDto, UserBattleHistoryDto>()
             .ForMember(dest => dest.Opponent,
                 opt => opt.MapFrom(src => ToTitleCase(src.Opponent)))
             .ForMember(dest => dest.Category,
@@ -370,7 +379,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => src.QuizRating))
             .ForMember(dest => dest.CreatedDate,
                 opt => opt.MapFrom(_ => DateTime.UtcNow));
-                
+
         CreateMap<QuizRating, QuizRatingDTO>()
             .ForMember(dest => dest.QuizRating,
                 opt => opt.MapFrom(src => src.QuizRating1));
