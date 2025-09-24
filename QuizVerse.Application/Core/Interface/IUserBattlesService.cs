@@ -9,4 +9,5 @@ public interface IUserBattlesService
     Task<List<UserRecentBattleDto>> GetUserRecentBattles();
     Task<List<UserBattleLeaderboardData>> GetBattleLeaderboardList();
     Task<string> SendBattleRequest(SendBattleRequestDTO dto);
+    Task<UserBattleResult> GetBattleResult(int battleId);
 }

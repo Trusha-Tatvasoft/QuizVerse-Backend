@@ -280,6 +280,10 @@ public class MappingProfile : Profile
         CreateMap<UserBattleLeaderboardData, UserBattleLeaderboardData>()
             .ForMember(dest => dest.UserName,
                 opt => opt.MapFrom(src => src.UserName.Trim()));
+
+        CreateMap<UserBattleResult, UserBattleResult>()
+            .ForMember(dest => dest.BattleName,
+                opt => opt.MapFrom(src => ToTitleCase(src.BattleName)));
         #endregion
 
         #region Browse Quizzes
