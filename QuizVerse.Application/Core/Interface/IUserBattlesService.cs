@@ -10,4 +10,5 @@ public interface IUserBattlesService
     Task<List<UserBattleLeaderboardData>> GetBattleLeaderboardList();
     Task<string> SendBattleRequest(SendBattleRequestDTO dto);
     Task<UserBattleResult> GetBattleResult(int battleId);
+    Task<bool> CheckUserExistence(string userName);
 }

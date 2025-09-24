@@ -68,6 +68,18 @@ public class UserBattlesController(IUserBattlesService userBattlesService) : Con
             Data = null
         });
     }
+
+    [HttpGet("check-user-existence/{userName}")]
+    public async Task<IActionResult> CheckUserExistence(string userName)
+    {
+        return Ok(new ApiResponse<bool>
+        {
+            Result = true,
+            Message = Constants.USERNAME_AVAILABILITY_VERIFIED,
+            StatusCode = StatusCodes.Status200OK,
+            Data = await userBattlesService.CheckUserExistence(userName)
+        });
+    }
     #endregion
 
     #region Get Battle Result

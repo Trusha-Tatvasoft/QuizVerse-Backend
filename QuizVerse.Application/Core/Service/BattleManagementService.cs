@@ -150,6 +150,6 @@ public class BattleManagementService(
 
         return Constants.DELETE_SUCCESS;
     }
-    #endregion
+    #endregion    
 
 }
