@@ -56,7 +56,7 @@ public class QuizService(
         return quizQuestionDto;
     }
 
-    public async Task<QuizQuestionResponseDto> SaveAndNextQuestion(SaveAndNextQuestionRequestDto request)
+    public async Task<QuizQuestionResponseDto?> SaveAndNextQuestion(SaveAndNextQuestionRequestDto request)
     {
         // Get current quiz play status
         QuizPlayStatus quizPlayStatus = await _quizPlayStatusRepository
@@ -64,7 +64,8 @@ public class QuizService(
                               && q.UserId == UserId /* current user id */
                               && q.IsCompleted == false)
                             ?? throw new AppException(Constants.QUIZ_NOT_FOUND_OR_COMPLETED);
-
+        Quiz quiz = await _quizRepostory.GetAsync(q => q.Id == request.QuizId)
+            ?? throw new AppException(Constants.QUIZ_NOT_FOUND);
         // Get current question
         QuizToBaseQuestionMap currentQuestionMap = await _quizToBaseQuestionMapRepository
             .GetQueryableInclude(q => q.Que)
@@ -77,16 +78,18 @@ public class QuizService(
         bool isCorrect = await ValidateAnswer(question, request.GivenAnswer);
 
         await SaveOrUpdateAttempt(quizPlayStatus, currentQuestionMap, question, request.GivenAnswer, isCorrect);
+        if (request.NextQuestionNumber <= quiz.TotalQuestion)
+        {
+            // Fetch next question
+            RawQuizQuestionDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawQuizQuestionDto>(string.Format(SqlConstants.GET_QUIZ_QUESTIONS_QUERY_TEMPLATE, request.QuizId, request.NextQuestionNumber));
 
-        // Fetch next question
-        RawQuizQuestionDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawQuizQuestionDto>(string.Format(SqlConstants.GET_QUIZ_QUESTIONS_QUERY_TEMPLATE, request.QuizId, request.NextQuestionNumber));
+            List<OptionResponseDto> options = JsonSerializer.Deserialize<List<OptionResponseDto>>(raw.Options ?? "[]") ?? [];
 
-        List<OptionResponseDto> options = JsonSerializer.Deserialize<List<OptionResponseDto>>(raw.Options ?? "[]") ?? [];
-
-        QuizQuestionResponseDto quizResponseDto = _mapper.Map<QuizQuestionResponseDto>(raw);
-        quizResponseDto.Options = options;
-
-        return quizResponseDto;
+            QuizQuestionResponseDto quizResponseDto = _mapper.Map<QuizQuestionResponseDto>(raw);
+            quizResponseDto.Options = options;
+            return quizResponseDto;
+        }
+        return null;
     }
 
     private async Task<bool> CheckAnswer(QuizAnswerCheckDto quizAnswerCheck)
@@ -264,7 +267,7 @@ public class QuizService(
 
     public async Task<string> GetAnswerExplanation(AnswerExplanationRequestDTO request)
     {
-        string answerText  = string.IsNullOrWhiteSpace(request.UserAnswer)
+        string answerText = string.IsNullOrWhiteSpace(request.UserAnswer)
             ? Constants.NO_ANSWER_PROVIDED
             : request.UserAnswer;
 
