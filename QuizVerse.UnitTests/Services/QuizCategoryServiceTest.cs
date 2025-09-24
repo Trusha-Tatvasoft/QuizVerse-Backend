@@ -330,9 +330,9 @@ namespace QuizVerse.UnitTests.Services
             DefaultHttpContext httpContext = new DefaultHttpContext();
             _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
 
-            Exception ex = await Assert.ThrowsAsync<Exception>(() => _service.CreateOrUpdateQuizCategory(dto));
+            Exception ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _service.CreateOrUpdateQuizCategory(dto));
 
-            Assert.Contains("User with ID", ex.Message);
+            Assert.Contains(Constants.UNAUTHORIZED_USER, ex.Message);
         }
 
         [Fact]

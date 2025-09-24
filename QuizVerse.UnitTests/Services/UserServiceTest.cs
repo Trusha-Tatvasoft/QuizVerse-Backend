@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http;
@@ -54,12 +55,11 @@ public class UserServiceTests
         });
         _mapper = mapperConfig.CreateMapper();
 
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            new[] { new Claim(ClaimTypes.UserData, "1") }, "mock"));
         var httpContextAccessor = new Mock<IHttpContextAccessor>();
-        var user = new System.Security.Claims.ClaimsPrincipal(new System.Security.Claims.ClaimsIdentity(new[]
-        {
-            new System.Security.Claims.Claim("userId", "1")
-        }));
-        httpContextAccessor.Setup(x => x.HttpContext.User).Returns(user);
+        httpContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
 
         _commonServiceMock = new Mock<ICommonService>();
         _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");

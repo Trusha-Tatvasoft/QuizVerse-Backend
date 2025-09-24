@@ -14,7 +14,7 @@ namespace QuizVerse.Application.Core.Service;
 
 public class QuestionDifficultyService(IGenericRepository<QuestionDifficulty> _questionDifficultyRepository, IMapper _mapper, IHttpContextAccessor _httpContextAccessor, IDropDownDataService _dropDownDataService) : IQuestionDifficultyService
 {
-    int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.INVALID_USER_ID_MESSAGE);
+    int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     #region Get Battle Question Difficulty Data
     public async Task<List<QuestionDifficultyXPData>> GetBattleQuestionDifficultyData()

@@ -32,7 +32,7 @@ public class QuestionPoolService(
     ISqlQueryRepository _sqlQueryRepository
 ) : IQuestionPoolService
 {
-    public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.USER_NOT_AUTHENTICATED_MESSAGE);
+    public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     #region Question Management
     public async Task<string> CreateOrUpdateQuestion(int id, QuestionRequestDTO dto)

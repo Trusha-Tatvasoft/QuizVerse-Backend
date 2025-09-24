@@ -86,6 +86,8 @@ public class SqlConstants
     public const string GET_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_user_id)";
     public const string UPDATE_USER_PROFILE_FUNCTION = "update_user_setting";
     public const string UPDATE_USER_PROFILE_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_current_user_id, @p_new_email, @p_new_name, @p_new_bio)";
+    public const string GET_USER_NAVBAR_FUNCTION = "get_user_navbar_data";
+    public const string GET_USER_NAVBAR_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}})";
     #endregion
 
     #region BrowseQuizzes
