@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -41,9 +42,12 @@ public class QuizManagementServiceTests
 
         _mockMapper = new Mock<IMapper>();
 
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            new[] { new Claim(ClaimTypes.UserData, "1") }, "mock"));
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
-        _httpContextAccessorMock.Setup(x => x.HttpContext)
-            .Returns(new DefaultHttpContext()); // can add claims if needed
+        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
+        
         _sqlRepoMock = new Mock<ISqlQueryRepository>();
         _dropDownDataServiceMock = new Mock<IDropDownDataService>();
         _commonServiceMock = new Mock<ICommonService>();

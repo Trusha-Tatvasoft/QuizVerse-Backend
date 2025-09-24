@@ -21,7 +21,7 @@ namespace QuizVerse.Application.Core.Service;
 
 public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISqlQueryRepository sqlQueryRepository, IConfiguration configuration) : IUserService
 {
-    public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
+    public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     #region User Queries
     private IQueryable<User> GetUserData(PageListRequest query)
@@ -137,7 +137,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
             new("p_status_active", NpgsqlDbType.Integer) { Value = (int)UserStatus.Active },
             new("p_status_inactive", NpgsqlDbType.Integer) { Value = (int)UserStatus.Inactive },
             new("p_status_suspended", NpgsqlDbType.Integer) { Value = (int)UserStatus.Suspended },
-            new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId.HasValue ? UserId.Value : DBNull.Value },
+            new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId },
             new("p_first_time_login", NpgsqlDbType.Boolean) { Value = !dto.IsRegister }
         };
 

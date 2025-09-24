@@ -14,7 +14,7 @@ namespace QuizVerse.Application.Core.Service;
 
 public class BrowseQuizzesService(ISqlQueryRepository _sqlQueryRepository, IMapper _mapper,IHttpContextAccessor _httpContextAccessor) : IBrowseQuizzesService
 {
-    int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.INVALID_USER_ID_MESSAGE);
+    int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     public async Task<BrowseQuizzesResponseDTO> BrowseQuizzes(BrowseQuizzesRequestDTO request)
     {

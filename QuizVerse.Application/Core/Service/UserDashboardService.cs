@@ -22,7 +22,7 @@ public class UserDashboardService(
     IMapper _mapper
 ) : IUserDashboardService
 {
-    private int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.USER_NOT_AUTHENTICATED_MESSAGE);
+    private int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     public async Task<UserDashboardResponse> GetStatisticsData()
     {

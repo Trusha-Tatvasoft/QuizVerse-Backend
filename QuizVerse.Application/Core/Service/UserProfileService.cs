@@ -28,8 +28,7 @@ public class UserProfileService(
     IHttpContextAccessor httpContextAccessor,
     IEmailService emailService) : IUserProfileService
 {
-    public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
-    // public int UserId = 2;
+    public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     #region GetUserProfile Data
     public async Task<UserBasicProfileDto> GetUserBasicProfile()
@@ -63,21 +62,20 @@ public class UserProfileService(
 
     public async Task<UserNavbarDataDto> GetUserNavbarData()
     {
-        UserPerformanceDetail? userPerformanceDetail = await userPerformanceDetailRepository.GetAsync(upd => upd.UserId == UserId
-                        , query => query.Include(u => u.User)) ?? throw new AppException(Constants.USER_NOT_FOUND_MESSAGE);
-        List<UserNotification>? userNotifications = userNotificationRepository.GetQueryableInclude().Where(un => un.IsRead == false && un.IsDeleted == false
-                        && un.GlobalNotification.IsDeleted == false).ToList();
-        IQueryable<int> currentLevelMaxUserXp = levelByExpRepository.GetQueryableInclude().Where(lpe => lpe.LevelOrder == userPerformanceDetail.CurrentLevel)
-                        .Select(lpe => lpe.MaximumExp);
+        string query = string.Format(
+            SqlConstants.GET_USER_NAVBAR_QUERY_TEMPLATE,
+            SqlConstants.GET_USER_NAVBAR_FUNCTION
+        );
 
-        return new UserNavbarDataDto()
+        var parameters = new NpgsqlParameter[]
         {
-            CurrentUserXp = userPerformanceDetail.TotalXp,
-            ProfilePic = userPerformanceDetail.User.ProfilePic,
-            NotificationCount = userNotifications.Any() ? userNotifications.Count() : 0,
-            CurrentLevelMaxUserXp = currentLevelMaxUserXp.Single()
+            new("p_user_id", NpgsqlDbType.Integer) { Value = UserId },
+            new("p_admin_role_id", NpgsqlDbType.Integer) { Value = (int)UserRoles.Admin }
         };
+
+        return await sqlQueryRepository.SqlQuerySingleAsync<UserNavbarDataDto>(query, parameters);
     }
+
     #endregion
 
     #region Get UserBadges
@@ -170,7 +168,7 @@ public class UserProfileService(
             return true;
 
         // If the email belongs to the same user, it's available
-        if (UserId.HasValue && user.Id == UserId.Value)
+        if (user.Id == UserId)
             return true;
 
         switch ((UserStatus)user.Status)
