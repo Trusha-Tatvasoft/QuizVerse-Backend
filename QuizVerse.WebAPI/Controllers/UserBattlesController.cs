@@ -68,6 +68,19 @@ public class UserBattlesController(IUserBattlesService userBattlesService) : Con
             Data = null
         });
     }
+    #endregion
 
+    #region Get Battle Result
+    [HttpGet("get-battle-result/{battleId}")]
+    public async Task<IActionResult> GetBattleResult(int battleId)
+    {
+        return Ok(new ApiResponse<UserBattleResult>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = StatusCodes.Status200OK,
+            Data = await userBattlesService.GetBattleResult(battleId),
+        });
+    }
     #endregion
 }

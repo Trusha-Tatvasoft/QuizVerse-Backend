@@ -133,4 +133,19 @@ public class UserBattlesService(
         return Constants.BATTLE_REQUEST_SENT_SUCCESS;
     }
     #endregion
+
+    #region Get Battle Result
+    public async Task<UserBattleResult> GetBattleResult(int battleId)
+    {
+        string query = string.Format(SqlConstants.GET_USER_BATTLE_RESULT_TEMPLATE, SqlConstants.GET_USER_BATTLE_RESULT_FUNCTION);
+        var parameters = new NpgsqlParameter[]
+        {
+        new("p_battle_id", NpgsqlDbType.Integer) { Value = battleId },
+        new("p_login_user_id", NpgsqlDbType.Integer) { Value = UserId },
+        new("p_status_running", NpgsqlDbType.Integer) { Value = (int)Infrastructure.Enums.BattleStatus.Running }
+        };
+
+        return mapper.Map<UserBattleResult>(await sqlQueryRepository.SqlQuerySingleAsync<UserBattleResult>(query, parameters));
+    }
+    #endregion
 }

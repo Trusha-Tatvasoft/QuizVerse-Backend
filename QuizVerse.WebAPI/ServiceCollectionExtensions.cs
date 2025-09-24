@@ -35,6 +35,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserBattlesService, UserBattlesService>();
         services.AddScoped<IBrowseQuizzesService, BrowseQuizzesService>();
         services.AddScoped<IAiService, AiService>();
+        services.AddScoped<IBattleMatchmakingService, BattleMatchmakingService>();
+        
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
@@ -42,6 +44,8 @@ public static class ServiceCollectionExtensions
         //repository
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped(typeof(ISqlQueryRepository), typeof(SqlQueryRepository));
+
+        services.AddSingleton<IMatchmakingQueueRepository, MatchmakingQueueRepository>();
     }
 
 }

@@ -357,5 +357,106 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal(Constants.BATTLE_REQUEST_SENT_SUCCESS, result);
         }
         #endregion
+
+        #region Get Battle Result
+        [Fact]
+        public async Task GetBattleResult_ReturnsBattleResult_WhenDataExists()
+        {
+            // Arrange
+            int battleId = 10;
+            var expectedResult = new UserBattleResult
+            {
+                BattleName = "General Knowledge Battle",
+                OpponentUserName = "Opponent1",
+                PlayerProfile = "player.png",
+                OpponentProfile = "opponent.png",
+                BattleStatus = 2,
+                IsWin = true,
+                PlayerAttemptedQuestions = 8,
+                OpponentAttemptedQuestions = 6,
+                PlayerEarnedXP = 100
+            };
+
+            _mockSqlQueryRepository
+                .Setup(repo => repo.SqlQuerySingleAsync<UserBattleResult>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(expectedResult);
+
+            _mockMapper
+                .Setup(m => m.Map<UserBattleResult>(expectedResult))
+                .Returns(expectedResult);
+
+            // Act
+            var result = await _service.GetBattleResult(battleId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("General Knowledge Battle", result.BattleName);
+            Assert.Equal("Opponent1", result.OpponentUserName);
+            Assert.True(result.IsWin);
+            Assert.Equal(100, result.PlayerEarnedXP);
+
+            _mockSqlQueryRepository.Verify(repo =>
+                repo.SqlQuerySingleAsync<UserBattleResult>(
+                    It.IsAny<string>(),
+                    It.Is<NpgsqlParameter[]>(p =>
+                        p.Any(x => x.ParameterName == "p_battle_id" && (int)x.Value == battleId) &&
+                        p.Any(x => x.ParameterName == "p_login_user_id" && (int)x.Value == _service.UserId) &&
+                        p.Any(x => x.ParameterName == "p_status_running"))),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task GetBattleResult_WhenBattleNotFound_ThrowsAppException()
+        {
+            // Arrange
+            int battleId = 999;
+            _mockSqlQueryRepository
+                .Setup(repo => repo.SqlQuerySingleAsync<UserBattleResult>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ThrowsAsync(new AppException("Battle not found.", StatusCodes.Status404NotFound));
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.GetBattleResult(battleId));
+            Assert.Equal("Battle not found.", ex.Message);
+            Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetBattleResult_WhenBattleStillRunning_ThrowsAppException()
+        {
+            // Arrange
+            int battleId = 100;
+            _mockSqlQueryRepository
+                .Setup(repo => repo.SqlQuerySingleAsync<UserBattleResult>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ThrowsAsync(new AppException("Battle is still running.", StatusCodes.Status400BadRequest));
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.GetBattleResult(battleId));
+            Assert.Equal("Battle is still running.", ex.Message);
+            Assert.Equal(StatusCodes.Status400BadRequest, ex.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetBattleResult_WhenResultNotFound_ThrowsAppException()
+        {
+            // Arrange
+            int battleId = 101;
+            _mockSqlQueryRepository
+                .Setup(repo => repo.SqlQuerySingleAsync<UserBattleResult>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ThrowsAsync(new AppException("Battle result not found.", StatusCodes.Status404NotFound));
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.GetBattleResult(battleId));
+            Assert.Equal("Battle result not found.", ex.Message);
+            Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
+        }
+        #endregion
     }
 }

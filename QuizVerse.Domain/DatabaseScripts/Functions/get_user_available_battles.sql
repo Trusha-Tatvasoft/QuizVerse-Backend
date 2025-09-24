@@ -18,7 +18,8 @@ RETURNS TABLE (
     "MaxXP" INT,
     "TotalQuestions" INT,
     "Duration" INTERVAL,
-    "Participants" INT
+    "Participants" INT,
+    "IsBattleRunning" BOOLEAN
 ) AS $$
 BEGIN
     RETURN QUERY
@@ -41,13 +42,6 @@ BEGIN
                     AND bl.start_date <= NOW()
                     AND bl.end_date >= NOW())
               )
-          -- exclude battles already played by this user
-          AND NOT EXISTS (
-              SELECT 1
-              FROM "BattleStatus" bs
-              WHERE bs.battle_id = bl.id
-                AND (bs.user1_id = p_user_id OR bs.user2_id = p_user_id)
-          )
     ),
     ques_stats AS (
         SELECT bqm.battle_id,
@@ -64,6 +58,15 @@ BEGIN
         FROM "BattleStatus"
         WHERE is_deleted = FALSE
         GROUP BY battle_id
+    ),
+    user_status AS (
+        SELECT bs.battle_id,
+               MAX(CASE WHEN bs.battle_status = 3 THEN TRUE ELSE FALSE END) AS is_running,
+               MAX(CASE WHEN bs.battle_status IN (1,2) THEN TRUE ELSE FALSE END) AS is_completed
+        FROM "BattleStatus" bs
+        WHERE (bs.user1_id = p_user_id OR bs.user2_id = p_user_id)
+          AND bs.is_deleted = FALSE
+        GROUP BY bs.battle_id
     )
     SELECT ab.battle_id AS "BattleId",
            ab.battle_name AS "BattleName",
@@ -73,10 +76,13 @@ BEGIN
            COALESCE(qs.max_xp, 0) AS "MaxXP",
            COALESCE(qs.total_questions, 0) AS "TotalQuestions",
            COALESCE(qs.duration, INTERVAL '0') AS "Duration",
-           COALESCE(ps.participants, 0) AS "Participants"
+           COALESCE(ps.participants, 0) AS "Participants",
+           COALESCE(us.is_running, FALSE) AS "IsBattleRunning"
     FROM active_battles ab
     LEFT JOIN ques_stats qs ON ab.battle_id = qs.battle_id
     LEFT JOIN participant_stats ps ON ab.battle_id = ps.battle_id
+    LEFT JOIN user_status us ON ab.battle_id = us.battle_id
+    WHERE COALESCE(us.is_completed, FALSE) = FALSE
     ORDER BY ab.battle_id ASC;
 END;
 $$ LANGUAGE plpgsql;

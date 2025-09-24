@@ -9,6 +9,7 @@ using QuizVerse.WebAPI.Middlewares;
 using Microsoft.OpenApi.Models;
 using QuizVerse.Infrastructure.Mappings;
 using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.WebAPI.Hubs;
 
 // Register encoding provider for Excel (required by ExcelDataReader)
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -37,6 +38,9 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
+
+// SignalR
+builder.Services.AddSignalR();
 
 //mappers
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -102,5 +106,6 @@ app.UseAuthorization();
 
 app.UseStaticFiles();
 app.MapControllers();
+app.MapHub<BattleHub>("/battleHub");
 
 app.Run();
