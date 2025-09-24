@@ -120,17 +120,17 @@ namespace QuizVerse.UnitTests.Services
             {
                 HasMore = false,
                 Battles = new List<UserBattleHistoryDto>
-        {
-            new()
-            {
-                Opponent = "opponent 1",
-                Category = "general knowledge",
-                Result = "Won",
-                YourScore = 8,
-                OpponentScore = 6,
-                XpGained = 10
-            }
-        }
+                {
+                    new()
+                    {
+                        Opponent = "opponent 1",
+                        Category = "general knowledge",
+                        Result = "Won",
+                        YourScore = 8,
+                        OpponentScore = 6,
+                        XpGained = 10
+                    }
+                }
             };
 
             var finalMappedBattle = new UserBattleHistoryDto
