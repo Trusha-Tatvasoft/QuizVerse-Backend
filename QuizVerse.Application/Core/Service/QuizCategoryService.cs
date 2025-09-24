@@ -20,7 +20,7 @@ namespace QuizVerse.Application.Core.Service;
 public class QuizCategoryService(IGenericRepository<QuizCategory> _quizCategoryRepository, IMapper _mapper, IHttpContextAccessor _httpContextAccessor, ISqlQueryRepository _sqlQueryRepository, IDropDownDataService dropDownDataService) : IQuizCategoryService
 {
 
-    private int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new Exception(Constants.USER_NOT_FOUND);
+    private int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     public async Task<PageListResponse<QuizCategoryDTO>> GetQuizCategories(PageListRequest pageListRequest)
     {

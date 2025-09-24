@@ -39,17 +39,11 @@ public class UserProfileServiceTests
         _mapperMock.Setup(m => m.Map<UserProfileSettingDto>(It.IsAny<UserProfileSettingDto>()))
            .Returns((UserProfileSettingDto u) => u);
 
-        var mockClaimsPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
-        {
-            new("userId", "2")
-        }, "mock"));
-
-        var mockHttpContext = new DefaultHttpContext
-        {
-            User = mockClaimsPrincipal
-        };
-
-        _httpContextAccessorMock.Setup(a => a.HttpContext).Returns(mockHttpContext);
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
+            new[] { new Claim(ClaimTypes.UserData, "1") }, "mock"));
+        _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
 
         _service = new UserProfileService(
             _sqlQueryRepositoryMock.Object,
@@ -131,87 +125,33 @@ public class UserProfileServiceTests
 
     #region GetUserNavbarData
     [Theory]
-    [InlineData(true, 2, 100)]
-    [InlineData(false, 0, 0)]
-    public async Task GetUserNavbarData_ShouldReturnCorrectDataOrThrow(bool userExists, int notificationCount, int maxExp)
+    [InlineData(100, 3)]
+    [InlineData(80, 5)]
+    public async Task GetUserNavbarData_FunctionCall_ShouldReturnCorrectData(
+        int progress, int notificationCount)
     {
         // Arrange
-        var userPerformanceDetail = userExists
-            ? new UserPerformanceDetail
-            {
-                UserId = 2,
-                TotalXp = 500,
-                CurrentLevel = 3,
-                User = new User { ProfilePic = "path/to/profile.jpg" }
-            }
-            : null;
-
-        _userPerformanceDetailRepositoryMock
-            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<UserPerformanceDetail, bool>>>(), It.IsAny<Func<IQueryable<UserPerformanceDetail>, IQueryable<UserPerformanceDetail>>>()))
-            .ReturnsAsync(userPerformanceDetail);
-
-        var notifications = notificationCount > 0
-            ? Enumerable.Range(1, notificationCount).Select(i => new UserNotification
-            {
-                IsRead = false,
-                IsDeleted = false,
-                GlobalNotification = new Notification() { IsDeleted = false }
-            }).ToList()
-            : new List<UserNotification>();
-
-        _userNotificationRepositoryMock
-            .Setup(r => r.GetQueryableInclude())
-            .Returns(notifications.AsQueryable());
-
-        var levelData = maxExp > 0
-            ? new List<LevelByExp> { new LevelByExp { LevelOrder = 3, MaximumExp = maxExp } }
-            : new List<LevelByExp>();
-
-        _levelByExpRepositoryMock
-            .Setup(r => r.GetQueryableInclude())
-            .Returns(levelData.AsQueryable());
-
-        // Act & Assert
-        if (!userExists)
+        var dto = new UserNavbarDataDto
         {
-            await Assert.ThrowsAsync<AppException>(() => _service.GetUserNavbarData());
-        }
-        else
-        {
-            var result = await _service.GetUserNavbarData();
-            Assert.Equal(500, result.CurrentUserXp);
-            Assert.Equal("path/to/profile.jpg", result.ProfilePic);
-            Assert.Equal(notificationCount, result.NotificationCount);
-            Assert.Equal(maxExp, result.CurrentLevelMaxUserXp);
-        }
-    }
-
-    [Fact]
-    public async Task GetUserNavbarData_ShouldThrowIfLevelDataNotFound()
-    {
-        // Arrange
-        var userPerformanceDetail = new UserPerformanceDetail
-        {
-            UserId = 2,
-            TotalXp = 500,
-            CurrentLevel = 3,
-            User = new User { ProfilePic = "path/to/profile.jpg" }
+            ProgressPercentage = progress,
+            ProfilePic = "profile/path.png",
+            NotificationCount = notificationCount
         };
 
-        _userPerformanceDetailRepositoryMock
-            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<UserPerformanceDetail, bool>>>(), It.IsAny<Func<IQueryable<UserPerformanceDetail>, IQueryable<UserPerformanceDetail>>>()))
-            .ReturnsAsync(userPerformanceDetail);
+        _sqlQueryRepositoryMock
+            .Setup(r => r.SqlQuerySingleAsync<UserNavbarDataDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(dto);
 
-        _userNotificationRepositoryMock
-            .Setup(r => r.GetQueryableInclude())
-            .Returns(new List<UserNotification>().AsQueryable());
+        // Act
+        var result = await _service.GetUserNavbarData();
 
-        _levelByExpRepositoryMock
-            .Setup(r => r.GetQueryableInclude())
-            .Returns(new List<LevelByExp>().AsQueryable());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetUserNavbarData());
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(progress, result.ProgressPercentage);
+        Assert.Equal("profile/path.png", result.ProfilePic);
+        Assert.Equal(notificationCount, result.NotificationCount);
     }
     #endregion
 

@@ -10,12 +10,12 @@ using QuizVerse.Infrastructure.Enums;
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
-[Authorize(Roles = nameof(UserRoles.Player))]
 [Route("api/[controller]")]
 public class UserProfileController(IUserProfileService userProfileService) : ControllerBase
 {
     #region Get User Profile
     [HttpGet("get-user-basic-profile")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> GetUserBasicProfile()
     {
         return Ok(new ApiResponse<UserBasicProfileDto>
@@ -28,6 +28,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpGet("get-user-overview")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> GetUserOverview()
     {
 
@@ -41,12 +42,13 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpGet("get-user-navbar-data")]
+    [Authorize(Roles = nameof(UserRoles.Player) + "," + nameof(UserRoles.Admin))]
     public async Task<IActionResult> GetUserNavbarData()
     {
         return Ok(new ApiResponse<UserNavbarDataDto>
         {
             Result = true,
-            Message= Constants.FETCH_SUCCESS,
+            Message = Constants.FETCH_SUCCESS,
             StatusCode = StatusCodes.Status200OK,
             Data = await userProfileService.GetUserNavbarData()
         });
@@ -56,6 +58,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     #region Update ProfilePic
     [HttpPost("update-profile-pic")]
     [Consumes("multipart/form-data")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> UpdateProfilePic([FromForm] UpdateProfilePicRequestDto dto)
     {
         return Ok(new ApiResponse<string>
@@ -70,6 +73,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
 
     #region Get UserBadges
     [HttpGet("get-user-badges")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> GetUserBadges()
     {
         return Ok(new ApiResponse<List<UserBadgesResponseDto>>
@@ -84,6 +88,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
 
     #region  User Profile update
     [HttpGet("get-user-profile-setting")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> GetUserProfileSetting()
     {
         return Ok(new ApiResponse<UserProfileSettingDto>
@@ -96,6 +101,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpPut("update-user-profile")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> UpdateUserProfile([FromBody] UserProfileSettingDto request)
     {
         var result = await userProfileService.UpdateUserProfile(request);
@@ -110,6 +116,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpGet("is-email-available")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> IsEmailAvailable(string email)
     {
         return Ok(new ApiResponse<bool>
@@ -122,6 +129,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpPost("send-otp-to-user")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> SendOtpToUser([FromBody] UserProfileSettingDto userProfileSettingDto)
     {
         return Ok(new ApiResponse<string>
@@ -134,6 +142,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpPost("verify-otp")]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequestDto request)
     {
         return Ok(new ApiResponse<bool>

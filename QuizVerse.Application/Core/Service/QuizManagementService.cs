@@ -30,7 +30,7 @@ public class QuizManagementService(
         ICommonService commonService
 ) : IQuizManagementService
 {
-    public int? UserId => httpContextAccessor.HttpContext?.User?.GetUserId();
+    public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     #region Get Card Data
     public async Task<QuizManagementPageDataDto> GetQuizCardData()
@@ -163,7 +163,7 @@ public class QuizManagementService(
                     ? JsonSerializer.Serialize(quizCreateUpdateRequestDto.NoOfQuestionsPerDifficulty, jsonOptions)
                     : "[]"
             },
-            new("p_created_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value },
+            new("p_created_by", NpgsqlDbType.Integer) { Value = UserId },
         };
 
         CreateUpdateResponseDto response = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
@@ -215,7 +215,7 @@ public class QuizManagementService(
         var parameters = new NpgsqlParameter[]
         {
             new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizId },
-            new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId ?? (object)DBNull.Value },
+            new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId },
         };
 
         CreateUpdateResponseDto response = await _sqlQueryRepository.SqlQuerySingleAsync<CreateUpdateResponseDto>(query, parameters);
