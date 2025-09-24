@@ -119,4 +119,22 @@ namespace QuizVerse.Infrastructure.Enums
         Free = 2,
         Premium = 3
     }
+
+    public enum BattleTimeFilterType
+    {
+        Last2Days = 1,
+        Last7Days = 2,
+        CurrentMonth = 3,
+        LastQuarter = 4,
+        CurrentYear = 5,   
+        LastYear = 6       
+    }
+
+    public enum BattleFilterType
+    {
+        Draw = 1,
+        Lost = 2,
+        Won = 3
+    }
+
 }

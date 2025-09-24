@@ -13,7 +13,7 @@ using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service
 {
-    public class AuthService(ITokenService _tokenService, ICommonService _commonService, IGenericRepository<User> _genericUserRepository, IGenericRepository<PasswordResetToken> _genericPasswordResetTokenRepository, IMapper _mapper, IConfiguration _configuration, IUserService userService, IGenericRepository<UserPerformanceDetail> _genericPerformanceRepository) : IAuthService
+    public class AuthService(ITokenService _tokenService, ICommonService _commonService, IGenericRepository<User> _genericUserRepository, IGenericRepository<PasswordResetToken> _genericPasswordResetTokenRepository, IMapper _mapper, IConfiguration _configuration, IUserService userService) : IAuthService
     {
         #region AuthenticateUser
         public async Task<(string accessToken, string refereshToken)> AuthenticateUser(UserLoginDTO userLoginDto)
@@ -60,35 +60,6 @@ namespace QuizVerse.Application.Core.Service
             user.LastLogin = DateTime.UtcNow;
 
             await _genericUserRepository.UpdateAsync(user);
-
-            // streak calc
-            var perfDetails = await _genericPerformanceRepository.GetAsync(p => p.UserId == user.Id);
-
-            if (perfDetails != null)
-            {
-                DateTime today = DateTime.UtcNow.Date;
-                DateTime lastModified = perfDetails.ModifiedDate?.Date ?? DateTime.MinValue.Date;
-
-                int daysDiff = (today - lastModified).Days;
-
-                if (perfDetails.CurrentStreak == 0 && perfDetails.HighestStreak == 0)
-                {
-                    perfDetails.CurrentStreak = 1;
-                    perfDetails.HighestStreak = 1;
-                    perfDetails.ModifiedDate = DateTime.UtcNow;
-                    await _genericPerformanceRepository.UpdateAsync(perfDetails);
-                }
-                else if (daysDiff > 0)
-                {
-                    perfDetails.CurrentStreak = (daysDiff == 1)
-                        ? perfDetails.CurrentStreak + 1
-                        : 1;
-
-                    perfDetails.HighestStreak = Math.Max(perfDetails.HighestStreak, perfDetails.CurrentStreak);
-                    perfDetails.ModifiedDate = DateTime.UtcNow;
-                    await _genericPerformanceRepository.UpdateAsync(perfDetails);
-                }
-            }
 
             return (accessToken, refreshToken);
         }

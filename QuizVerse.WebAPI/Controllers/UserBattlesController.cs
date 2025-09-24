@@ -28,16 +28,16 @@ public class UserBattlesController(IUserBattlesService userBattlesService) : Con
     }
     #endregion
 
-    #region User Recent Battles
-    [HttpGet("get-user-recent-battles")]
-    public async Task<IActionResult> GetUserRecentBattles()
+    #region User Battles History
+    [HttpPost("get-user-battle-history")]
+    public async Task<IActionResult> GetUserBattleHistory([FromBody] UserBattleHistoryRequestDto request)
     {
-        return Ok(new ApiResponse<List<UserRecentBattleDto>>
+        return Ok(new ApiResponse<UserBattleHistoryResponseDto>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = StatusCodes.Status200OK,
-            Data = await userBattlesService.GetUserRecentBattles()
+            Data = await userBattlesService.GetUserBattleHistory(request)
         });
     }
     #endregion

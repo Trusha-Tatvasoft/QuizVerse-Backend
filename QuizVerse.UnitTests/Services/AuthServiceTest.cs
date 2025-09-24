@@ -26,12 +26,11 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<IConfiguration> _configurationMock = new();
         private readonly Mock<IGenericRepository<PasswordResetToken>> _passwordResetTokenRepoMock = new();
         private readonly Mock<IUserService> _userServiceMock = new();
-        private readonly Mock<IGenericRepository<UserPerformanceDetail>> _performanceRepoMock = new();
 
         private AuthService CreateService() =>
             new(_tokenServiceMock.Object, _commonServiceMock.Object, _userRepoMock.Object,
                 _passwordResetTokenRepoMock.Object, _mapperMock.Object, _configurationMock.Object,
-                _userServiceMock.Object, _performanceRepoMock.Object);
+                _userServiceMock.Object);
 
         public AuthServiceTests()
         {
@@ -223,128 +222,6 @@ namespace QuizVerse.UnitTests.Services
             var ex = await Assert.ThrowsAsync<Exception>(() => service.AuthenticateUser(dto));
             Assert.Equal(Constants.FAILED_TOKEN_GENERATION_MESSAGE, ex.Message);
         }
-        [Fact]
-        public async Task AuthenticateUser_ShouldSkipStreakUpdate_WhenNoPerformanceRecord()
-        {
-            var user = CreateTestUser();
-            var dto = new UserLoginDTO { Email = user.Email, Password = "pass" };
-
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(),
-                                                It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync(user);
-            _commonServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(true);
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns("access_token");
-            _tokenServiceMock.Setup(t => t.GenerateRefreshToken(user, dto.RememberMe)).Returns("refresh_token");
-
-            _performanceRepoMock
-                .Setup(r => r.GetAsync(
-                    It.IsAny<Expression<Func<UserPerformanceDetail, bool>>>(),
-                    It.IsAny<Func<IQueryable<UserPerformanceDetail>, IQueryable<UserPerformanceDetail>>>()))
-                .ReturnsAsync((UserPerformanceDetail?)null);
-
-            var service = CreateService();
-            var (accessToken, refreshToken) = await service.AuthenticateUser(dto);
-
-            Assert.Equal("access_token", accessToken);
-            Assert.Equal("refresh_token", refreshToken);
-
-            _performanceRepoMock.Verify(r => r.UpdateAsync(It.IsAny<UserPerformanceDetail>()), Times.Never);
-        }
-        [Fact]
-        public async Task AuthenticateUser_ShouldIncreaseStreak_WhenConsecutiveDayLogin()
-        {
-            var user = CreateTestUser();
-            var dto = new UserLoginDTO { Email = user.Email, Password = "pass" };
-
-            var perfDetails = CreatePerfDetails(user.Id, currentStreak: 2, highestStreak: 3, modifiedDate: DateTime.UtcNow.AddDays(-1));
-
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(),
-                                                It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync(user);
-            _commonServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(true);
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns("access_token");
-            _tokenServiceMock.Setup(t => t.GenerateRefreshToken(user, dto.RememberMe)).Returns("refresh_token");
-
-            _performanceRepoMock
-                .Setup(r => r.GetAsync(
-                    It.IsAny<Expression<Func<UserPerformanceDetail, bool>>>(),
-                    It.IsAny<Func<IQueryable<UserPerformanceDetail>, IQueryable<UserPerformanceDetail>>>()))
-                .ReturnsAsync(perfDetails);
-
-            var service = CreateService();
-            var (accessToken, refreshToken) = await service.AuthenticateUser(dto);
-
-            Assert.Equal("access_token", accessToken);
-            Assert.Equal("refresh_token", refreshToken);
-            Assert.Equal(3, perfDetails.CurrentStreak); // incremented
-            Assert.Equal(3, perfDetails.HighestStreak);
-
-            _performanceRepoMock.Verify(r => r.UpdateAsync(perfDetails), Times.Once);
-        }
-        [Fact]
-        public async Task AuthenticateUser_ShouldResetStreak_WhenDaysMissed()
-        {
-            var user = CreateTestUser();
-            var dto = new UserLoginDTO { Email = user.Email, Password = "pass" };
-
-            var perfDetails = CreatePerfDetails(user.Id, currentStreak: 5, highestStreak: 5, modifiedDate: DateTime.UtcNow.AddDays(-3));
-
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(),
-                                                It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync(user);
-            _commonServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(true);
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns("access_token");
-            _tokenServiceMock.Setup(t => t.GenerateRefreshToken(user, dto.RememberMe)).Returns("refresh_token");
-
-            _performanceRepoMock
-                .Setup(r => r.GetAsync(
-                    It.IsAny<Expression<Func<UserPerformanceDetail, bool>>>(),
-                    It.IsAny<Func<IQueryable<UserPerformanceDetail>, IQueryable<UserPerformanceDetail>>>()))
-                .ReturnsAsync(perfDetails);
-
-            var service = CreateService();
-            var (accessToken, refreshToken) = await service.AuthenticateUser(dto);
-
-            Assert.Equal("access_token", accessToken);
-            Assert.Equal("refresh_token", refreshToken);
-            Assert.Equal(1, perfDetails.CurrentStreak); // reset
-            Assert.Equal(5, perfDetails.HighestStreak);
-
-            _performanceRepoMock.Verify(r => r.UpdateAsync(perfDetails), Times.Once);
-        }
-        [Fact]
-        public async Task AuthenticateUser_ShouldInitializeStreak_WhenCurrentAndHighestAreZero()
-        {
-            var user = CreateTestUser();
-            var dto = new UserLoginDTO { Email = user.Email, Password = "pass" };
-
-            var perfDetails = CreatePerfDetails(user.Id, currentStreak: 0, highestStreak: 0, modifiedDate: DateTime.UtcNow.AddDays(-1));
-
-            _userRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(),
-                                                It.IsAny<Func<IQueryable<User>, IQueryable<User>>>()))
-                         .ReturnsAsync(user);
-            _commonServiceMock.Setup(s => s.VerifyPassword(dto.Password, user.Password)).Returns(true);
-            _tokenServiceMock.Setup(t => t.GenerateAccessToken(user)).Returns("access_token");
-            _tokenServiceMock.Setup(t => t.GenerateRefreshToken(user, dto.RememberMe)).Returns("refresh_token");
-
-            _performanceRepoMock.Setup(r => r.GetAsync(
-                It.IsAny<Expression<Func<UserPerformanceDetail, bool>>>(),
-                It.IsAny<Func<IQueryable<UserPerformanceDetail>, IQueryable<UserPerformanceDetail>>>()))
-                .ReturnsAsync(perfDetails);
-
-            var service = CreateService();
-            var (accessToken, refreshToken) = await service.AuthenticateUser(dto);
-
-            Assert.Equal("access_token", accessToken);
-            Assert.Equal("refresh_token", refreshToken);
-
-            Assert.Equal(1, perfDetails.CurrentStreak);
-            Assert.Equal(1, perfDetails.HighestStreak);
-            Assert.True((DateTime.UtcNow - perfDetails.ModifiedDate.Value).TotalSeconds < 5);
-
-            _performanceRepoMock.Verify(r => r.UpdateAsync(perfDetails), Times.Once);
-        }
-
         #endregion
 
         #region ValidateRefreshTokens

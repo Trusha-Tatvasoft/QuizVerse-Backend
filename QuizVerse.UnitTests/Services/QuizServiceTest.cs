@@ -85,14 +85,14 @@ public class QuizServiceTests
         {
             Id = 1,
             CategoryName = "General",
-            Description = "General knowledge category"   // FIX
+            Description = "General knowledge category"
         };
 
         var difficulty = new QuizDifficulty
         {
             Id = 1,
             Name = "Easy",
-            Description = "Easy difficulty level"        // FIX
+            Description = "Easy difficulty level"
         };
 
         var quiz = new Quiz
@@ -103,7 +103,8 @@ public class QuizServiceTests
             CategoryId = category.Id,
             DifficultyLevelId = difficulty.Id,
             Category = category,
-            DifficultyLevel = difficulty
+            DifficultyLevel = difficulty,
+            TotalQuestion = 2
         };
 
         var quizPlayStatus = new QuizPlayStatus
@@ -114,29 +115,55 @@ public class QuizServiceTests
             IsCompleted = false
         };
 
-        var baseQuestion = new BaseQuestion
+        var baseQuestion1 = new BaseQuestion
         {
             Id = 1,
             QueText = "What is 2 + 2?",
-            QueTypeId = 1 // Objective type
+            QueTypeId = 1
         };
 
-        var questionOption = new QuestionOptionsAnswer
+        var questionOption1 = new QuestionOptionsAnswer
         {
             Id = 1,
             Key = "answer",
             Value = "4",
-            QuestionId = baseQuestion.Id,
+            QuestionId = baseQuestion1.Id,
             IsDeleted = false
         };
-        baseQuestion.QuestionOptionsAnswers = new List<QuestionOptionsAnswer> { questionOption };
+        baseQuestion1.QuestionOptionsAnswers = new List<QuestionOptionsAnswer> { questionOption1 };
 
-        var quizToQuestionMap = new QuizToBaseQuestionMap
+        var quizToQuestionMap1 = new QuizToBaseQuestionMap
         {
             Id = 1,
             QuizId = quiz.Id,
-            Que = baseQuestion,
-            QueId = baseQuestion.Id
+            Que = baseQuestion1,
+            QueId = baseQuestion1.Id
+        };
+
+        // Add second question for consistency
+        var baseQuestion2 = new BaseQuestion
+        {
+            Id = 2,
+            QueText = "What is 5 + 5?",
+            QueTypeId = 1
+        };
+
+        var questionOption2 = new QuestionOptionsAnswer
+        {
+            Id = 2,
+            Key = "answer",
+            Value = "10",
+            QuestionId = baseQuestion2.Id,
+            IsDeleted = false
+        };
+        baseQuestion2.QuestionOptionsAnswers = new List<QuestionOptionsAnswer> { questionOption2 };
+
+        var quizToQuestionMap2 = new QuizToBaseQuestionMap
+        {
+            Id = 2,
+            QuizId = quiz.Id,
+            Que = baseQuestion2,
+            QueId = baseQuestion2.Id
         };
 
         var user = new User
@@ -165,8 +192,8 @@ public class QuizServiceTests
             Id = 1,
             QuizId = quiz.Id,
             UserId = user.Id,
-            TotalQue = 10,
-            CorrectedQue = 8,
+            TotalQue = 2,
+            CorrectedQue = 1,
             TimeSpent = TimeSpan.FromMinutes(15),
             XpEarned = 50,
             Grade = 90,
@@ -192,16 +219,15 @@ public class QuizServiceTests
         _context.QuizDifficulties.Add(difficulty);
         _context.Quizzes.Add(quiz);
         _context.QuizPlayStatuses.Add(quizPlayStatus);
-        _context.BaseQuestions.Add(baseQuestion);
-        _context.QuestionOptionsAnswers.Add(questionOption);
-        _context.QuizToBaseQuestionMaps.Add(quizToQuestionMap);
+        _context.BaseQuestions.AddRange(baseQuestion1, baseQuestion2);
+        _context.QuestionOptionsAnswers.AddRange(questionOption1, questionOption2);
+        _context.QuizToBaseQuestionMaps.AddRange(quizToQuestionMap1, quizToQuestionMap2);
         _context.GradeForQuizResults.Add(grade);
         _context.QuizAttempteds.Add(quizAttempted);
         _context.Users.Add(user);
         _context.QuizRatings.Add(quizRating);
         _context.SaveChanges();
     }
-
 
 
     [Fact]
@@ -263,22 +289,58 @@ public class QuizServiceTests
             QuestionName = "What is 5 + 5?",
             QuestionType = "Objective",
             Options = JsonSerializer.Serialize(new List<OptionResponseDto>
-            {
-                new() { Key = "answer", Value = "10" }
-            })
+        {
+            new() { Key = "answer", Value = "10" }
+        })
         };
 
         _sqlQueryRepoMock
             .Setup(x => x.SqlQuerySingleAsync<RawQuizQuestionDto>(It.IsAny<string>()))
             .ReturnsAsync(rawQuestion);
 
-        QuizQuestionResponseDto response = await _quizService.SaveAndNextQuestion(request);
+        QuizQuestionResponseDto? response = await _quizService.SaveAndNextQuestion(request);
 
         Assert.NotNull(response);
         Assert.Equal("What is 5 + 5?", response.QuestionName);
         Assert.Equal(2, response.QuizQuestionId);
         Assert.Single(response.Options);
         Assert.Equal("10", response.Options[0].Value);
+
+        var attempt = await _context.AttemptedQuizQuestionsAnswers
+            .FirstOrDefaultAsync(a => a.QuizQueId == request.CurrentQuestionId);
+        Assert.NotNull(attempt);
+        Assert.Equal(request.GivenAnswer, attempt.GivenAnswer);
+        Assert.True(attempt.IsCorrect);
+    }
+
+    [Fact]
+    public async Task SaveAndNextQuestion_ShouldReturnNull_WhenNoMoreQuestions()
+    {
+        // Arrange
+        SaveAndNextQuestionRequestDto request = new()
+        {
+            QuizId = 1,
+            CurrentQuestionId = 1,
+            NextQuestionNumber = 3, // Exceeds TotalQuestion (2)
+            GivenAnswer = "4"
+        };
+
+        _sqlQueryRepoMock
+            .Setup(x => x.SqlQuerySingleAsync<RawQuizQuestionDto>(It.IsAny<string>()))
+            .ReturnsAsync((RawQuizQuestionDto)null!);
+
+        // Act
+        QuizQuestionResponseDto? response = await _quizService.SaveAndNextQuestion(request);
+
+        // Assert
+        Assert.Null(response);
+
+        // Verify answer was saved
+        var attempt = await _context.AttemptedQuizQuestionsAnswers
+            .FirstOrDefaultAsync(a => a.QuizQueId == request.CurrentQuestionId);
+        Assert.NotNull(attempt);
+        Assert.Equal(request.GivenAnswer, attempt.GivenAnswer);
+        Assert.True(attempt.IsCorrect);
     }
 
     [Fact]
@@ -458,9 +520,9 @@ public class QuizServiceTests
         Assert.NotNull(result);
         Assert.IsType<QuizCompletedSummaryDTO>(result);
         Assert.Equal("Sample Quiz", result.QuizName);
-        Assert.Equal(10, result.TotalQuestions);
-        Assert.Equal(8, result.CorrectAnswers);
-        Assert.Equal(2, result.WrongAnswers);
+        Assert.Equal(2, result.TotalQuestions);
+        Assert.Equal(1, result.CorrectAnswers);
+        Assert.Equal(1, result.WrongAnswers);
         Assert.Equal(50, result.XpEarned);
         Assert.Equal("A+", result.Grade);
         Assert.Equal(TimeSpan.FromMinutes(15), result.TimeSpent);

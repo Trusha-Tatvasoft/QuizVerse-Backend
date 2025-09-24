@@ -101,57 +101,85 @@ namespace QuizVerse.UnitTests.Services
 
         #region User Recent Battles
         [Fact]
-        public async Task GetUserRecentBattles_ReturnsMappedBattleList()
+        public async Task GetUserBattleHistory_ReturnsMappedBattleList()
         {
-            var rawBattles = new List<UserRecentBattleDto>
+            var dto = new UserBattleHistoryRequestDto
             {
-                new()
+                BatchNumber = 1,
+                FilterBy = null,
+                TimeFilterBy = null
+            };
+
+            var rawResult = new UserBattleHistoryRawResult
+            {
+                Battles = "[{\"Opponent\":\"opponent 1\",\"Category\":\"general knowledge\",\"Result\":\"Won\",\"YourScore\":8,\"OpponentScore\":6,\"XpGained\":10}]",
+                HasMore = false
+            };
+
+            var initialMappedResponse = new UserBattleHistoryResponseDto
+            {
+                HasMore = false,
+                Battles = new List<UserBattleHistoryDto>
                 {
-                    Opponent = "opponent 1",
-                    Category = "general knowledge",
-                    Result = "Won",
-                    YourScore = 8,
-                    OpponentScore = 6,
-                    XpGained = 10
+                    new()
+                    {
+                        Opponent = "opponent 1",
+                        Category = "general knowledge",
+                        Result = "Won",
+                        YourScore = 8,
+                        OpponentScore = 6,
+                        XpGained = 10
+                    }
                 }
             };
 
-            var mappedBattles = new List<UserRecentBattleDto>
+            var finalMappedBattle = new UserBattleHistoryDto
             {
-                new()
-                {
-                    Opponent = "Opponent 1",
-                    Category = "General Knowledge",
-                    Result = "Won",
-                    YourScore = 8,
-                    OpponentScore = 6,
-                    XpGained = 10
-                }
+                Opponent = "Opponent 1",
+                Category = "General Knowledge",
+                Result = "Won",
+                YourScore = 8,
+                OpponentScore = 6,
+                XpGained = 10
             };
 
             _mockSqlQueryRepository
-                .Setup(repo => repo.SqlQueryListAsync<UserRecentBattleDto>(
+                .Setup(repo => repo.SqlQuerySingleAsync<UserBattleHistoryRawResult>(
                     It.IsAny<string>(),
                     It.IsAny<NpgsqlParameter[]>()))
-                .ReturnsAsync(rawBattles);
+                .ReturnsAsync(rawResult);
 
             _mockMapper
-                .Setup(m => m.Map<List<UserRecentBattleDto>>(rawBattles))
-                .Returns(mappedBattles);
+                .Setup(m => m.Map<UserBattleHistoryResponseDto>(rawResult))
+                .Returns(initialMappedResponse);
 
-            var result = await _service.GetUserRecentBattles();
+            _mockMapper
+                .Setup(m => m.Map<UserBattleHistoryDto>(It.Is<UserBattleHistoryDto>(
+                    b => b.Opponent == "opponent 1")))
+                .Returns(finalMappedBattle);
+
+            var result = await _service.GetUserBattleHistory(dto);
 
             Assert.NotNull(result);
-            Assert.Single(result);
-            Assert.Equal("Opponent 1", result[0].Opponent);
-            Assert.Equal("General Knowledge", result[0].Category);
-            Assert.Equal(8, result[0].YourScore);
+            Assert.False(result.HasMore);
+            Assert.Single(result.Battles);
+            Assert.Equal("Opponent 1", result.Battles[0].Opponent);
+            Assert.Equal("General Knowledge", result.Battles[0].Category);
+            Assert.Equal(8, result.Battles[0].YourScore);
 
             _mockSqlQueryRepository.Verify(repo =>
-                repo.SqlQueryListAsync<UserRecentBattleDto>(It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()), Times.Once);
+                repo.SqlQuerySingleAsync<UserBattleHistoryRawResult>(
+                    It.IsAny<string>(),
+                    It.IsAny<NpgsqlParameter[]>()),
+                Times.Once);
 
-            _mockMapper.Verify(mapper =>
-                mapper.Map<List<UserRecentBattleDto>>(rawBattles), Times.Once);
+            _mockMapper.Verify(m =>
+                m.Map<UserBattleHistoryResponseDto>(rawResult),
+                Times.Once);
+
+            _mockMapper.Verify(m =>
+                m.Map<UserBattleHistoryDto>(It.IsAny<UserBattleHistoryDto>()),
+                Times.Exactly(initialMappedResponse.Battles.Count));
         }
         #endregion
 

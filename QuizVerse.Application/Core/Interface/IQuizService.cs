@@ -8,7 +8,7 @@ public interface IQuizService
 {
     public Task<QuizOverviewResponseDto> GetQuizOverviewAsync(int quizId);
     public Task<QuizStartResponseDto?> StartQuizAsync(int quizId);
-    public Task<QuizQuestionResponseDto> SaveAndNextQuestion(SaveAndNextQuestionRequestDto request);
+    public Task<QuizQuestionResponseDto?> SaveAndNextQuestion(SaveAndNextQuestionRequestDto request);
     public Task<bool> SubmitQuiz(SubmitQuizRequestDTO request);
     Task<QuizCompletedSummaryDTO> GetQuizSummary(int quizAttemptId);
     Task<List<QuizQuestionReviewDTO>> GetQuizQuestionReview(int quizId);

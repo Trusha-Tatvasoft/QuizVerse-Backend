@@ -30,7 +30,7 @@ public class UserRequestDto
     [StringLength(500, ErrorMessage = "Bio can't be longer than 500 characters.")]
     public string? Bio { get; set; }
 
-    [AllowedImage(ErrorMessage = "Invalid profile picture. Only .jpg, .jpeg, .png, and .gif files are allowed, with a maximum size of 5MB.")]
+    [AllowedImage(ErrorMessage = "Invalid profile picture. Only .jpg, .jpeg, .png, and .gif files are allowed, with a maximum size of 10MB.")]
     public IFormFile? ProfilePic { get; set; }
 
     public bool IsRegister { get; set; } = false;
