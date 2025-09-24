@@ -132,6 +132,22 @@ public class UserBattlesService(
 
         return Constants.BATTLE_REQUEST_SENT_SUCCESS;
     }
+
+    public async Task<bool> CheckUserExistence(string userName)
+    {
+        User? user = await _userRepository.GetAsync(u => u.UserName.Trim() == userName.Trim() && !u.IsDeleted);
+
+        if (user != null)
+        {
+            if (user.Id == UserId)
+                throw new AppException(Constants.SELF_CHALLENGE_NOT_ALLOWED, StatusCodes.Status400BadRequest);
+        }
+        else
+        {
+            throw new AppException(Constants.USERNAME_DOES_NOT_EXIST, StatusCodes.Status400BadRequest);
+        }
+        return true;
+    }
     #endregion
 
     #region Get Battle Result
