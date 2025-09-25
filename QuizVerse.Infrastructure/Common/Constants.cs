@@ -92,7 +92,7 @@ public static class Constants
     public const string CREATE_SUCCESS = "Created successfully";
     public const string UPDATE_SUCCESS = "Updated successfully";
     public const string DELETE_SUCCESS = "Deleted successfully";
-    public const string CAN_NOT_DELETE_BATTLE  = "Battle is being played. So you cannot delete it.";
+    public const string CAN_NOT_DELETE_BATTLE = "Battle is being played. So you cannot delete it.";
     public const string NO_DATA_Found = "No data found";
     #endregion
 
@@ -356,5 +356,6 @@ public static class Constants
     public const string ACTIVE_CHALLENGE_EXISTS = "You already have an active challenge sent to this user.";
     public const string BATTLE_REQUEST_SENT_SUCCESS = "Battle request sent successfully.";
     public const string BATTLE_ALREADY_ACCEPTED = "You already have an accepted battle for this Battle and cannot send it to another user.";
+    public const string USER_SEARCH_SUCCESS = "User search completed successfully.";
     #endregion
 }

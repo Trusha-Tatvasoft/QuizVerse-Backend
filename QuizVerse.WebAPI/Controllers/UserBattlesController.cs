@@ -80,6 +80,18 @@ public class UserBattlesController(IUserBattlesService userBattlesService) : Con
             Data = await userBattlesService.CheckUserExistence(userName)
         });
     }
+
+    [HttpPost("search-user/{userName}")]
+    public async Task<IActionResult> SearchUser(string userName)
+    {
+        return Ok(new ApiResponse<List<SearchUserResponseDto>>
+        {
+            Result = true,
+            StatusCode = StatusCodes.Status200OK,
+            Message = Constants.USER_SEARCH_SUCCESS,
+            Data = await userBattlesService.SearchUsersAsync(userName)
+        });
+    }
     #endregion
 
     #region Get Battle Result

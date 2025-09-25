@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
@@ -148,6 +149,22 @@ public class UserBattlesService(
         }
         return true;
     }
+    public async Task<List<SearchUserResponseDto>> SearchUsersAsync(string userName)
+    {
+        if (string.IsNullOrWhiteSpace(userName))
+            return [];
+
+        var users = await _userRepository
+            .GetQueryableInclude()
+            .Include(u => u.UserPerformanceDetail)
+            .Where(u => u.UserName.ToLower().Contains(userName.ToLower())
+                && !u.IsDeleted
+                && u.Status == (int)UserStatus.Active)
+            .ToListAsync();
+
+        return mapper.Map<List<SearchUserResponseDto>>(users);
+    }
+
     #endregion
 
     #region Get Battle Result

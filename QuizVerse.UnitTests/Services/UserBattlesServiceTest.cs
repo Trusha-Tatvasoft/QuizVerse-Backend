@@ -13,6 +13,8 @@ using System.Linq.Expressions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using System.ComponentModel.DataAnnotations;
 using QuizVerse.Infrastructure.Common.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.UnitTests.Services
 {
@@ -406,6 +408,17 @@ namespace QuizVerse.UnitTests.Services
             _mockBattleRequestRepository.Verify(r => r.AddAsync(It.Is<BattleRequest>(br =>
                 br.SenderId == 2 && br.ReceiverId == receiver.Id)), Times.Once);
             Assert.Equal(Constants.BATTLE_REQUEST_SENT_SUCCESS, result);
+        }
+
+        [Fact]
+        public async Task SearchUsersAsync_ReturnsEmptyList_WhenUserNameIsEmpty()
+        {
+            // Act
+            var result = await _service.SearchUsersAsync("");
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Empty(result);
         }
         #endregion
 
