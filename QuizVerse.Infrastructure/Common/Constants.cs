@@ -90,7 +90,7 @@ public static class Constants
     public const string CREATE_SUCCESS = "Created successfully";
     public const string UPDATE_SUCCESS = "Updated successfully";
     public const string DELETE_SUCCESS = "Deleted successfully";
-    public const string CAN_NOT_DELETE_BATTLE  = "Battle is being played. So you cannot delete it.";
+    public const string CAN_NOT_DELETE_BATTLE = "Battle is being played. So you cannot delete it.";
     public const string NO_DATA_Found = "No data found";
     #endregion
 
@@ -354,5 +354,39 @@ public static class Constants
     public const string ACTIVE_CHALLENGE_EXISTS = "You already have an active challenge sent to this user.";
     public const string BATTLE_REQUEST_SENT_SUCCESS = "Battle request sent successfully.";
     public const string BATTLE_ALREADY_ACCEPTED = "You already have an accepted battle for this Battle and cannot send it to another user.";
+    #endregion
+
+    #region Battle Playing
+    public static class SignalRMethods
+    {
+        public const string CONTINUE_BATTLE = "ContinueBattle";
+        public const string ERROR = "Error";
+        public const string SEARCHING = "Searching";
+        public const string MATCH_FOUND = "MatchFound";
+        public const string BATTLE_STARTED = "BattleStarted";
+        public const string BATTLE_RESUMED = "BattleResumed";
+        public const string RECEIVE_QUESTION = "ReceiveQuestion";
+        public const string RECEIVE_SCORE_UPDATE = "ReceiveScoreUpdate";
+        public const string LAST_ANSWERED_DETAIL = "LastAnsweredDetail";
+        public const string BATTLE_ENDED = "BattleEnded";
+        public const string QUESTION_TIMEOUT = "QuestionTimeOut";
+        public const string PLAYER_INTERRUPTED = "PlayerInterrupted";
+        public const string BATTLE_ENDED_FOR_PARTICULAR_PLAYER_DUE_TO_INTERRUPT = "BattleEndedForParticularPlayerDueToInterrupt";
+    }
+    public const string YOU_HAVE_UNFINISHED_BATTLE = "You have an unfinished battle.";
+    public const string BATTLE_SESSION_EXPIRED = "Battle session expired.";
+    public const string BATTLE_ALREADY_COMPLETED = "Battle already completed.";
+    public const string FAILED_TO_CREATE_BATTLE = "Failed to create battle.";
+    public const string YOU_ARE_NOT_PART_OF_BATTLE = "You are not part of this battle.";
+    public const string RESUME_WINDOW_EXPIRED = "Resume window expired.";
+    public const string NO_PENDING_BATTLE_TO_RESUME = "No pending battle to resume.";
+    public const string NO_PENDING_BATTLE_TO_INTERRUPT = "No pending battle to interrupt.";
+    public const string YOU_HAVE_ALREADY_COMPLETED_THIS_BATTLE = "You have already completed this battle.";
+    public const string YOU_ARE_ALREADY_CONNECTED_TO_THIS_BATTLE = "You are already connected to battle.";
+    public const string BATTLE_ID = "BattleId";
+    public const string BATTLE_ATTEMPT_ID_KEY = "BattleAttemptIdKey";
+    public const string INVALID_QUESTION_INDEX = "Invalid question index.";
+    public const string ALREADY_ANSWERED = "Already answered this question.";
+    public const string ANSWER_CURRENT_QUESTION_ONLY = "Answer the current question only!";
     #endregion
 }
