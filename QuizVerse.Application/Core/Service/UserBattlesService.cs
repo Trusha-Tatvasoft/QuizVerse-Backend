@@ -118,6 +118,7 @@ public class UserBattlesService(
         bool existingChallenge = await _battleRequestRepository.Exists(br =>
             br.SenderId == UserId &&
             br.ReceiverId == receiver.Id &&
+            br.BattleId == dto.BattleId &&
             activeStatuses.Contains((BattleRequestStatus)br.Status) &&
             !br.IsDeleted
         );
