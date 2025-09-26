@@ -177,8 +177,7 @@ public class UserBattlesService(
         {
             var dto = mapper.Map<SearchUserResponseDto>(u);
             dto.HasRequest = battleRequests.Any(br =>
-                (br.SenderId == currentUserId && br.ReceiverId == u.Id) ||
-                (br.ReceiverId == currentUserId && br.SenderId == u.Id));
+                br.SenderId == currentUserId && br.ReceiverId == u.Id && br.BattleId == battleId) ;
             return dto;
         }).ToList();
 
