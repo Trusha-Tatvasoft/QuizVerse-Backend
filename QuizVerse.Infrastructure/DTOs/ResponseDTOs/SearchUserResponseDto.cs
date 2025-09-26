@@ -6,4 +6,5 @@ public class SearchUserResponseDto
     public string UserName { get; set; } = string.Empty;
     public string? ProfilePic { get; set; }
     public int TotalXp { get; set; }
+    public bool HasRequest { get; set; }
 }

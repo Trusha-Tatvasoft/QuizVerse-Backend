@@ -149,21 +149,42 @@ public class UserBattlesService(
         }
         return true;
     }
-    public async Task<List<SearchUserResponseDto>> SearchUsersAsync(string userName)
+    public async Task<List<SearchUserResponseDto>> SearchUsersAsync(string userName, int battleId)
     {
         if (string.IsNullOrWhiteSpace(userName))
-            return [];
+            return new List<SearchUserResponseDto>();
 
-        var users = await _userRepository
-            .GetQueryableInclude()
-            .Include(u => u.UserPerformanceDetail)
-            .Where(u => u.UserName.ToLower().Contains(userName.ToLower())
-                && !u.IsDeleted
-                && u.Status == (int)UserStatus.Active)
+        var currentUserId = UserId; // get current user
+
+        // Materialize the users query asynchronously
+        var allUsers = await _userRepository
+            .GetQueryableInclude(u => u.UserPerformanceDetail!)
             .ToListAsync();
 
-        return mapper.Map<List<SearchUserResponseDto>>(users);
+        var filteredUsers = allUsers
+            .Where(u => u.Id != currentUserId &&
+                        !u.IsDeleted &&
+                        u.Status == (int)UserStatus.Active &&
+                        u.UserName.Contains(userName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        // Materialize battle requests asynchronously
+        var battleRequests = await _battleRequestRepository
+            .GetQueryableInclude()
+            .ToListAsync();
+
+        var result = filteredUsers.Select(u =>
+        {
+            var dto = mapper.Map<SearchUserResponseDto>(u);
+            dto.HasRequest = battleRequests.Any(br =>
+                (br.SenderId == currentUserId && br.ReceiverId == u.Id) ||
+                (br.ReceiverId == currentUserId && br.SenderId == u.Id));
+            return dto;
+        }).ToList();
+
+        return result;
     }
+
 
     #endregion
 

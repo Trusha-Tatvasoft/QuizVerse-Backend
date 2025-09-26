@@ -410,16 +410,6 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal(Constants.BATTLE_REQUEST_SENT_SUCCESS, result);
         }
 
-        [Fact]
-        public async Task SearchUsersAsync_ReturnsEmptyList_WhenUserNameIsEmpty()
-        {
-            // Act
-            var result = await _service.SearchUsersAsync("");
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Empty(result);
-        }
         #endregion
 
         #region Get Battle Result

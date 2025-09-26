@@ -81,15 +81,15 @@ public class UserBattlesController(IUserBattlesService userBattlesService) : Con
         });
     }
 
-    [HttpPost("search-user/{userName}")]
-    public async Task<IActionResult> SearchUser(string userName)
+    [HttpGet("search-user")]
+    public async Task<IActionResult> SearchUser([FromQuery] string userName, [FromQuery] int battleId)
     {
         return Ok(new ApiResponse<List<SearchUserResponseDto>>
         {
             Result = true,
             StatusCode = StatusCodes.Status200OK,
             Message = Constants.USER_SEARCH_SUCCESS,
-            Data = await userBattlesService.SearchUsersAsync(userName)
+            Data = await userBattlesService.SearchUsersAsync(userName,battleId)
         });
     }
     #endregion

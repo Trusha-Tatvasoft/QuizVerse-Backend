@@ -11,5 +11,5 @@ public interface IUserBattlesService
     Task<string> SendBattleRequest(SendBattleRequestDTO dto);
     Task<UserBattleResult> GetBattleResult(int battleId);
     Task<bool> CheckUserExistence(string userName);
-    Task<List<SearchUserResponseDto>> SearchUsersAsync(string userName);
+    Task<List<SearchUserResponseDto>> SearchUsersAsync(string userName, int battleId);
 }
