@@ -40,10 +40,8 @@ public class SubmitAnswerDTO
 {
     [Required(ErrorMessage = "Battle status id is required")]
     public int battleStatusID { get; set; }
-    
     [Required(ErrorMessage = "Answer id is required")]
     public int questionId { get; set; }
-
     [Required(ErrorMessage = "Answer is required")]
     public string answer { get; set; }
 }
@@ -64,13 +62,10 @@ public class RawBattleQuestionDto
     public string QuestionName { get; set; } = null!;
     [Column("question_type")]
     public string QuestionType { get; set; } = null!;
-
     [Column("options")]
     public string Options { get; set; } = "[]";
-
     [Column("time_per_question")]
     public int Time { get; set; }
-
     [Column("xp_per_question")]
     public int Xp { get; set; }
 }
