@@ -41,7 +41,10 @@ public class UserProfileServiceTests
 
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
-            new[] { new Claim(ClaimTypes.UserData, "1") }, "mock"));
+            new[] {
+                new Claim(ClaimTypes.UserData, "1"),
+                new Claim(ClaimTypes.Role, "Admin"
+            )}, "mock"));
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
 
@@ -325,7 +328,7 @@ public class UserProfileServiceTests
     [InlineData(UserStatus.Active, true, null)]
     public async Task IsEmailAvailable_ShouldBehaveBasedOnUserStatus(UserStatus status, bool isDeleted, Type? expectedException)
     {
-        var user = new User { Email = "test@test.com", Status = (int)status, IsDeleted = isDeleted };
+        var user = new User { Email = "test@test.com", Status = (int)status, IsDeleted = isDeleted, RoleId = (int)UserRoles.Admin };
         _userRepositoryMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null)).ReturnsAsync(user);
 
         if (expectedException != null)
@@ -397,4 +400,148 @@ public class UserProfileServiceTests
         }
     }
     #endregion
+
+    #region GetAdminProfile
+    [Fact]
+    public async Task GetAdminProfile_ShouldReturnMappedDto_WhenUserExists()
+    {
+        // Arrange
+        var user = new User { Id = 1, FullName = "Admin User", Email = "admin@test.com" };
+        var mappedDto = new AdminProfileResponseDto { FullName = "Admin User", Email = "admin@test.com" };
+
+        _userRepositoryMock
+            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+            .ReturnsAsync(user);
+
+        _mapperMock
+            .Setup(m => m.Map<AdminProfileResponseDto>(user))
+            .Returns(mappedDto);
+
+        // Act
+        var result = await _service.GetAdminProfile();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal("Admin User", result.FullName);
+        Assert.Equal("admin@test.com", result.Email);
+    }
+
+    [Fact]
+    public async Task GetAdminProfile_ShouldThrow_WhenUserNotFound()
+    {
+        // Arrange
+        _userRepositoryMock
+            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+            .ReturnsAsync((User?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<AppException>(() => _service.GetAdminProfile());
+    }
+    #endregion
+
+    #region UpdateAdminProfile
+    [Fact]
+    public async Task UpdateAdminProfile_ShouldUpdateSuccessfully_WhenValidRequest()
+    {
+        // Arrange
+        var request = new AdminProfileRequestDto
+        {
+            FullName = "Updated Admin",
+            UserName = "admin123",
+            Email = "admin@test.com",
+            Bio = "Updated Bio"
+        };
+
+        var userEntity = new User
+        {
+            Id = 1,
+            FullName = "Old Name",
+            UserName = "oldusername",
+            Email = "old@test.com"
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync(false);
+
+        _userRepositoryMock
+            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+            .ReturnsAsync(userEntity);
+
+        _userRepositoryMock
+            .Setup(r => r.UpdateAsync(It.IsAny<User>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _service.UpdateAdminProfile(request);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal(Constants.PROFILE_UPDATED_SUCCESSFULLY, result.Message);
+        Assert.Equal("Updated Admin", userEntity.FullName);
+        Assert.Equal("admin123", userEntity.UserName);
+        Assert.Equal("admin@test.com", userEntity.Email);
+        Assert.Equal("Updated Bio", userEntity.Bio);
+    }
+
+    [Fact]
+    public async Task UpdateAdminProfile_ShouldThrow_WhenFullNameIsEmpty()
+    {
+        // Arrange
+        var request = new AdminProfileRequestDto
+        {
+            FullName = "",
+            UserName = "admin123",
+            Email = "admin@test.com"
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateAdminProfile(request));
+        Assert.Equal(Constants.FULLNAME_REQUIRED, ex.Message);
+    }
+
+    [Fact]
+    public async Task UpdateAdminProfile_ShouldThrow_WhenDuplicateUsernameExists()
+    {
+        // Arrange
+        var request = new AdminProfileRequestDto
+        {
+            FullName = "Valid Name",
+            UserName = "duplicate",
+            Email = "admin@test.com"
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync(true);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateAdminProfile(request));
+        Assert.Equal(Constants.DUPLICATE_USERNAME, ex.Message);
+    }
+
+    [Fact]
+    public async Task UpdateAdminProfile_ShouldThrow_WhenUserNotFound()
+    {
+        // Arrange
+        var request = new AdminProfileRequestDto
+        {
+            FullName = "Valid Name",
+            UserName = "admin123",
+            Email = "admin@test.com"
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.Exists(It.IsAny<Expression<Func<User, bool>>>()))
+            .ReturnsAsync(false);
+
+        _userRepositoryMock
+            .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+            .ReturnsAsync((User?)null);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<AppException>(() => _service.UpdateAdminProfile(request));
+    }
+    #endregion
+
 }
