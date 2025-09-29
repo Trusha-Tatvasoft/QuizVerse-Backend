@@ -58,7 +58,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     #region Update ProfilePic
     [HttpPost("update-profile-pic")]
     [Consumes("multipart/form-data")]
-    [Authorize(Roles = nameof(UserRoles.Player))]
+    [Authorize(Roles = nameof(UserRoles.Player) + "," + nameof(UserRoles.Admin))]
     public async Task<IActionResult> UpdateProfilePic([FromForm] UpdateProfilePicRequestDto dto)
     {
         return Ok(new ApiResponse<string>
@@ -116,7 +116,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpGet("is-email-available")]
-    [Authorize(Roles = nameof(UserRoles.Player))]
+    [Authorize(Roles = nameof(UserRoles.Player) + "," + nameof(UserRoles.Admin))]
     public async Task<IActionResult> IsEmailAvailable(string email)
     {
         return Ok(new ApiResponse<bool>
@@ -129,7 +129,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpPost("send-otp-to-user")]
-    [Authorize(Roles = nameof(UserRoles.Player))]
+    [Authorize(Roles = nameof(UserRoles.Player) + "," + nameof(UserRoles.Admin))]
     public async Task<IActionResult> SendOtpToUser([FromBody] UserProfileSettingDto userProfileSettingDto)
     {
         return Ok(new ApiResponse<string>
@@ -142,7 +142,7 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
     }
 
     [HttpPost("verify-otp")]
-    [Authorize(Roles = nameof(UserRoles.Player))]
+    [Authorize(Roles = nameof(UserRoles.Player) + "," + nameof(UserRoles.Admin))]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequestDto request)
     {
         return Ok(new ApiResponse<bool>
@@ -151,6 +151,38 @@ public class UserProfileController(IUserProfileService userProfileService) : Con
             Message = Constants.VALID_DATA,
             StatusCode = StatusCodes.Status200OK,
             Data = await userProfileService.VerifyOtp(request)
+        });
+    }
+    #endregion
+
+    #region Get Admin Profile
+    [HttpGet("get-admin-profile")]
+    [Authorize(Roles = nameof(UserRoles.Admin))]
+    public async Task<IActionResult> GetAdminProfile()
+    {
+        return Ok(new ApiResponse<AdminProfileResponseDto>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = StatusCodes.Status200OK,
+            Data = await userProfileService.GetAdminProfile()
+        });
+    }
+    #endregion
+
+    #region Update Admin Profile
+    [HttpPut("update-admin-profile")]
+    [Authorize(Roles = nameof(UserRoles.Admin))]
+    public async Task<IActionResult> UpdateAdminProfile([FromBody] AdminProfileRequestDto UpdatedAdminProfile)
+    {
+        CreateUpdateResponseDto result = await userProfileService.UpdateAdminProfile(UpdatedAdminProfile);
+
+        return Ok(new ApiResponse<string>
+        {
+            Result = result.Success,
+            Message = result.Message,
+            StatusCode = StatusCodes.Status200OK,
+            Data = null
         });
     }
     #endregion

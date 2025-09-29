@@ -71,6 +71,8 @@ public static class Constants
     public const string USER_DATA_NULL = "No data available to export.";
     public const string NO_EMAIL_CHANGE = "Email can't be changed";
     public const string USER_CREATE_SUCCESS = "User created successfully.";
+    public const string PROFILE_UPDATED_SUCCESSFULLY = "Profile Updated successfully";
+    public const string EMAIL_ALREADY_IN_USE_DIFFERENT_ROLE = "This email cannot be reused by you";
     #endregion
 
     #region Email Messages
@@ -90,7 +92,7 @@ public static class Constants
     public const string CREATE_SUCCESS = "Created successfully";
     public const string UPDATE_SUCCESS = "Updated successfully";
     public const string DELETE_SUCCESS = "Deleted successfully";
-    public const string CAN_NOT_DELETE_BATTLE  = "Battle is being played. So you cannot delete it.";
+    public const string CAN_NOT_DELETE_BATTLE = "Battle is being played. So you cannot delete it.";
     public const string NO_DATA_Found = "No data found";
     #endregion
 
