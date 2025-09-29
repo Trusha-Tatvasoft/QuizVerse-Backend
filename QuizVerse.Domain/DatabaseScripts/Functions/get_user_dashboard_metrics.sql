@@ -48,7 +48,7 @@ BEGIN
         FROM "BattleResult" br
         JOIN "BattleStatus" bs ON bs.id = br.battle_status
         WHERE (bs.user1_id = p_user_id OR bs.user2_id = p_user_id)
-          AND bs.battle_status IN (2, 3) -- 2 = completed, 3 = draw
+          AND bs.battle_status IN (1, 2) -- 1 = completed, 2 = draw
     ), 0);
 
     -- Current Rank

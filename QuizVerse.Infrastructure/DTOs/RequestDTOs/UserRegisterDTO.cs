@@ -5,12 +5,14 @@ namespace QuizVerse.Infrastructure.DTOs.RequestDTOs
     public class UserRegisterDto
     {
         [Required(ErrorMessage = "Full name is required.")]
+        [RegularExpression(@"^[A-Za-z][A-Za-z .'-]*$",
+            ErrorMessage = "Full Name must start with a letter and may only include (.-')")]
         [StringLength(255, ErrorMessage = "Full name must not exceed 255 characters.")]
         public string FullName { get; set; } = null!;
 
         [Required(ErrorMessage = "Username is required.")]
-        [RegularExpression(@"^[a-zA-Z0-9!@#\$%\^&\*\(\)_\+\-=\[\]\{\};:,.<>\/?\\|`~]+$",
-            ErrorMessage = "Username can only contain letters, numbers, and special characters.")]
+        [RegularExpression(@"^[a-zA-Z][a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};:,.<>\/\\|~]+$",
+            ErrorMessage = "Username must start with a letter and may include numbers/special characters.")]
         [StringLength(100, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 100 characters.")]
         public string UserName { get; set; } = null!;
 

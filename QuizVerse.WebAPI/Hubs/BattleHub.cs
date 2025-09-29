@@ -37,6 +37,7 @@ public class BattleHub(
                     if (item.Connected[userId])
                     {
                         await Clients.Client(Context.ConnectionId).SendAsync(SignalRMethods.ERROR, YOU_ARE_ALREADY_CONNECTED_TO_THIS_BATTLE);
+                        return;
                     }
                 }
             }
@@ -516,16 +517,30 @@ public class BattleHub(
         else
         {
             // Fallback: iterate all battles to find this user
-            state = BattleStateManager.GetAllBattles()
-                .FirstOrDefault(s => (s.Player1Id == userId.Value || s.Player2Id == userId.Value));
+            List<BattleState> stateStored = BattleStateManager.GetAllBattles().Where(s => (s.Player1Id == userId || s.Player2Id == userId)).ToList();
+            if (stateStored != null && stateStored.Count() > 0)
+            {
+                foreach (BattleState item in stateStored)
+                {
+                    if (item.Connected[(int)userId])
+                    {
+                        state = item;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (state == null)
+        {
+            return Task.CompletedTask;
         }
 
         if (!state.Connected[userId.Value])
         {
-            return null;
+            return Task.CompletedTask;
         }
-
-        if (state != null)
+        else
         {
             state.Connected[userId.Value] = false;
             state.ConnectionBrokeTime[userId.Value] = DateTime.UtcNow;

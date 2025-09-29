@@ -104,7 +104,8 @@ public class QuizServiceTests
             DifficultyLevelId = difficulty.Id,
             Category = category,
             DifficultyLevel = difficulty,
-            TotalQuestion = 2
+            TotalQuestion = 2,
+            Status = 1,
         };
 
         var quizPlayStatus = new QuizPlayStatus
