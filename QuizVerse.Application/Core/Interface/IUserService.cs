@@ -7,7 +7,7 @@ public interface IUserService
 {
     Task<PageListResponse<UserDto>> GetUsersByPagination(PageListRequest query);
     Task<UserDto> GetUserById(int id);
-    Task<(bool Success, string Message)> CreateOrUpdateUser(UserRequestDto dto);
+    Task<(bool Success, string Message)> CreateOrUpdateUser(UserRequestDto dto, bool isCreateOrUpdate);
     Task<string> UpdateUserByAction(UserActionRequest request);
     Task<MemoryStream> UserExportData(PageListRequest pageListRequest);
 }

@@ -346,7 +346,7 @@ public class UserServiceTests
                 Message = "User created successfully."
             });
 
-        var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
+        var (Success, Message) = await _userService.CreateOrUpdateUser(dto, true);
 
         Assert.True(Success);
         Assert.Contains(Constants.USER_CREATE_SUCCESS, Message);
@@ -385,7 +385,7 @@ public class UserServiceTests
                 Message = "User created successfully."
             });
 
-        var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
+        var (Success, Message) = await _userService.CreateOrUpdateUser(dto,true);
 
         Assert.True(Success);
         Assert.Contains(Constants.USER_REGISTERED_AND_EMAIL_SENT, Message);
@@ -441,7 +441,7 @@ public class UserServiceTests
                 Message = "User created successfully."
             });
 
-        var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
+        var (Success, Message) = await _userService.CreateOrUpdateUser(dto, true);
 
         Assert.True(Success);
         _commonServiceMock.Verify(s => s.SaveFile(dto.ProfilePic, "users"), Times.Once);
@@ -457,7 +457,7 @@ public class UserServiceTests
             Password = "1234"
         };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto, true));
         Assert.Equal(Constants.DUPLICATE_EMAIL, ex.Message);
     }
 
@@ -471,7 +471,7 @@ public class UserServiceTests
             Password = "1234"
         };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto, true));
         Assert.Equal(Constants.DUPLICATE_USERNAME, ex.Message);
     }
 
@@ -484,7 +484,7 @@ public class UserServiceTests
             UserName = "someone"
         };
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto, true));
         Assert.Equal(Constants.PASSWORD_REQUIRED_FOR_NEW_USER, ex.Message);
     }
 
@@ -512,7 +512,7 @@ public class UserServiceTests
             .Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
             .ReturnsAsync("Some failure message");
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto, true));
 
         Assert.Equal(Constants.USER_REGISTERED_BUT_EMAIL_NOT_SENT, ex.Message);
     }
@@ -553,7 +553,7 @@ public class UserServiceTests
         Message = "User updated successfully."
     });
 
-        var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
+        var (Success, Message) = await _userService.CreateOrUpdateUser(dto, true);
 
         Assert.True(Success);
 
@@ -587,7 +587,7 @@ public class UserServiceTests
                 Message = "User with ID 99 not found."
             });
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto, true));
         Assert.Equal("User with ID 99 not found.", ex.Message);
     }
 
@@ -615,7 +615,7 @@ public class UserServiceTests
                 Message = "Email can't be changed"
             });
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto, true));
         Assert.Equal("Email can't be changed", ex.Message);
     }
 
@@ -644,7 +644,7 @@ public class UserServiceTests
             });
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto,true));
         Assert.Equal("User with this username already exists.", ex.Message);
     }
 
@@ -669,7 +669,7 @@ public class UserServiceTests
                 Message = "User updated successfully."
             });
 
-        var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
+        var (Success, Message) = await _userService.CreateOrUpdateUser(dto, true);
 
         Assert.True(Success);
         Assert.Equal("User updated successfully.", Message);

@@ -49,7 +49,7 @@ public class UsersController(IUserService userService) : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> CreateOrUpdateUser([FromForm] UserRequestDto dto)
     {
-        var (success, message) = await userService.CreateOrUpdateUser(dto);
+        var (success, message) = await userService.CreateOrUpdateUser(dto, true);
 
         bool isUpdate = dto.Id.HasValue && dto.Id > 0;
 
