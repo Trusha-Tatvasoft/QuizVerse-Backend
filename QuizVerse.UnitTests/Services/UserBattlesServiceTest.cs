@@ -13,6 +13,8 @@ using System.Linq.Expressions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using System.ComponentModel.DataAnnotations;
 using QuizVerse.Infrastructure.Common.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.UnitTests.Services
 {
@@ -96,6 +98,57 @@ namespace QuizVerse.UnitTests.Services
                 repo.SqlQueryListAsync<UserAvailableBattleDto>(
                     It.IsAny<string>(),
                     It.Is<NpgsqlParameter>(p => p.ParameterName == "p_user_id" && (int)p.Value == _service.UserId)), Times.Once);
+        }
+        #endregion
+
+        #region IsUserNameExist Tests
+        [Fact]
+        public async Task IsUserNameExist_UserDoesNotExist_ThrowsAppException()
+        {
+            string testUserName = "nonexistent";
+            _mockUserRepository
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                .ReturnsAsync((User?)null);
+
+            var exception = await Assert.ThrowsAsync<AppException>(
+                () => _service.CheckUserExistence(testUserName)
+            );
+
+            Assert.Equal(Constants.USERNAME_DOES_NOT_EXIST, exception.Message);
+            Assert.Equal(StatusCodes.Status400BadRequest, exception.StatusCode);
+        }
+
+        [Fact]
+        public async Task IsUserNameExist_UserIsSelf_ThrowsAppException()
+        {
+            string testUserName = "selfuser";
+            var user = new User { Id = 2, UserName = testUserName }; // same as UserId in context
+
+            _mockUserRepository
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                .ReturnsAsync(user);
+
+            var exception = await Assert.ThrowsAsync<AppException>(
+                () => _service.CheckUserExistence(testUserName)
+            );
+
+            Assert.Equal(Constants.SELF_CHALLENGE_NOT_ALLOWED, exception.Message);
+            Assert.Equal(StatusCodes.Status400BadRequest, exception.StatusCode);
+        }
+
+        [Fact]
+        public async Task IsUserNameExist_UserExists_ReturnsTrue()
+        {
+            string testUserName = "otheruser";
+            var user = new User { Id = 99, UserName = testUserName }; // different from current UserId
+
+            _mockUserRepository
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<User, bool>>>(), null))
+                .ReturnsAsync(user);
+
+            var result = await _service.CheckUserExistence(testUserName);
+
+            Assert.True(result);
         }
         #endregion
 
@@ -356,6 +409,7 @@ namespace QuizVerse.UnitTests.Services
                 br.SenderId == 2 && br.ReceiverId == receiver.Id)), Times.Once);
             Assert.Equal(Constants.BATTLE_REQUEST_SENT_SUCCESS, result);
         }
+
         #endregion
 
         #region Get Battle Result
