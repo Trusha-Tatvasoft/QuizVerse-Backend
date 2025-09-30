@@ -294,6 +294,9 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.BattleName,
                 opt => opt.MapFrom(src => ToTitleCase(src.BattleName)));
 
+        CreateMap<User, SearchUserResponseDto>()
+                .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.UserPerformanceDetail != null ? src.UserPerformanceDetail.TotalXp: 0));
+
         CreateMap<RawBattleQuestionDto, BattleQuestionResponseDto>()
             .ForMember(dest => dest.Options, opt => opt.Ignore())
             .ForMember(dest => dest.TimeInSeconds, opt => opt.MapFrom(src => src.Time));

@@ -68,6 +68,30 @@ public class UserBattlesController(IUserBattlesService userBattlesService,IBattl
             Data = null
         });
     }
+
+    [HttpGet("check-user-existence/{userName}")]
+    public async Task<IActionResult> CheckUserExistence(string userName)
+    {
+        return Ok(new ApiResponse<bool>
+        {
+            Result = true,
+            Message = Constants.USERNAME_AVAILABILITY_VERIFIED,
+            StatusCode = StatusCodes.Status200OK,
+            Data = await userBattlesService.CheckUserExistence(userName)
+        });
+    }
+
+    [HttpGet("search-user")]
+    public async Task<IActionResult> SearchUser([FromQuery] string userName, [FromQuery] int battleId)
+    {
+        return Ok(new ApiResponse<List<SearchUserResponseDto>>
+        {
+            Result = true,
+            StatusCode = StatusCodes.Status200OK,
+            Message = Constants.USER_SEARCH_SUCCESS,
+            Data = await userBattlesService.SearchUsersAsync(userName,battleId)
+        });
+    }
     #endregion
 
     #region Get Battle Result
