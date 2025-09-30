@@ -36,6 +36,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBrowseQuizzesService, BrowseQuizzesService>();
         services.AddScoped<IAiService, AiService>();
         services.AddScoped<IBattleMatchmakingService, BattleMatchmakingService>();
+        services.AddScoped<IBattleService, BattleService>();
         
 
         //mappers

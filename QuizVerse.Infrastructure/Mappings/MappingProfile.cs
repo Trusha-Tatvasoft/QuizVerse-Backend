@@ -296,6 +296,12 @@ public class MappingProfile : Profile
 
         CreateMap<User, SearchUserResponseDto>()
                 .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.UserPerformanceDetail != null ? src.UserPerformanceDetail.TotalXp: 0));
+
+        CreateMap<RawBattleQuestionDto, BattleQuestionResponseDto>()
+            .ForMember(dest => dest.Options, opt => opt.Ignore())
+            .ForMember(dest => dest.TimeInSeconds, opt => opt.MapFrom(src => src.Time));
+
+        CreateMap<BattleResult, BattleCompletionResult>();
         #endregion
 
         #region Browse Quizzes

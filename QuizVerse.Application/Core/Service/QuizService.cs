@@ -10,6 +10,7 @@ using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 namespace QuizVerse.Application.Core.Service;
 
@@ -36,7 +37,7 @@ public class QuizService(
         Quiz quiz = await _quizRepostory
             .GetQueryableInclude(q => q.Category, q => q.DifficultyLevel)  // include navigation properties
             .OrderBy(q => q.Id)
-            .FirstOrDefaultAsync(q => q.Id == quizId) ?? throw new AppException(Constants.QUIZ_NOT_FOUND);  // fetch single quiz by ID
+            .FirstOrDefaultAsync(q => q.Id == quizId && q.Status == (int)QuizStatus.Active) ?? throw new AppException(Constants.QUIZ_NOT_FOUND);  // fetch single quiz by ID
 
         // Map entity to DTO
         QuizOverviewResponseDto quizDto = _mapper.Map<QuizOverviewResponseDto>(quiz);
@@ -46,6 +47,8 @@ public class QuizService(
 
     public async Task<QuizStartResponseDto?> StartQuizAsync(int quizId)
     {
+        bool exists = await _quizRepostory.Exists(q => q.Id == quizId && q.Status == (int)QuizStatus.Active);
+        if (!exists) throw new AppException(Constants.QUIZ_NOT_FOUND);
         RawStartQuizDto raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawStartQuizDto>(string.Format(SqlConstants.START_QUIZ_QUERY_TEMPLATE, quizId, UserId));
         if (raw == null) return null;
 
