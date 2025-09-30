@@ -275,7 +275,7 @@ namespace QuizVerse.Application.Core.Service
         public async Task<(bool success, string message)> RegisterUser(UserRegisterDto userRegisterDto)
         {
             var requestDto = _mapper.Map<UserRequestDto>(userRegisterDto);
-            return await userService.CreateOrUpdateUser(requestDto, false);
+            return await userService.CreateOrUpdateUser(requestDto);
         }
         #endregion
 

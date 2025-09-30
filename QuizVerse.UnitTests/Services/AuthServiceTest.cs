@@ -383,7 +383,7 @@ namespace QuizVerse.UnitTests.Services
             _mapperMock.Setup(m => m.Map<UserRequestDto>(userRegisterDto))
                        .Returns(mappedRequestDto);
 
-            _userServiceMock.Setup(u => u.CreateOrUpdateUser(mappedRequestDto, false))
+            _userServiceMock.Setup(u => u.CreateOrUpdateUser(mappedRequestDto))
                             .ReturnsAsync((true, "User created successfully."));
 
             var service = CreateService();
@@ -396,7 +396,7 @@ namespace QuizVerse.UnitTests.Services
             message.Should().Be("User created successfully.");
 
             _mapperMock.Verify(m => m.Map<UserRequestDto>(userRegisterDto), Times.Once);
-            _userServiceMock.Verify(u => u.CreateOrUpdateUser(mappedRequestDto, false), Times.Once);
+            _userServiceMock.Verify(u => u.CreateOrUpdateUser(mappedRequestDto), Times.Once);
         }
 
         [Fact]
@@ -409,7 +409,7 @@ namespace QuizVerse.UnitTests.Services
             _mapperMock.Setup(m => m.Map<UserRequestDto>(userRegisterDto))
                        .Returns(mappedRequestDto);
 
-            _userServiceMock.Setup(u => u.CreateOrUpdateUser(mappedRequestDto, false))
+            _userServiceMock.Setup(u => u.CreateOrUpdateUser(mappedRequestDto))
                             .ReturnsAsync((false, "Failed to create user"));
 
             var service = CreateService();
