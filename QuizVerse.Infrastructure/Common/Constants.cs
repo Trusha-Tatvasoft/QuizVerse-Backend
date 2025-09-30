@@ -73,6 +73,8 @@ public static class Constants
     public const string USER_DATA_NULL = "No data available to export.";
     public const string NO_EMAIL_CHANGE = "Email can't be changed";
     public const string USER_CREATE_SUCCESS = "User created successfully.";
+    public const string PROFILE_UPDATED_SUCCESSFULLY = "Profile Updated successfully";
+    public const string EMAIL_ALREADY_IN_USE_DIFFERENT_ROLE = "This email cannot be reused by you";
     #endregion
 
     #region Email Messages

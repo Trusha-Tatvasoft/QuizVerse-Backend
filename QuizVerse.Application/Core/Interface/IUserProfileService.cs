@@ -16,4 +16,6 @@ public interface IUserProfileService
     Task<bool> IsEmailAvailable(string email);
     Task<string> SendOtpToUser(UserProfileSettingDto userProfileSettingDto);
     Task<bool> VerifyOtp(VerifyOtpRequestDto request);
+    Task<AdminProfileResponseDto> GetAdminProfile();
+    Task<CreateUpdateResponseDto> UpdateAdminProfile(AdminProfileRequestDto UpdatedAdminProfile);
 }

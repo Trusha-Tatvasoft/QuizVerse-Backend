@@ -19,5 +19,10 @@ namespace QuizVerse.Infrastructure.Common.Helper
         {
             return (user?.Identity as ClaimsIdentity)?.FindFirst(ClaimTypes.Email)?.Value;
         }
+
+        public static string? GetUserRole(this ClaimsPrincipal user)
+        {
+            return (user?.Identity as ClaimsIdentity)?.FindFirst(ClaimTypes.Role)?.Value;
+        }
     }
 }

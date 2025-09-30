@@ -268,6 +268,10 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Bio,
                 opt => opt.MapFrom(src => string.IsNullOrWhiteSpace(src.Bio) ? null : src.Bio.Trim()));
 
+        CreateMap<User, AdminProfileResponseDto>()
+             .ForMember(dest => dest.FullName,
+                opt => opt.MapFrom(src => ToTitleCase(src.FullName)));
+
         #endregion
 
         #region UserBattles

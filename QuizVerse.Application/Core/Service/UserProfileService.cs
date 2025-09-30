@@ -1,4 +1,5 @@
 using AutoMapper;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -29,6 +30,8 @@ public class UserProfileService(
     IEmailService emailService) : IUserProfileService
 {
     public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
+    public string UserRole => httpContextAccessor.HttpContext?.User?.GetUserRole() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
+
 
     #region GetUserProfile Data
     public async Task<UserBasicProfileDto> GetUserBasicProfile()
@@ -161,6 +164,9 @@ public class UserProfileService(
     #region CheckEmailAvailable
     public async Task<bool> IsEmailAvailable(string email)
     {
+        if (!Enum.TryParse<UserRoles>(UserRole, out var currentUserRole))
+            throw new AppException(Constants.UNAUTHORIZED_USER);
+
         var normalizedEmail = email.ToLower().Trim();
         var user = await userRepository.GetAsync(u => u.Email.ToLower().Trim() == normalizedEmail);
 
@@ -179,7 +185,18 @@ public class UserProfileService(
             case UserStatus.Active:
             case UserStatus.Inactive:
                 if (user.IsDeleted)
-                    return true;
+                {
+                    // strict separation: only allow if same role
+                    if (user.RoleId == (int)currentUserRole)
+                    {
+                        return true;
+                    }
+
+                    // if roles differ → not allowed
+                    throw new AppException(Constants.EMAIL_ALREADY_IN_USE_DIFFERENT_ROLE);
+                }
+
+                // active/inactive + not deleted → email is in use
                 throw new AppException(Constants.EMAIL_ALREADY_IN_USE);
 
             default:
@@ -236,5 +253,48 @@ public class UserProfileService(
 
         return true;
     }
+
+    #endregion
+
+    #region Get Admin Profile
+    public async Task<AdminProfileResponseDto> GetAdminProfile()
+    {
+        User user = await userRepository.GetAsync(u => u.Id == UserId && !u.IsDeleted)
+                           ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, UserId));
+
+        return mapper.Map<AdminProfileResponseDto>(user);
+    }
+    #endregion
+    #region Update Admin Profile
+    public async Task<CreateUpdateResponseDto> UpdateAdminProfile(AdminProfileRequestDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            throw new AppException(Constants.FULLNAME_REQUIRED);
+
+        // Check if username exists for another user
+        if (await userRepository.Exists(u => u.UserName == request.UserName && u.Id != UserId))
+            throw new AppException(Constants.DUPLICATE_USERNAME);
+
+        // Check if email exists for another user
+
+        await IsEmailAvailable(request.Email);
+
+        User userEntity = await userRepository.GetAsync(u => u.Id == UserId) ?? throw new AppException(Constants.USER_NOT_FOUND);
+
+        userEntity.FullName = request.FullName.Trim();
+        userEntity.UserName = request.UserName.Trim();
+        userEntity.Email = request.Email.Trim();
+        userEntity.Bio = request.Bio;
+
+        // Save changes
+        await userRepository.UpdateAsync(userEntity);
+
+        return new CreateUpdateResponseDto
+        {
+            Success = true,
+            Message = Constants.PROFILE_UPDATED_SUCCESSFULLY
+        };
+    }
+
     #endregion
 }
