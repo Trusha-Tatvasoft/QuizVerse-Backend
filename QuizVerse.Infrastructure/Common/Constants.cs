@@ -31,6 +31,8 @@ public static class Constants
     public const string ACCESS_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE = "AccessTokenExpiryMinutes is not configured.";
     public const string REFRESH_TOKEN_EXPIRYTIME_NOT_CONFIGURED_MESSAGE = "RefreshTokenExpiryDays is not configured.";
     public const string USER_NOT_FOUND_MESSAGE = "User Not Found";
+    public const string USERNAME_DOES_NOT_EXIST = "User with this username doesn't exist";
+    public const string USERNAME_AVAILABILITY_VERIFIED = "Username availability checked successfully.";
     public const string USER_SUSPENDED_MESSAGE = "You have been suspended. Remaining suspension time: {0} days and {1} hours.";
     public const string USER_NOT_AUTHENTICATED_MESSAGE = "User is not authenticated.";
     #endregion
@@ -356,5 +358,6 @@ public static class Constants
     public const string ACTIVE_CHALLENGE_EXISTS = "You already have an active challenge sent to this user.";
     public const string BATTLE_REQUEST_SENT_SUCCESS = "Battle request sent successfully.";
     public const string BATTLE_ALREADY_ACCEPTED = "You already have an accepted battle for this Battle and cannot send it to another user.";
+    public const string USER_SEARCH_SUCCESS = "User search completed successfully.";
     #endregion
 }

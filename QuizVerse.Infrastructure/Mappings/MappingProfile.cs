@@ -297,6 +297,9 @@ public class MappingProfile : Profile
         CreateMap<UserBattleResult, UserBattleResult>()
             .ForMember(dest => dest.BattleName,
                 opt => opt.MapFrom(src => ToTitleCase(src.BattleName)));
+
+        CreateMap<User, SearchUserResponseDto>()
+                .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.UserPerformanceDetail != null ? src.UserPerformanceDetail.TotalXp: 0));
         #endregion
 
         #region Browse Quizzes

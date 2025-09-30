@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using NpgsqlTypes;
 using QuizVerse.Application.Core.Interface;
@@ -117,6 +118,7 @@ public class UserBattlesService(
         bool existingChallenge = await _battleRequestRepository.Exists(br =>
             br.SenderId == UserId &&
             br.ReceiverId == receiver.Id &&
+            br.BattleId == dto.BattleId &&
             activeStatuses.Contains((BattleRequestStatus)br.Status) &&
             !br.IsDeleted
         );
@@ -132,6 +134,58 @@ public class UserBattlesService(
 
         return Constants.BATTLE_REQUEST_SENT_SUCCESS;
     }
+
+    public async Task<bool> CheckUserExistence(string userName)
+    {
+        User? user = await _userRepository.GetAsync(u => u.UserName.Trim() == userName.Trim() && !u.IsDeleted);
+
+        if (user != null)
+        {
+            if (user.Id == UserId)
+                throw new AppException(Constants.SELF_CHALLENGE_NOT_ALLOWED, StatusCodes.Status400BadRequest);
+        }
+        else
+        {
+            throw new AppException(Constants.USERNAME_DOES_NOT_EXIST, StatusCodes.Status400BadRequest);
+        }
+        return true;
+    }
+    public async Task<List<SearchUserResponseDto>> SearchUsersAsync(string userName, int battleId)
+    {
+        if (string.IsNullOrWhiteSpace(userName))
+            return new List<SearchUserResponseDto>();
+
+        var currentUserId = UserId; // get current user
+
+        // Materialize the users query asynchronously
+        var allUsers = await _userRepository
+            .GetQueryableInclude(u => u.UserPerformanceDetail!)
+            .ToListAsync();
+
+        var filteredUsers = allUsers
+            .Where(u => u.Id != currentUserId &&
+                        !u.IsDeleted &&
+                        u.Status == (int)UserStatus.Active &&
+                        u.UserName.Contains(userName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        // Materialize battle requests asynchronously
+        var battleRequests = await _battleRequestRepository
+            .GetQueryableInclude()
+            .ToListAsync();
+
+        var result = filteredUsers.Select(u =>
+        {
+            var dto = mapper.Map<SearchUserResponseDto>(u);
+            dto.HasRequest = battleRequests.Any(br =>
+                br.SenderId == currentUserId && br.ReceiverId == u.Id && br.BattleId == battleId) ;
+            return dto;
+        }).ToList();
+
+        return result;
+    }
+
+
     #endregion
 
     #region Get Battle Result
