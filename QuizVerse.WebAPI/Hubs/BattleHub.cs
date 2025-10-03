@@ -147,32 +147,8 @@ public class BattleHub(
             await Clients.Group(state.BattleAttemptId.ToString())
                 .SendAsync(SignalRMethods.BATTLE_STARTED, battleDetails);
 
-            // Wait for players to prepare (show instructions, etc.)
-            await Task.Delay(TimeSpan.FromSeconds(28));
-
-            // Generate first question for both players
-            var p1Q = await _battleService.GetQuestionForPlayerAsync(state, result.Player.ConnectionId, state.Player1Id, 1);
-            var p2Q = await _battleService.GetQuestionForPlayerAsync(state, result.Opponent.ConnectionId, state.Player2Id, 1);
-
-            // Send first question to Player 1 and start timer
-            if (p1Q != null)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(3));
-                await Clients.Client(result.Player.ConnectionId).SendAsync(SignalRMethods.RECEIVE_QUESTION, p1Q);
-                var cts1 = new CancellationTokenSource();
-                state.ActiveTimers[state.Player1Id] = cts1;
-                StartTimeout(state.BattleAttemptId, result.Player.ConnectionId, 1, state.Player1Id, cts1);
-            }
-
-            // Send first question to Player 2 and start timer
-            if (p2Q != null)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(3));
-                await Clients.Client(result.Opponent.ConnectionId).SendAsync(SignalRMethods.RECEIVE_QUESTION, p2Q);
-                var cts2 = new CancellationTokenSource();
-                state.ActiveTimers[state.Player2Id] = cts2;
-                StartTimeout(state.BattleAttemptId, result.Opponent.ConnectionId, 1, state.Player2Id, cts2);
-            }
+            _ = CountdownToStart(state, state.Player1Id);
+            _ = CountdownToStart(state, state.Player2Id);
         }
         catch (Exception ex)
         {
@@ -586,6 +562,63 @@ public class BattleHub(
 
             // Finalize battle and save results to database
             await battleService.FinalizeBattleAsync(state, new CancellationToken());
+        }
+    }
+
+    public async Task SkipInstructions(int battleAttemptId)
+    {
+        int userId = Context.User?.GetUserId() ?? throw new UnauthorizedAccessException();
+
+        if (BattleStateManager.TryGetBattle(battleAttemptId, out var state))
+        {
+            state.IsSkipInstruction[userId] = true;
+        }
+        else
+        {
+            await Clients.Client(Context.ConnectionId).SendAsync(SignalRMethods.ERROR, BATTLE_NOT_FOUND);
+        }
+    }
+
+    private async Task CountdownToStart(BattleState state, int userId)
+    {
+        var completed = await Task.WhenAny(WaitForBothPlayersReady(state, userId), Task.Delay(TimeSpan.FromSeconds(58)));
+
+        var connectionId = userId == state.Player1Id ? state.Player1ConnectionId : state.Player2ConnectionId;
+        if (state != null)
+        {
+            state.IsSkipInstruction[userId] = true;
+            // Create new service scope to avoid disposed context issues
+            using var scope = _scopeFactory.CreateScope();
+            var battleSvc = scope.ServiceProvider.GetRequiredService<IBattleService>();
+
+            // Immediately send question to this player
+            var question = await battleSvc.GetQuestionForPlayerAsync(
+                state,
+                connectionId,
+                userId,
+                1
+            );
+
+            if (question != null)
+            {
+                await _hubContext.Clients.Client(connectionId).SendAsync(SignalRMethods.RECEIVE_QUESTION, question);
+                var cts = new CancellationTokenSource();
+                state.ActiveTimers[userId] = cts;
+                StartTimeout(state.BattleAttemptId, connectionId, 1, userId, cts);
+            }
+        }
+    }
+
+    private async Task WaitForBothPlayersReady(BattleState state, int userId)
+    {
+        while (true)
+        {
+            if (state.IsSkipInstruction.TryGetValue(userId, out var p1) &&
+                p1)
+            {
+                break;
+            }
+            await Task.Delay(500);
         }
     }
 }

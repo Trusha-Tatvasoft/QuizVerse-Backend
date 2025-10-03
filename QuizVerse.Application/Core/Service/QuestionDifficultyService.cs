@@ -20,7 +20,7 @@ public class QuestionDifficultyService(IGenericRepository<QuestionDifficulty> _q
     public async Task<List<QuestionDifficultyXPData>> GetBattleQuestionDifficultyData()
     {
         return _mapper.Map<List<QuestionDifficultyXPData>>(
-            (await _questionDifficultyRepository.GetAllAsync()).Where(q => !q.IsDeleted)
+            (await _questionDifficultyRepository.GetAllAsync()).Where(q => !q.IsDeleted).OrderBy(q => q.XpGained).ToList()
         );
     }
     #endregion
