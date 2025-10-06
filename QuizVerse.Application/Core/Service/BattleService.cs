@@ -354,6 +354,12 @@ public class BattleService(
         else
             battleStatus.BattleStatus1 = (int)Infrastructure.Enums.BattleStatus.Draw;
 
+        if (p1Score == 0 && p2Score == 0)
+        {
+            battleStatus.BattleStatus1 = (int)Infrastructure.Enums.BattleStatus.Draw;
+            winnerId=null;
+        }
+
         battleStatus.ModifiedDate = DateTime.UtcNow;
         await _battleStatusRepo.UpdateAsync(battleStatus);
 

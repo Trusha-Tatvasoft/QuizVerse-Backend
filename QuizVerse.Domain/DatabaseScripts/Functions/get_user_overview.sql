@@ -1,11 +1,11 @@
 -- ==============================================================================
 -- Author:       <Devisha Gajjar>
 -- Create date:  <26-August-2025>
--- Description:  <Generates a user overview including recent activities, 
+-- Description:  <Generates a user overview including recent activities,
 --               global rank, best performing quiz category, and longest streak>
 -- Usage:        SELECT * FROM get_user_overview(p_user_id);
 -- ==============================================================================
-
+ 
 CREATE OR REPLACE FUNCTION get_user_overview(p_user_id INT)
 RETURNS TABLE (
     "RecentActivityJson" JSONB,
@@ -16,7 +16,7 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     WITH recent_activities AS (
-        SELECT 
+        SELECT
             jsonb_build_object(
                 'type', 'quiz',
                 'description', 'Completed ' || q.name,
@@ -27,30 +27,42 @@ BEGIN
         FROM "QuizAttempted" qa
         JOIN "Quiz" q ON q.id = qa.quiz_id
         WHERE qa.user_id = p_user_id
-
+ 
         UNION ALL
-
-        SELECT 
+ 
+        SELECT
             jsonb_build_object(
                 'type', 'battle',
-                'description', 
-                    CASE 
+                'description',
+                    CASE
+                        -- 0–0 Draw as "Lost"
+                        WHEN bs.battle_status = 2 AND
+                            ((bs.user1_id = p_user_id AND br.user1_corrected_ans = 0 AND br.user2_corrected_ans = 0) OR
+                            (bs.user2_id = p_user_id AND br.user2_corrected_ans = 0 AND br.user1_corrected_ans = 0))
+                            THEN 'Lost battle vs ' || opp.full_name
+                           
+                        -- Draw
+                        WHEN bs.battle_status = 2 THEN 'Draw battle vs ' || opp.full_name
+ 
+                        -- Win
                         WHEN br.winner_id = p_user_id THEN 'Won battle vs ' || opp.full_name
-                        ELSE 'Lost battle vs ' || opp.full_name 
+ 
+                        -- Loss
+                        ELSE 'Lost battle vs ' || opp.full_name
                     END,
-                'xp', 
-                    CASE 
-                        WHEN br.winner_id = p_user_id THEN br.winner_gained_xp 
-                        ELSE br.looser_gained_xp 
+                'xp',
+                    CASE
+                        WHEN br.winner_id = p_user_id THEN br.winner_gained_xp
+                        ELSE br.looser_gained_xp
                     END
             ) AS activity,
             bs.modified_date AS created_at
         FROM "BattleResult" br
         JOIN "BattleStatus" bs ON bs.id = br.battle_status
         JOIN "Users" opp ON (
-            CASE 
-                WHEN bs.user1_id = p_user_id THEN bs.user2_id 
-                ELSE bs.user1_id 
+            CASE
+                WHEN bs.user1_id = p_user_id THEN bs.user2_id
+                ELSE bs.user1_id
             END
         ) = opp.id
         WHERE bs.user1_id = p_user_id OR bs.user2_id = p_user_id
@@ -58,7 +70,7 @@ BEGIN
         LIMIT 3
     ),
     user_perf AS (
-        SELECT 
+        SELECT
             upd.new_global_rank::INT AS global_rank,
             upd.highest_streak::INT AS longest_streak
         FROM "UserPerformanceDetails" upd
@@ -66,7 +78,7 @@ BEGIN
         LIMIT 1
     ),
     best_cat AS (
-        SELECT 
+        SELECT
             qc.category_name
         FROM "QuizAttempted" qa
         JOIN "Quiz" q ON q.id = qa.quiz_id

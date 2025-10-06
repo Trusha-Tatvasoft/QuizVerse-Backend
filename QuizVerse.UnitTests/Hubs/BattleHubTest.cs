@@ -25,6 +25,7 @@ namespace QuizVerse.Tests.Hubs
         private readonly Mock<IServiceScopeFactory> _mockScopeFactory;
         private readonly Mock<IHubContext<BattleHub>> _mockHubContext;
         private readonly Mock<IGenericRepository<BattleStatus>> _mockBattleStatusRepo;
+        private readonly Mock<IGenericRepository<BattleList>> _mockBattleListRepo;
         private readonly Mock<IMapper> _mockMapper;
         private readonly Mock<HubCallerContext> _mockContext;
         private readonly Mock<IHubCallerClients> _mockClients;
@@ -39,6 +40,7 @@ namespace QuizVerse.Tests.Hubs
             _mockScopeFactory = new Mock<IServiceScopeFactory>();
             _mockHubContext = new Mock<IHubContext<BattleHub>>();
             _mockBattleStatusRepo = new Mock<IGenericRepository<BattleStatus>>();
+            _mockBattleListRepo = new Mock<IGenericRepository<BattleList>>();
             _mockMapper = new Mock<IMapper>();
             _mockContext = new Mock<HubCallerContext>();
             _mockClients = new Mock<IHubCallerClients>();
@@ -51,6 +53,7 @@ namespace QuizVerse.Tests.Hubs
                 _mockScopeFactory.Object,
                 _mockHubContext.Object,
                 _mockBattleStatusRepo.Object,
+                _mockBattleListRepo.Object,
                 _mockMapper.Object)
             {
                 Context = _mockContext.Object,
@@ -86,6 +89,17 @@ namespace QuizVerse.Tests.Hubs
             const int battleId = 1;
             const int userId = 1;
 
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
+
             var completedBattle = new BattleStatus
             {
                 Id = 100,
@@ -115,6 +129,18 @@ namespace QuizVerse.Tests.Hubs
             // Arrange
             const int battleId = 1;
             const int userId = 1;
+
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
 
             var drawBattle = new BattleStatus
             {
@@ -146,6 +172,18 @@ namespace QuizVerse.Tests.Hubs
             const int battleId = 1;
             const int userId = 1;
 
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
+
             var matchResult = new MatchmakingResultDTO
             {
                 IsMatched = true,
@@ -165,7 +203,6 @@ namespace QuizVerse.Tests.Hubs
                 TotalQuestions = 10
             };
 
-            // Initialize ConcurrentDictionary contents
             battleState.Connected.TryAdd(1, false);
             battleState.Connected.TryAdd(2, false);
             battleState.IsSkipInstruction.TryAdd(1, false);
@@ -222,6 +259,18 @@ namespace QuizVerse.Tests.Hubs
             const int battleId = 1;
             const int userId = 1;
 
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
+
             var matchResult = new MatchmakingResultDTO
             {
                 IsMatched = true,
@@ -260,8 +309,9 @@ namespace QuizVerse.Tests.Hubs
             // Arrange
             const int battleId = 1;
 
-            _mockBattleStatusRepo
-                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleStatus, bool>>>(), null))
+            // Mock BattleList to throw exception
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
                 .ThrowsAsync(new Exception("Database error"));
 
             // Act
@@ -281,13 +331,24 @@ namespace QuizVerse.Tests.Hubs
             const int battleId = 1;
             const int userId = 1;
 
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
+
             var battleState = new BattleState
             {
                 BattleAttemptId = battleId,
                 Player1Id = userId
             };
 
-            // Initialize ConcurrentDictionary contents
             battleState.Connected.TryAdd(userId, true);
 
             BattleStateManager.AddBattle(battleId, battleState);
@@ -312,6 +373,18 @@ namespace QuizVerse.Tests.Hubs
             const int battleId = 1;
             const int userId = 1;
 
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
+
             var battleStatus = new BattleStatus
             {
                 Id = 100,
@@ -328,7 +401,6 @@ namespace QuizVerse.Tests.Hubs
                 Player2Id = 2
             };
 
-            // Initialize ConcurrentDictionary contents
             battleState.Connected.TryAdd(userId, false);
             battleState.ConnectionBrokeTime.TryAdd(userId, DateTime.UtcNow.AddMinutes(-5));
 
@@ -358,6 +430,18 @@ namespace QuizVerse.Tests.Hubs
             const int battleId = 1;
             const int userId = 1;
 
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
+
             var battleStatus = new BattleStatus
             {
                 Id = 100,
@@ -374,7 +458,6 @@ namespace QuizVerse.Tests.Hubs
                 Player2Id = 2
             };
 
-            // Initialize ConcurrentDictionary contents
             battleState.Connected.TryAdd(userId, false);
             battleState.ConnectionBrokeTime.TryAdd(userId, DateTime.UtcNow.AddMinutes(-15));
 
@@ -403,6 +486,18 @@ namespace QuizVerse.Tests.Hubs
             // Arrange
             const int battleId = 1;
             const int userId = 1;
+
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
 
             var battleStatus = new BattleStatus
             {
@@ -433,6 +528,18 @@ namespace QuizVerse.Tests.Hubs
             // Arrange
             const int battleId = 1;
             const int userId = 1;
+
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
 
             var matchResult = new MatchmakingResultDTO
             {
@@ -948,6 +1055,18 @@ namespace QuizVerse.Tests.Hubs
             const int battleId = 1;
             const int userId = 1;
 
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
+
             var battleState1 = new BattleState
             {
                 BattleAttemptId = 100,
@@ -992,6 +1111,18 @@ namespace QuizVerse.Tests.Hubs
             const int battleId = 1;
             const int userId = 1;
 
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
+
             var matchResult = new MatchmakingResultDTO
             {
                 IsMatched = false
@@ -1021,6 +1152,18 @@ namespace QuizVerse.Tests.Hubs
             // Arrange
             const int battleId = 1;
             const int userId = 1;
+
+            // Mock BattleList first
+            var battleList = new BattleList
+            {
+                Id = battleId,
+                IsDeleted = false,
+                BattleTimeLimited = false
+            };
+
+            _mockBattleListRepo
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleList, bool>>>(), null))
+                .ReturnsAsync(battleList);
 
             var matchResult = new MatchmakingResultDTO
             {

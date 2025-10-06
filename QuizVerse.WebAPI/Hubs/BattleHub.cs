@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.SignalR;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
+using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs;
@@ -17,6 +18,7 @@ public class BattleHub(
     IServiceScopeFactory _scopeFactory,
     IHubContext<BattleHub> _hubContext,
     IGenericRepository<QuizVerse.Domain.Entities.BattleStatus> _battleStatusRepo,
+    IGenericRepository<BattleList> _battleListRepo,
     IMapper _mapper
 ) : Hub
 {
@@ -24,6 +26,23 @@ public class BattleHub(
     {
         try
         {
+            // Validate battle existence and time constraints
+            BattleList? currentBattle = await _battleListRepo.GetAsync(b => b.Id == battleId && !b.IsDeleted);
+            if (currentBattle == null)
+            {
+                await Clients.Client(Context.ConnectionId).SendAsync(SignalRMethods.ERROR, BATTLE_NOT_FOUND);
+                return;
+            }
+
+            if (currentBattle.BattleTimeLimited)
+            {
+                if (currentBattle.StartDate > DateTime.UtcNow || currentBattle.EndDate < DateTime.UtcNow)
+                {
+                    await Clients.Client(Context.ConnectionId).SendAsync(SignalRMethods.ERROR, BATTLE_NOT_FOUND);
+                    return;
+                }
+            }
+
             // Extract user ID from JWT token in SignalR context
             int userId = Context.User?.GetUserId()
                 ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
@@ -308,7 +327,7 @@ public class BattleHub(
                 }
 
                 // Check if resume window is still valid (within 10 minutes)
-                if (state.ConnectionBrokeTime[userId] - DateTime.UtcNow < TimeSpan.FromMinutes(10))
+                if (DateTime.UtcNow - state.ConnectionBrokeTime[userId] < TimeSpan.FromMinutes(10))
                 {
                     // Cancel any existing timers for this user
                     try { state.ActiveTimers[userId].Cancel(); state.ActiveTimers[userId].Dispose(); } catch { }
@@ -363,8 +382,7 @@ public class BattleHub(
                         // Restart timer for current question
                         var cts1 = new CancellationTokenSource();
                         state.ActiveTimers[userId] = cts1;
-                        // Note: Using hardcoded values here - should use current question index and userId
-                        StartTimeout(state.BattleAttemptId, Context.ConnectionId, 1, state.Player1Id, cts1);
+                        StartTimeout(state.BattleAttemptId, Context.ConnectionId, state.CurrentIndex[userId], state.Player1Id, cts1);
                     }
                 }
                 else
