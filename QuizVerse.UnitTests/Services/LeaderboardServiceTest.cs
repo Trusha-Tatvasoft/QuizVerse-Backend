@@ -348,13 +348,19 @@ namespace QuizVerse.UnitTests.Services
         [Fact]
         public async Task GetMonthlyChampions_ThrowsAppException_WhenMonthIsFutureInCurrentYear()
         {
-            // Arrange
-            var month = 10; // Future month relative to September 5, 2025
-            var year = 2025;
+            var now = DateTime.Now;
+            var month = now.Month + 1;
+            var year = now.Year;
 
-            // Act & Assert
+            if (month > 12)
+            {
+                month = 1;
+                year += 1;
+            }
+
             var exception = await Assert.ThrowsAsync<AppException>(() =>
                 _service.GetMonthlyChampions(month, year));
+
             Assert.Equal(Constants.INVALID_MONTH_YEAR_COMBINATION_MESSAGE, exception.Message);
             Assert.Equal(400, exception.StatusCode);
 

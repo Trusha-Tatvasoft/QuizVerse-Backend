@@ -306,6 +306,26 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.TimeInSeconds, opt => opt.MapFrom(src => src.Time));
 
         CreateMap<BattleResult, BattleCompletionResult>();
+
+        CreateMap<BattleRequest, BattleRequestDTO>()
+            .ForMember(dest => dest.RequestId,
+                opt => opt.MapFrom(src => src.Id))
+            .ForMember(dest => dest.SenderUserName,
+                opt => opt.MapFrom(src => src.Sender != null ? src.Sender.UserName : string.Empty))
+            .ForMember(dest => dest.SenderFullName,
+                opt => opt.MapFrom(src => src.Sender != null ? src.Sender.FullName : string.Empty))
+            .ForMember(dest => dest.SenderProfilePic,
+                opt => opt.MapFrom(src => src.Sender != null ? src.Sender.ProfilePic : null))
+            .ForMember(dest => dest.BattleName,
+                opt => opt.MapFrom(src => src.Battle != null ? src.Battle.Quiz.Name : string.Empty))
+            .ForMember(dest => dest.BattleCategory,
+                opt => opt.MapFrom(src => src.Battle != null ? src.Battle.Quiz.Category.CategoryName : string.Empty))
+            .ForMember(dest => dest.BattleDifficulty,
+                opt => opt.MapFrom(src => src.Battle != null ? src.Battle.Quiz.DifficultyLevel.Name : string.Empty))
+            .ForMember(dest => dest.SendingDate,
+                opt => opt.MapFrom(_ => DateTime.UtcNow))
+            .ForMember(dest => dest.TimeAgo,
+                opt => opt.MapFrom(_ => "just now"));
         #endregion
 
         #region Browse Quizzes

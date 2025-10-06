@@ -21,7 +21,9 @@ public class UserBattlesService(
     IGenericRepository<BattleRequest> _battleRequestRepository,
     IHttpContextAccessor httpContextAccessor,
     ISqlQueryRepository sqlQueryRepository,
-    IMapper mapper) : IUserBattlesService
+    IMapper mapper,
+    INotificationService _notificationService
+    ) : IUserBattlesService
 {
     public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
@@ -132,6 +134,18 @@ public class UserBattlesService(
 
         await _battleRequestRepository.AddAsync(battleRequest);
 
+        var sender = await _userRepository.GetAsync(u => u.Id == UserId && !u.IsDeleted);
+        var battle = await _battleListRepository.GetAsync(
+            b => b.Id == dto.BattleId && !b.IsDeleted,
+            includes: q => q
+                .Include(x => x.Quiz).ThenInclude(qz => qz.Category)
+                .Include(x => x.Quiz).ThenInclude(qz => qz.DifficultyLevel)
+        );
+
+        var battleRequestDTO = mapper.Map<BattleRequestDTO>(battleRequest);
+
+        await _notificationService.SendBattleRequestAsync(receiver.Id, battleRequestDTO);
+
         return Constants.BATTLE_REQUEST_SENT_SUCCESS;
     }
 
@@ -166,6 +180,7 @@ public class UserBattlesService(
             .Where(u => u.Id != currentUserId &&
                         !u.IsDeleted &&
                         u.Status == (int)UserStatus.Active &&
+                        u.RoleId != 1 &&
                         u.UserName.Contains(userName, StringComparison.OrdinalIgnoreCase))
             .ToList();
 

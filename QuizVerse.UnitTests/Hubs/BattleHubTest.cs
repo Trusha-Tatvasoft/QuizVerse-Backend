@@ -458,5 +458,69 @@ namespace QuizVerse.Tests.Hubs
             BattleStateManager.RemoveBattle(attemptId);
         }
         #endregion
+
+        #region SendBattleRequestNotification
+        [Fact]
+        public async Task SendBattleRequestNotification_SendsRequestToReceiver()
+        {
+            var receiverUserName = "receiver1";
+            var request = new BattleRequestDTO
+            {
+                RequestId = 1,
+                SenderUserName = "sender",
+                SenderFullName = "Sender Name",
+                BattleName = "Test Battle",
+                BattleCategory = "Category A",
+                BattleDifficulty = "Easy",
+                SendingDate = DateTime.UtcNow,
+                TimeAgo = "just now"
+            };
+
+            _mockClients.Setup(c => c.User(receiverUserName)).Returns(_mockClientProxy.Object);
+
+            await _hub.SendBattleRequestNotification(receiverUserName, request);
+
+            _mockClientProxy.Verify(p => p.SendCoreAsync(
+                SignalRMethods.RECEIVE_BATTLE_REQUEST,
+                It.Is<object[]>(args => args[0] == request),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task SendBattleRequestNotification_WhenSendFails_SendsErrorToCaller()
+        {
+            var receiverUserName = "receiver1";
+            var request = new BattleRequestDTO
+            {
+                RequestId = 1,
+                SenderUserName = "sender",
+                SenderFullName = "Sender Name",
+                BattleName = "Test Battle",
+                BattleCategory = "Category A",
+                BattleDifficulty = "Easy",
+                SendingDate = DateTime.UtcNow,
+                TimeAgo = "just now"
+            };
+
+            var exception = new Exception("SignalR failure");
+
+            _mockClientProxy
+                .Setup(p => p.SendCoreAsync(
+                    SignalRMethods.RECEIVE_BATTLE_REQUEST,
+                    It.Is<object[]>(args => args[0] == request),
+                    It.IsAny<CancellationToken>()))
+                .ThrowsAsync(exception);
+
+            _mockClients.Setup(c => c.User(receiverUserName)).Returns(_mockClientProxy.Object);
+            _mockClients.Setup(c => c.Caller).Returns(_mockClientProxy.Object);
+
+            await _hub.SendBattleRequestNotification(receiverUserName, request);
+
+            _mockClientProxy.Verify(p => p.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(args => args[0].ToString() == "SignalR failure"),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+        #endregion
     }
 }

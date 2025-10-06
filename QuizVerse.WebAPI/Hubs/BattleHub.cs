@@ -588,4 +588,18 @@ public class BattleHub(
             await battleService.FinalizeBattleAsync(state, new CancellationToken());
         }
     }
+
+    public async Task SendBattleRequestNotification(string receiverUserName, BattleRequestDTO request)
+    {
+        try
+        {
+            // Send the battle request to the target user
+            await Clients.User(receiverUserName).SendAsync(SignalRMethods.RECEIVE_BATTLE_REQUEST, request);
+        }
+        catch (Exception ex)
+        {
+            // Inform the sender of the failure
+            await Clients.Caller.SendAsync(SignalRMethods.ERROR, ex.Message);
+        }
+    }
 }
