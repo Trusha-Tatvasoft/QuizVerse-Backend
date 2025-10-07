@@ -197,7 +197,7 @@ BEGIN
         Update "QuizToBaseQuestionMap" 
         SET modified_by = p_created_by, modified_date = CURRENT_TIMESTAMP, 
             is_deleted = TRUE
-        WHERE quiz_id = v_quiz_id
+        WHERE quiz_id = v_quiz_id AND (is_deleted = FALSE OR is_deleted IS NULL)
         AND que_id NOT IN (
             SELECT id FROM jsonb_to_recordset(p_questions) AS q(id INT, "categoryId" INT, "queDifficultyId" INT, "queText" TEXT, "queTypeId" INT, "queOptionsAns" JSONB)
             WHERE id IS NOT NULL

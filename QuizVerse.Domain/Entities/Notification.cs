@@ -27,6 +27,8 @@ public partial class Notification
 
     public bool IsDeleted { get; set; }
 
+    public string NotificationTitle { get; set; } = null!;
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual User? ModifiedByNavigation { get; set; }

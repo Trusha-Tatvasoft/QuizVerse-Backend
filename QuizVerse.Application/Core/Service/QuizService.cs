@@ -200,6 +200,11 @@ public class QuizService(
                 QueTypeId = question.QueTypeId,
                 GivenAnswer = givenAnswer,
                 IsCorrect = isCorrect,
+                QuestionText = question.QueText,
+                QuestionAnswer = question.QuestionOptionsAnswers
+                                    .Where(o => !o.IsDeleted && o.Key.Equals("answer"))
+                                    .Select(o => o.Value)
+                                    .FirstOrDefault() ?? "",
                 CreatedDate = DateTime.UtcNow
             };
             await _attemptedQuizQuestionsAnswerRepository.AddAsync(attemptedAnswer);
@@ -224,6 +229,15 @@ public class QuizService(
             SqlConstants.GET_QUIZ_QUESTION_REVIEW_FUNCTION,
             quizId,
             UserId));
+
+        quizQuestionReviews.ForEach(q =>
+        {
+            if (string.IsNullOrWhiteSpace(q.UserAnswer))
+            {
+                q.UserAnswer = null;
+                q.IsCorrect = null;
+            }
+        });
 
         return quizQuestionReviews;
     }
