@@ -142,7 +142,18 @@ public class UserBattlesService(
                 .Include(x => x.Quiz).ThenInclude(qz => qz.DifficultyLevel)
         );
 
-        var battleRequestDTO = mapper.Map<BattleRequestDTO>(battleRequest);
+        BattleRequestDTO battleRequestDTO = new()
+        {
+            RequestId = battleRequest.Id,
+            SenderUserName = sender?.UserName!,
+            SenderFullName = sender?.FullName!,
+            SenderProfilePic = sender?.ProfilePic,
+            BattleName = battle?.Quiz.Name,
+            BattleCategory = battle?.Quiz.Category?.CategoryName!,
+            BattleDifficulty = battle?.Quiz.DifficultyLevel?.Name!,
+            SendingDate = DateTime.UtcNow,
+            TimeAgo = "just now"
+        };
 
         await _notificationService.SendBattleRequestAsync(receiver.Id, battleRequestDTO);
 
