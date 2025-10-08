@@ -359,6 +359,8 @@ public static class Constants
     public const string BATTLE_REQUEST_SENT_SUCCESS = "Battle request sent successfully.";
     public const string BATTLE_ALREADY_ACCEPTED = "You already have an accepted battle for this Battle and cannot send it to another user.";
     public const string USER_SEARCH_SUCCESS = "User search completed successfully.";
+    public const string USER_IN_ACTIVE_BATTLE = "Your friend is already engaged in another battle.";
+    public const string USER_IN_ACTIVE_QUIZ = "Your friend is already engaged in a quiz.";
     #endregion
 
     #region Battle Playing
