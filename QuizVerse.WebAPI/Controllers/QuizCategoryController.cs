@@ -10,7 +10,7 @@ using QuizVerse.Infrastructure.Enums;
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
-[Authorize(Roles = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin))]
+[Authorize(Roles = nameof(Constants.RoleGroups.Admins))]
 [Route("api/[controller]")]
 public class QuizCategoryController(IQuizCategoryService _quizCategoryService) : ControllerBase
 {

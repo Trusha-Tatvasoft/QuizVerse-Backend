@@ -12,7 +12,7 @@ namespace QuizVerse.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin))]
+    [Authorize(Roles = nameof(UserRoles.Player))]
     public class QuizController(IQuizService _quizService) : ControllerBase
     {
         [HttpGet("get-quiz-overview/{quizId}")]

@@ -9,7 +9,7 @@ using QuizVerse.Infrastructure.Enums;
 namespace QuizVerse.WebAPI.Controllers;
 
 [Route("api/[controller]")]
-[Authorize(Roles = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin))]
+[Authorize(Roles = nameof(Constants.RoleGroups.Admins))]
 [ApiController]
 public class AdminDashboardController(IAdminDashboardService _adminDashboardService) : ControllerBase
 {

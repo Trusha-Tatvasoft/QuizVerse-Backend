@@ -27,7 +27,7 @@ public class PlatformConfigurationController(IPlatformConfigurationService platf
     }
 
     [HttpPost("update-platform-configurations")]
-    [Authorize(Roles = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin))]
+    [Authorize(Roles = nameof(Constants.RoleGroups.Admins))]
     public async Task<IActionResult> UpdatePlatformConfigurations([FromForm] PlatformConfigurationRequestDTO platformConfigurationRequest)
     {
         ApiResponse<object> response = new ApiResponse<object>
