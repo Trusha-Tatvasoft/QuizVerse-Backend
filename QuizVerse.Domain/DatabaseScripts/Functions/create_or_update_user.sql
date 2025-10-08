@@ -16,7 +16,7 @@
 --         'hashedpass',                       -- p_password
 --         'profile_pic.jpg',                  -- p_profile_pic binary
 --         'A passionate gamer',               -- p_bio
---         2,                                  -- p_player_role_id
+--         2,                                  -- p_role_id
 --         1,                                  -- p_status_active
 --         2,                                  -- p_status_inactive
 --         3,                                  -- p_status_suspended
@@ -50,7 +50,7 @@
 --         NULL,                               -- p_password (ignored in update)
 --         'new_pic.jpg',                      -- p_profile_pic (optional)
 --         'Updated bio info',                 -- p_bio
---         2,                                  -- p_player_role_id (ignored)
+--         2,                                  -- p_role_id (ignored)
 --         1,                                  -- p_status_active
 --         2,                                  -- p_status_inactive
 --         3,                                  -- p_status_suspended
@@ -66,7 +66,7 @@ CREATE OR REPLACE FUNCTION create_or_update_user(
     p_password TEXT,
     p_profile_pic TEXT,
     p_bio TEXT,
-    p_player_role_id INT,
+    p_role_id INT,
     p_status_active INT,
     p_status_inactive INT,
     p_status_suspended INT,
@@ -156,7 +156,7 @@ BEGIN
             p_password,
             v_trimmed_bio,
             p_profile_pic,              
-            p_player_role_id,
+            p_role_id,
             p_status_active,
             NOW(),
             p_modified_by,

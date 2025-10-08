@@ -10,7 +10,8 @@ namespace QuizVerse.Infrastructure.Enums
     public enum UserRoles
     {
         Admin = 1,
-        Player = 2
+        Player = 2,
+        SuperAdmin = 3
     }
 
     public enum UserActionType
@@ -126,8 +127,8 @@ namespace QuizVerse.Infrastructure.Enums
         Last7Days = 2,
         CurrentMonth = 3,
         LastQuarter = 4,
-        CurrentYear = 5,   
-        LastYear = 6       
+        CurrentYear = 5,
+        LastYear = 6
     }
 
     public enum BattleFilterType

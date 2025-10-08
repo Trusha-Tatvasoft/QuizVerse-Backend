@@ -1,7 +1,7 @@
 -- ==============================================================================
 -- Author:       <Devisha Gajjar>
 -- Create date:  <26-August-2025>
--- Description:  <Fetches the basic profile of a user including rank, XP, progress, 
+-- Description:  <Fetches the basic profile of a user including rank, XP, progress,
 --               achievements, and win rate with calculated statistics>
 -- Usage:        SELECT * FROM get_user_basic_profile(p_user_id);
 -- ==============================================================================
@@ -15,7 +15,7 @@ RETURNS TABLE (
     "NextRank" VARCHAR,
     "MemberSince" TIMESTAMPTZ,
     "Progress" NUMERIC,
-    "TotalXp" INT,   
+    "TotalXp" INT,  
     "QuizCompleted" INT,
     "WinRate" NUMERIC,
     "Achievements" INT
@@ -25,55 +25,92 @@ DECLARE
     v_current_level INT := 1;
     v_rank_name VARCHAR := 'Unranked';
     v_next_rank_name VARCHAR := 'N/A';
-    v_progress_pct NUMERIC := 0;
-    current_level_min_exp INT;
-    next_level_min_exp INT;
+ 
+    v_rank_min_level INT := 0;
+    v_rank_max_level INT := 0;
+    v_next_rank_min_level INT := NULL;
+ 
+    v_rank_min_exp BIGINT := 0;
+    v_next_rank_min_exp BIGINT := NULL;
+ 
+    v_progress_pct NUMERIC(5,2) := 0;
 BEGIN
     -- Get total XP and current level
     SELECT upd.total_xp, upd.current_level
     INTO v_total_xp, v_current_level
     FROM "UserPerformanceDetails" upd
     WHERE upd.user_id = p_user_id;
-
-    -- Get current rank name based on current level
-    SELECT COALESCE(r.rank_name, 'Unranked')
-    INTO v_rank_name
+ 
+    IF NOT FOUND THEN
+        RETURN QUERY
+        SELECT
+            u.id AS "UserId",
+            u.profile_pic AS "ProfilePic",
+            u.full_name AS "Name",
+            'Unranked' AS "Rank",
+            'N/A' AS "NextRank",
+            u.created_date AS "MemberSince",
+            0::NUMERIC AS "Progress",
+            0 AS "TotalXp",
+            0 AS "QuizCompleted",
+            0 AS "WinRate",
+            0 AS "Achievements"
+        FROM "Users" u
+        WHERE u.id = p_user_id;
+        RETURN;
+    END IF;
+ 
+    -- Get current rank info by level
+    SELECT r.rank_name, r.minimum_level, r.maximum_level
+    INTO v_rank_name, v_rank_min_level, v_rank_max_level
     FROM "UserRankByLevel" r
     WHERE v_current_level BETWEEN r.minimum_level AND r.maximum_level
     LIMIT 1;
-
-    -- Get next rank name
-    SELECT COALESCE(r.rank_name, 'N/A')
-    INTO v_next_rank_name
+ 
+    -- Get next rank info
+    SELECT r.rank_name, r.minimum_level
+    INTO v_next_rank_name, v_next_rank_min_level
     FROM "UserRankByLevel" r
-    WHERE r.minimum_level > v_current_level
+    WHERE r.minimum_level > COALESCE(v_rank_min_level, v_current_level)
     ORDER BY r.minimum_level ASC
     LIMIT 1;
-
-    -- Calculate progress percentage within current level
+ 
+    -- Get XP range for current rank
     SELECT minimum_exp
-    INTO current_level_min_exp
+    INTO v_rank_min_exp
     FROM "LevelByExp"
-    WHERE minimum_exp <= v_total_xp
+    WHERE level_order <= v_rank_min_level
     ORDER BY level_order DESC
     LIMIT 1;
-
-    SELECT minimum_exp
-    INTO next_level_min_exp
-    FROM "LevelByExp"
-    WHERE minimum_exp > v_total_xp
-    ORDER BY level_order ASC
-    LIMIT 1;
-
-    IF next_level_min_exp IS NULL THEN
+ 
+    IF v_next_rank_min_level IS NOT NULL THEN
+        SELECT minimum_exp
+        INTO v_next_rank_min_exp
+        FROM "LevelByExp"
+        WHERE level_order <= v_next_rank_min_level
+        ORDER BY level_order DESC
+        LIMIT 1;
+    END IF;
+ 
+    -- Default lower boundary if missing
+    IF v_rank_min_exp IS NULL THEN
+        v_rank_min_exp := 0;
+    END IF;
+ 
+    -- Calculate XP-based progress within rank boundaries
+    IF v_next_rank_min_exp IS NULL OR (v_next_rank_min_exp - v_rank_min_exp) = 0 THEN
         v_progress_pct := 100;
     ELSE
         v_progress_pct := ROUND(
-            (v_total_xp - current_level_min_exp)::NUMERIC /
-            (next_level_min_exp - current_level_min_exp) * 100, 2
-        );
+            GREATEST(
+                LEAST(
+                    (v_total_xp - v_rank_min_exp)::NUMERIC /
+                    (v_next_rank_min_exp - v_rank_min_exp) * 100,
+                100),
+            0),
+        2);
     END IF;
-
+ 
     -- Return the full user profile row
     RETURN QUERY
     SELECT

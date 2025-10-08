@@ -1,5 +1,5 @@
 -- =============================================
--- Author:       Bhumi Shah (updated)
+-- Author:       Bhumi Shah
 -- Update Date:  2025-09-22
 -- Description:  Returns navbar data for a user based on their role.
 --               For players returns ProgressPercentage calculated as:
@@ -24,8 +24,17 @@ DECLARE
     v_user_role_id INT;
     v_total_xp INT;
     v_current_level INT;
-    v_level_min_exp INT;
-    v_next_level_min_exp INT;
+
+    v_rank_name TEXT;
+    v_rank_min_level INT;
+    v_rank_max_level INT;
+
+    v_next_rank_name TEXT;
+    v_next_rank_min_level INT;
+
+    v_rank_min_exp BIGINT;
+    v_next_rank_min_exp BIGINT;
+
     v_progress NUMERIC(5,2);
 BEGIN
     -- Get role id of the user
@@ -79,29 +88,55 @@ BEGIN
             RETURN; -- ADD THIS LINE TO EXIT THE FUNCTION
         END IF;
 
-        -- Get current level minimum_exp
-        SELECT lpe.minimum_exp
-        INTO v_level_min_exp
-        FROM "LevelByExp" lpe
-        WHERE lpe.level_order = v_current_level
+        -- Get current rank info by level (if any)
+        SELECT r.rank_name, r.minimum_level, r.maximum_level
+        INTO v_rank_name, v_rank_min_level, v_rank_max_level
+        FROM "UserRankByLevel" r
+        WHERE v_current_level BETWEEN r.minimum_level AND r.maximum_level
         LIMIT 1;
 
-        -- Get next level minimum_exp (level_order + 1)
-        SELECT lpe2.minimum_exp
-        INTO v_next_level_min_exp
-        FROM "LevelByExp" lpe2
-        WHERE lpe2.level_order = v_current_level + 1
+        -- Get next rank's minimum level (the next rank after current rank)
+        SELECT r.rank_name, r.minimum_level
+        INTO v_next_rank_name, v_next_rank_min_level
+        FROM "UserRankByLevel" r
+        WHERE r.minimum_level > COALESCE(v_rank_min_level, v_current_level)
+        ORDER BY r.minimum_level ASC
         LIMIT 1;
 
-        -- If no next level or denominator 0, user is at max level -> 100%
-        IF v_next_level_min_exp IS NULL OR (v_next_level_min_exp - v_level_min_exp) = 0 THEN
+        -- current rank min XP (take nearest LevelByExp <= min_level)
+        SELECT minimum_exp
+        INTO v_rank_min_exp
+        FROM "LevelByExp"
+        WHERE level_order <= v_rank_min_level
+        ORDER BY level_order DESC
+        LIMIT 1;
+
+        -- next rank min XP (if next rank exists)
+        IF v_next_rank_min_level IS NOT NULL THEN
+            SELECT minimum_exp
+            INTO v_next_rank_min_exp
+            FROM "LevelByExp"
+            WHERE level_order <= v_next_rank_min_level
+            ORDER BY level_order DESC
+            LIMIT 1;
+        ELSE
+            v_next_rank_min_exp := NULL;
+        END IF;
+
+        -- Treat missing lower boundary as 0 XP
+        IF v_rank_min_exp IS NULL THEN
+            v_rank_min_exp := 0;
+        END IF;
+
+        -- If no next rank boundary (top rank) or zero denominator => 100%
+        IF v_next_rank_min_exp IS NULL OR (v_next_rank_min_exp - v_rank_min_exp) = 0 THEN
             v_progress := 100.00;
         ELSE
             v_progress := ROUND(
                 GREATEST(
                   LEAST(
-                    (v_total_xp - v_level_min_exp)::NUMERIC
-                    / (v_next_level_min_exp - v_level_min_exp) * 100
+                    (v_total_xp - v_rank_min_exp)::NUMERIC
+                    / (v_next_rank_min_exp - v_rank_min_exp) * 100
                   , 100)
                 , 0)
             , 2);
