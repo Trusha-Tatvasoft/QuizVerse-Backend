@@ -377,6 +377,8 @@ public static class Constants
         public const string QUESTION_TIMEOUT = "QuestionTimeOut";
         public const string PLAYER_INTERRUPTED = "PlayerInterrupted";
         public const string BATTLE_ENDED_FOR_PARTICULAR_PLAYER_DUE_TO_INTERRUPT = "BattleEndedForParticularPlayerDueToInterrupt";
+        public const string RECEIVE_BATTLE_REQUEST = "ReceiveBattleRequest";
+        public const string FAILED_TO_SEND_BATTLE_REQUEST = "Failed to send battle request to user {ReceiverUserId}";
     }
     public const string YOU_HAVE_UNFINISHED_BATTLE = "You have an unfinished battle.";
     public const string BATTLE_SESSION_EXPIRED = "Battle session expired.";

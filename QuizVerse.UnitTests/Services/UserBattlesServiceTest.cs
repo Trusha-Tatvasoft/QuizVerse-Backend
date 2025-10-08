@@ -15,6 +15,7 @@ using System.ComponentModel.DataAnnotations;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using QuizVerse.Infrastructure.Enums;
+using QuizVerse.Application.Core.Interface;
 
 namespace QuizVerse.UnitTests.Services
 {
@@ -26,6 +27,7 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
         private readonly Mock<ISqlQueryRepository> _mockSqlQueryRepository;
         private readonly Mock<IMapper> _mockMapper;
+        private readonly Mock<INotificationService> _mockNotificationService;
         private readonly UserBattlesService _service;
 
         public UserBattlesServiceTest()
@@ -42,6 +44,7 @@ namespace QuizVerse.UnitTests.Services
             _mockBattleRequestRepository = new Mock<IGenericRepository<BattleRequest>>();
             _mockSqlQueryRepository = new Mock<ISqlQueryRepository>();
             _mockMapper = new Mock<IMapper>();
+            _mockNotificationService = new Mock<INotificationService>();
 
             _service = new UserBattlesService(
                 _mockBattleListRepository.Object,
@@ -49,7 +52,8 @@ namespace QuizVerse.UnitTests.Services
                 _mockBattleRequestRepository.Object,
                 _mockHttpContextAccessor.Object,
                 _mockSqlQueryRepository.Object,
-                _mockMapper.Object);
+                _mockMapper.Object,
+                _mockNotificationService.Object);
         }
 
         #region User Available Battles
