@@ -7,9 +7,10 @@ public static class Constants
     #region Authorize attribute Roles
     public static class RoleGroups
     {
-        public static readonly string Admins = UserRoles.Admin + "," + UserRoles.SuperAdmin;
-        public static readonly string AllUsers = UserRoles.Admin + "," + UserRoles.SuperAdmin + "," + UserRoles.Player;
+        public const string Admins = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin);
+        public const string AllUsers = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin) + "," + nameof(UserRoles.Player);
     }
+
     #endregion
     #region General Messages
     public const string PLATFORM_NAME = "QuizVerse";
