@@ -3,6 +3,7 @@ using QuizVerse.Application.Core.Service;
 using QuizVerse.Infrastructure.Interface;
 using QuizVerse.Infrastructure.Mappings;
 using QuizVerse.Infrastructure.Repository;
+using QuizVerse.WebAPI.Notifications;
 
 namespace QuizVerse.WebAPI;
 
@@ -37,6 +38,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAiService, AiService>();
         services.AddScoped<IBattleMatchmakingService, BattleMatchmakingService>();
         services.AddScoped<IBattleService, BattleService>();
+        services.AddScoped<INotificationService, SignalRNotificationService>();
         
 
         //mappers
