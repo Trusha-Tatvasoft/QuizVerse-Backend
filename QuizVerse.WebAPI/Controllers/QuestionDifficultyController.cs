@@ -11,7 +11,7 @@ namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = nameof(Constants.RoleGroups.Admins))]
+[Authorize(Roles = Constants.RoleGroups.Admins)]
 public class QuestionDifficultyController(IQuestionDifficultyService questionDifficultyService) : ControllerBase
 {
     #region Get Battle Question Data 

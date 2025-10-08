@@ -11,7 +11,7 @@ using QuizVerse.Infrastructure.Enums;
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
-[Authorize(Roles = nameof(Constants.RoleGroups.Admins))]
+[Authorize(Roles = Constants.RoleGroups.Admins)]
 [Route("api/[controller]")]
 public class BattleManagementController(IBattleManagementService battleManagementService) : ControllerBase
 {
@@ -65,7 +65,7 @@ public class BattleManagementController(IBattleManagementService battleManagemen
         return Ok(new ApiResponse<CreateUpdateResponseDto>
         {
             Result = true,
-            Message =  await battleManagementService.DeleteBattle(BattleId),
+            Message = await battleManagementService.DeleteBattle(BattleId),
             StatusCode = StatusCodes.Status200OK,
             Data = null
         });

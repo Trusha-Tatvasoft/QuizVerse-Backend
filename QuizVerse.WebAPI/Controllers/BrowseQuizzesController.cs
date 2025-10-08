@@ -12,7 +12,7 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = nameof(UserRoles.Player))]
-public class BrowseQuizzesController(IBrowseQuizzesService browseQuizzesService): ControllerBase
+public class BrowseQuizzesController(IBrowseQuizzesService browseQuizzesService) : ControllerBase
 {
     [HttpPost("browse-quizzes")]
     public async Task<IActionResult> BrowseQuizzes(BrowseQuizzesRequestDTO request)
