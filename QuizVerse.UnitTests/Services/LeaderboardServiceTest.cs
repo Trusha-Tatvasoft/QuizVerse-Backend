@@ -333,18 +333,18 @@ namespace QuizVerse.UnitTests.Services
         {
             // Arrange
             var month = 6;
-            var year = 2026; // Future year relative to September 5, 2025
-
+            var year = DateTime.Now.Year + 1; // Future year relative to September 5, 2025
+ 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<AppException>(() =>
                 _service.GetMonthlyChampions(month, year));
             Assert.Equal(Constants.INVALID_YEAR_MESSAGE, exception.Message);
             Assert.Equal(400, exception.StatusCode);
-
+ 
             _sqlQueryRepoMock.Verify(x => x.SqlQueryListAsync<MonthlyChampionsResponseDto>(
                 It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()), Times.Never);
         }
-
+ 
         [Fact]
         public async Task GetMonthlyChampions_ThrowsAppException_WhenMonthIsFutureInCurrentYear()
         {
@@ -363,7 +363,7 @@ namespace QuizVerse.UnitTests.Services
 
             Assert.Equal(Constants.INVALID_MONTH_YEAR_COMBINATION_MESSAGE, exception.Message);
             Assert.Equal(400, exception.StatusCode);
-
+ 
             _sqlQueryRepoMock.Verify(x => x.SqlQueryListAsync<MonthlyChampionsResponseDto>(
                 It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()), Times.Never);
         }

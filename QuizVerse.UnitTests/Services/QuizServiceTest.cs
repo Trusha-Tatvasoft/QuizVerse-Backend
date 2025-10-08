@@ -571,9 +571,9 @@ public class QuizServiceTests
             {
                 QuestionId = 2,
                 QuestionText = "Capital of France?",
-                UserAnswer = "Paris",
+                UserAnswer = "", // empty answer should become null
                 CorrectAnswer = "Paris",
-                IsCorrect = true
+                IsCorrect = false
             }
         };
 
@@ -588,8 +588,14 @@ public class QuizServiceTests
         Assert.NotNull(result);
         Assert.IsType<List<QuizQuestionReviewDTO>>(result);
         Assert.Equal(expectedList.Count, result.Count);
-        Assert.Equal(expectedList[0].QuestionText, result[0].QuestionText);
-        Assert.Equal(expectedList[1].UserAnswer, result[1].UserAnswer);
+
+        // First item: should remain unchanged
+        Assert.Equal("4", result[0].UserAnswer);
+        Assert.True(result[0].IsCorrect);
+
+        // Second item: should have null values
+        Assert.Null(result[1].UserAnswer);
+        Assert.Null(result[1].IsCorrect);
 
         _sqlQueryRepoMock.Verify(x => x.SqlQueryListAsync<QuizQuestionReviewDTO>(
             It.IsAny<string>(),

@@ -26,7 +26,7 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     #region User Queries
     private IQueryable<User> GetUserData(PageListRequest query)
     {
-        IQueryable<User> userQuery = userRepository.GetQueryableInclude(u => u.Role).Where(u => !u.IsDeleted);
+        IQueryable<User> userQuery = userRepository.GetQueryableInclude(u => u.Role).Where(u => !u.IsDeleted && u.Id != UserId);
 
         // Search
         if (!string.IsNullOrWhiteSpace(query.SearchTerm))

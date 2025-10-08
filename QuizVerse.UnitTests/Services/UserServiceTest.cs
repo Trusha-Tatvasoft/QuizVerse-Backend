@@ -150,7 +150,7 @@ public class UserServiceTests
     }
     #endregion
 
-    #region GetAllUserData 
+    #region GetAllUserData
     [Fact]
     public async Task GetUsersList_WithSearchFilterSort_ReturnsCorrectData()
     {
@@ -158,7 +158,7 @@ public class UserServiceTests
         {
             PageNumber = 1,
             PageSize = 10,
-            SearchTerm = "alice",
+            SearchTerm = "bob",
             SortColumn = "fullname",
             SortDescending = false
         };
@@ -166,7 +166,7 @@ public class UserServiceTests
         var result = await _userService.GetUsersByPagination(query);
 
         Assert.Single(result.Records);
-        Assert.Equal("Alice Johnson", result.Records.First().FullName);
+        Assert.Equal("Bob Smith", result.Records.First().FullName);
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public class UserServiceTests
 
         var result = await _userService.GetUsersByPagination(query);
 
-        Assert.Equal(2, result.Records.Count());
+        Assert.Equal(1, result.Records.Count());
         Assert.Equal("bob@example.com", result.Records.First().Email);
     }
 
@@ -845,7 +845,6 @@ public class UserServiceTests
 
         // Assert
         Assert.Equal(1, capturedList[0].No);
-        Assert.Equal(2, capturedList[1].No);
     }
 
     [Fact]
@@ -870,11 +869,11 @@ public class UserServiceTests
 
         var query = new PageListRequest
         {
-            SearchTerm = "alice",
+            SearchTerm = "bob",
             Filters = new FilterDto
             {
                 Role = UserRoles.Player,
-                Status = UserStatus.Active
+                Status = UserStatus.Suspended
             }
         };
 
@@ -893,7 +892,7 @@ public class UserServiceTests
                 {
                     capturedSetup = setup;
                     Assert.Single(list);
-                    Assert.Equal("Alice Johnson", list[0].FullName);
+                    Assert.Equal("Bob Smith", list[0].FullName);
                 })
             .Returns(new MemoryStream());
 
@@ -910,7 +909,7 @@ public class UserServiceTests
         capturedSetup.Invoke(worksheet);
 
         Assert.Equal("Search Text:", worksheet.Cell("A7").Value);
-        Assert.Equal("alice", worksheet.Cell("B7").Value);
+        Assert.Equal("bob", worksheet.Cell("B7").Value);
 
         Assert.Equal("Total Records:", worksheet.Cell("D7").Value);
         Assert.Equal("1", worksheet.Cell("E7").Value.ToString());
@@ -918,7 +917,7 @@ public class UserServiceTests
         Assert.Equal("Filter:", worksheet.Cell("G7").Value);
         var filterText = worksheet.Cell("H7").Value.ToString();
         Assert.Contains("Role: Player", filterText);
-        Assert.Contains("Status: Active", filterText);
+        Assert.Contains("Status: Suspended", filterText);
     }
 
     #endregion

@@ -4,7 +4,7 @@
 -- Description:  <Get recent battles of a user including
 --               opponent, category, result, score, XP, profile pic,
 --              with optional date filter, pagination, and HasMore flag>
--- Usage:        SELECT * 
+-- Usage:        SELECT *
 --                     FROM get_user_battles_history(
 --                         2,  -- p_user_id: ID of the user
 --                         2,  -- p_status_draw: Enum value for Draw
@@ -33,7 +33,7 @@ DECLARE
 BEGIN
     RETURN QUERY
     WITH all_battles AS (
-        SELECT 
+        SELECT
         -- Opponent name and profile pic
             q.name AS "BattleName",
             CASE WHEN bs.user1_id = p_user_id THEN u2.user_name ELSE u1.user_name END AS "Opponent",
@@ -42,8 +42,12 @@ BEGIN
         -- Quiz category name
             qc.category_name AS "Category",
             CASE
-
+ 
         -- Battle result
+               WHEN bs.battle_status = p_status_draw AND
+                    ((bs.user1_id = p_user_id AND br.user1_corrected_ans = 0 AND br.user2_corrected_ans = 0) OR
+                    (bs.user2_id = p_user_id AND br.user2_corrected_ans = 0 AND br.user1_corrected_ans = 0))
+                    THEN 'Lost'
                 WHEN bs.battle_status = p_status_draw THEN 'Draw'
                 WHEN bs.battle_status = p_status_completed AND br.winner_id = p_user_id THEN 'Won'
                 WHEN bs.battle_status = p_status_completed AND br.winner_id IS NOT NULL THEN 'Lost'
@@ -52,8 +56,8 @@ BEGIN
         -- Scores
             CASE WHEN bs.user1_id = p_user_id THEN br.user1_corrected_ans ELSE br.user2_corrected_ans END AS "YourScore",
             CASE WHEN bs.user1_id = p_user_id THEN br.user2_corrected_ans ELSE br.user1_corrected_ans END AS "OpponentScore",
-            
-
+           
+ 
         -- XP gained
             CASE
                 WHEN bs.battle_status = p_status_draw THEN br.winner_gained_xp
@@ -81,13 +85,13 @@ BEGIN
                (p_filter_by = 2 AND "Result" = 'Lost') OR
                (p_filter_by = 3 AND "Result" = 'Won'))
           AND (p_time_filter_by IS NULL OR
-			     (p_time_filter_by = 1 AND "BattleDate" >= NOW() - INTERVAL '2 days') OR       -- Last2Days
-			     (p_time_filter_by = 2 AND "BattleDate" >= NOW() - INTERVAL '7 days') OR       -- Last7Days
-			     (p_time_filter_by = 3 AND "BattleDate" >= date_trunc('month', CURRENT_DATE)) OR -- CurrentMonth
-			     (p_time_filter_by = 4 AND "BattleDate" >= NOW() - INTERVAL '3 months') OR      -- LastQuarter
-			     (p_time_filter_by = 5 AND "BattleDate" >= date_trunc('year', CURRENT_DATE)) OR  -- CurrentYear
-			     (p_time_filter_by = 6 AND "BattleDate" >= NOW() - INTERVAL '1 year')           -- LastYear
-			)
+                 (p_time_filter_by = 1 AND "BattleDate" >= NOW() - INTERVAL '2 days') OR       -- Last2Days
+                 (p_time_filter_by = 2 AND "BattleDate" >= NOW() - INTERVAL '7 days') OR       -- Last7Days
+                 (p_time_filter_by = 3 AND "BattleDate" >= date_trunc('month', CURRENT_DATE)) OR -- CurrentMonth
+                 (p_time_filter_by = 4 AND "BattleDate" >= NOW() - INTERVAL '3 months') OR      -- LastQuarter
+                 (p_time_filter_by = 5 AND "BattleDate" >= date_trunc('year', CURRENT_DATE)) OR  -- CurrentYear
+                 (p_time_filter_by = 6 AND "BattleDate" >= NOW() - INTERVAL '1 year')           -- LastYear
+            )
         ORDER BY "BattleDate" DESC
     ),
     total_count AS (
@@ -99,7 +103,7 @@ BEGIN
         OFFSET v_offset
         LIMIT v_page_size
     )
-    SELECT 
+    SELECT
         COALESCE(
             (SELECT jsonb_agg(row) FROM (SELECT * FROM paged) AS row),
             '[]'::jsonb

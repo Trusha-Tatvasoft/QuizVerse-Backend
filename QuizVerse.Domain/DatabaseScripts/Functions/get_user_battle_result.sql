@@ -9,11 +9,11 @@
 --                 • Retrieves quiz title via "BattleList" → "Quiz" mapping
 --                 • Determines if current user has won the battle
 --                 • Returns attempted question counts and earned XP
---                 • Raises exceptions for missing battle, running status, 
+--                 • Raises exceptions for missing battle, running status,
 --                   missing result, or missing quiz mapping
--- Usage:        SELECT * FROM get_user_battle_result(12, 7, 3);
+-- Usage:        SELECT * FROM get_user_battle_result(13, 2, 3);
 -- =============================================
-
+ 
 CREATE OR REPLACE FUNCTION get_user_battle_result(
     p_battle_id INT,
     p_login_user_id INT,
@@ -48,75 +48,83 @@ BEGIN
     WHERE battle_id = p_battle_id
       AND (user1_id = p_login_user_id OR user2_id = p_login_user_id)
       AND is_deleted = FALSE
-	ORDER BY modified_date DESC NULLS LAST
+    ORDER BY modified_date DESC NULLS LAST
     LIMIT 1;
-
+ 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Battle not found.'
             USING ERRCODE = 'P0001';
     END IF;
-
+ 
     -- Step 2: Check running status
     IF bs.battle_status = p_status_running THEN
         RAISE EXCEPTION 'Battle is still running, wait for some time for result!'
             USING ERRCODE = 'P0001';
     END IF;
-
+ 
     -- Step 3: Get battle result
     SELECT * INTO br
     FROM "BattleResult"
     WHERE battle_status = bs.id
     LIMIT 1;
-
+ 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Battle result not found.'
             USING ERRCODE = 'P0001';
     END IF;
-
+ 
     -- Step 4: Determine player and opponent
     is_user1 := (bs.user1_id = p_login_user_id);
-
+ 
     IF is_user1 THEN
-        SELECT user_name, profile_pic, full_name INTO player_user 
+        SELECT user_name, profile_pic, full_name INTO player_user
         FROM "Users" WHERE id = bs.user1_id;
-
-        SELECT user_name, profile_pic, full_name INTO opponent_user 
+ 
+        SELECT user_name, profile_pic, full_name INTO opponent_user
         FROM "Users" WHERE id = bs.user2_id;
     ELSE
-        SELECT user_name, profile_pic, full_name INTO player_user 
+        SELECT user_name, profile_pic, full_name INTO player_user
         FROM "Users" WHERE id = bs.user2_id;
-
-        SELECT user_name, profile_pic, full_name INTO opponent_user 
+ 
+        SELECT user_name, profile_pic, full_name INTO opponent_user
         FROM "Users" WHERE id = bs.user1_id;
     END IF;
-
+ 
     -- Step 5: Get battle name from Quiz
     SELECT q.name INTO quiz_title
     FROM "BattleList" bl
     JOIN "Quiz" q ON q.id = bl.quiz_id
     WHERE bl.id = bs.battle_id;
-
+ 
     IF quiz_title IS NULL THEN
         RAISE EXCEPTION 'Quiz title not found for this battle.'
             USING ERRCODE = 'P0001';
     END IF;
-
+ 
     -- Step 6: Return data
     "BattleName" := quiz_title;
     "OpponentUserName" := opponent_user.user_name;
     "PlayerProfile" := player_user.profile_pic;
     "OpponentProfile" := opponent_user.profile_pic;
     "BattleStatus" := bs.battle_status;
-    "IsWin" := (br.winner_id IS NOT NULL AND br.winner_id = p_login_user_id);
+    "IsWin" := CASE
+              WHEN br.winner_id IS NULL THEN
+                   CASE
+                       WHEN br.winner_gained_xp = 0 AND br.looser_gained_xp = 0 THEN FALSE
+                       ELSE TRUE
+                   END
+              WHEN br.winner_id = p_login_user_id THEN TRUE
+              ELSE FALSE
+           END;
     "PlayerAttemptedQuestions" := CASE WHEN is_user1 THEN br.user1_corrected_ans ELSE br.user2_corrected_ans END;
     "OpponentAttemptedQuestions" := CASE WHEN is_user1 THEN br.user2_corrected_ans ELSE br.user1_corrected_ans END;
-    "PlayerEarnedXP" := CASE 
+    "PlayerEarnedXP" := CASE
                           WHEN br.winner_id = p_login_user_id THEN br.winner_gained_xp
                           ELSE br.looser_gained_xp
                         END;
     "OpponentFullName" := opponent_user.full_name;
     "PlayerFullName" := player_user.full_name;
-
+ 
     RETURN NEXT;
 END;
 $$;

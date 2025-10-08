@@ -19,15 +19,19 @@ DECLARE
     user_total_xp INT;
     user_current_level INT;
 
-    current_level_min_exp INT;
-    current_level_max_exp INT;
+    -- Rank and XP details
+    current_rank_min_level INT;
+    current_rank_max_level INT;
+    next_rank_min_level INT;
 
-    next_level_min_exp INT;
+    current_rank_min_exp INT;
+    current_rank_max_exp INT;
+    next_rank_min_exp INT;
 
     current_rank_name TEXT;
     next_rank_name TEXT;
 BEGIN
-    -- 1. Get user performance
+    -- 1. Get user's XP and level
     SELECT total_xp, current_level
     INTO user_total_xp, user_current_level
     FROM "UserPerformanceDetails"
@@ -37,41 +41,37 @@ BEGIN
         RAISE EXCEPTION 'User not found';
     END IF;
 
-    -- 2. Get current level by XP
-    SELECT minimum_exp, maximum_exp
-    INTO current_level_min_exp, current_level_max_exp
-    FROM "LevelByExp"
-    WHERE minimum_exp <= user_total_xp
-      AND maximum_exp >= user_total_xp
-    LIMIT 1;
-
-    -- 3. Get next level
-    SELECT minimum_exp
-    INTO next_level_min_exp
-    FROM "LevelByExp"
-    WHERE minimum_exp > user_total_xp
-    ORDER BY level_order
-    LIMIT 1;
-
-    -- 4. Get current rank
-    SELECT rank_name
-    INTO current_rank_name
+    -- 2. Find user's current rank range
+    SELECT rank_name, minimum_level, maximum_level
+    INTO current_rank_name, current_rank_min_level, current_rank_max_level
     FROM "UserRankByLevel"
     WHERE minimum_level <= user_current_level
       AND maximum_level >= user_current_level
     LIMIT 1;
 
-    -- 5. Get next rank
-    SELECT rank_name
-    INTO next_rank_name
+    -- 3. Find next rank range
+    SELECT rank_name, minimum_level
+    INTO next_rank_name, next_rank_min_level
     FROM "UserRankByLevel"
     WHERE minimum_level > user_current_level
     ORDER BY minimum_level
     LIMIT 1;
 
+    -- 4. Get XP range for current rank (from all levels in LevelByExp)
+    SELECT MIN(minimum_exp), MAX(maximum_exp)
+    INTO current_rank_min_exp, current_rank_max_exp
+    FROM "LevelByExp"
+    WHERE level_order BETWEEN current_rank_min_level AND current_rank_max_level;
+
+    -- 5. Get XP start of next rank
+    SELECT MIN(minimum_exp)
+    INTO next_rank_min_exp
+    FROM "LevelByExp"
+    WHERE level_order >= next_rank_min_level;
+
     -- 6. Calculate XP needed and progress percent
-    IF next_level_min_exp IS NULL THEN
-        -- Max level reached
+    IF next_rank_min_exp IS NULL THEN
+        -- User is at max rank
         current_rank := current_rank_name;
         next_rank := NULL;
         xp_needed := 0;
@@ -79,10 +79,10 @@ BEGIN
     ELSE
         current_rank := current_rank_name;
         next_rank := next_rank_name;
-        xp_needed := next_level_min_exp - user_total_xp;
+        xp_needed := next_rank_min_exp - user_total_xp;
         progress_percent := ROUND(
-            (user_total_xp - current_level_min_exp)::NUMERIC /
-            (next_level_min_exp - current_level_min_exp) * 100, 2
+            (user_total_xp - current_rank_min_exp)::NUMERIC /
+            (next_rank_min_exp - current_rank_min_exp) * 100, 2
         );
     END IF;
 

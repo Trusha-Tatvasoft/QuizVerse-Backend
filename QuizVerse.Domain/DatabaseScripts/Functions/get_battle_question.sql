@@ -63,7 +63,6 @@ AS $$
       AND COALESCE(bs.is_deleted, FALSE) = FALSE
       AND COALESCE(bl.is_deleted, FALSE) = FALSE
       AND COALESCE(qm.is_deleted, FALSE) = FALSE
-      AND COALESCE(que.is_deleted, FALSE) = FALSE
     GROUP BY qm.id, que.que_text, qt.type_name,
              bqd.time_per_question, qd.xp_gained
     ORDER BY qm.id
