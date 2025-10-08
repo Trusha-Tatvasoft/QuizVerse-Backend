@@ -21,6 +21,10 @@ public partial class AttemptedQuizQuestionsAnswer
 
     public DateTime? ModifiedDate { get; set; }
 
+    public string? QuestionText { get; set; }
+
+    public string? QuestionAnswer { get; set; }
+
     public virtual QuestionType QueType { get; set; } = null!;
 
     public virtual QuizPlayStatus QuizPlayStatus { get; set; } = null!;

@@ -112,6 +112,12 @@ public partial class QuizVerseDbContext : DbContext
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("modified_date");
             entity.Property(e => e.QueTypeId).HasColumnName("que_type_id");
+            entity.Property(e => e.QuestionAnswer)
+                .HasColumnType("character varying")
+                .HasColumnName("question_answer");
+            entity.Property(e => e.QuestionText)
+                .HasColumnType("character varying")
+                .HasColumnName("question_text");
             entity.Property(e => e.QuizPlayStatusId).HasColumnName("quiz_play_status_id");
             entity.Property(e => e.QuizQueId).HasColumnName("quiz_que_id");
 
@@ -637,6 +643,9 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.NotificationMessage)
                 .HasColumnType("character varying")
                 .HasColumnName("notification_message");
+            entity.Property(e => e.NotificationTitle)
+                .HasColumnType("character varying")
+                .HasColumnName("notification_title");
             entity.Property(e => e.NotificationType).HasColumnName("notification_type");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.NotificationCreatedByNavigations)
