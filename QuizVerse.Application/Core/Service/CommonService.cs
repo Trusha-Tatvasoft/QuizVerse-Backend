@@ -79,6 +79,33 @@ namespace QuizVerse.Application.Core.Service
             string finalFileName = Path.Combine(folderName, fileName).Replace("\\", "/");
             return finalFileName;
         }
+
+        public bool DeleteFile(string relativeFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(relativeFilePath))
+                return false;
+
+            try
+            {
+                string fullPath = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot",
+                    "uploads",
+                    relativeFilePath
+                );
+                fullPath = Path.GetFullPath(fullPath);
+                if (File.Exists(fullPath))
+                {
+                    File.Delete(fullPath);
+                    return true;
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
         #endregion
 
         #region Create CSV Helper

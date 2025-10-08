@@ -114,17 +114,23 @@ public class PlatformConfigurationService(IGenericRepository<PlatformConfigurati
                 await platformConfigurationRepository.DeleteAsync(logoConfig);
         }
 
-        var files = Directory.GetFiles(SystemConstants.LOGO_PATH);
-        foreach (var file in files)
+        if (Directory.Exists(SystemConstants.LOGO_PATH))
         {
-            if (imagePath == null)
+            var files = Directory.GetFiles(SystemConstants.LOGO_PATH);
+            if (files.Length != 0)
             {
-                System.IO.File.Delete(file);
-                continue;
-            }
-            if (!file.EndsWith(Path.GetFileName(imagePath), StringComparison.OrdinalIgnoreCase))
-            {
-                System.IO.File.Delete(file);
+                foreach (var file in files)
+                {
+                    if (imagePath == null)
+                    {
+                        System.IO.File.Delete(file);
+                        continue;
+                    }
+                    if (!file.EndsWith(Path.GetFileName(imagePath), StringComparison.OrdinalIgnoreCase))
+                    {
+                        System.IO.File.Delete(file);
+                    }
+                }
             }
         }
 

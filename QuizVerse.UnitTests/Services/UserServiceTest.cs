@@ -19,6 +19,7 @@ using QuizVerse.Infrastructure.Interface;
 using QuizVerse.Infrastructure.Mappings;
 using QuizVerse.Infrastructure.Repository;
 using Xunit;
+using System.Linq.Expressions;
 
 namespace QuizVerse.UnitTests.Services;
 
@@ -29,6 +30,7 @@ public class UserServiceTests
     private readonly UserService _userService;
     private readonly Mock<ICommonService> _commonServiceMock;
     private readonly Mock<ISqlQueryRepository> _sqlQueryRepositoryMock;
+    private readonly Mock<IGenericRepository<User>> _userRepositoryMock;
 
     public UserServiceTests()
     {
@@ -63,7 +65,8 @@ public class UserServiceTests
 
         _commonServiceMock = new Mock<ICommonService>();
         _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
-
+        _sqlQueryRepositoryMock = new Mock<ISqlQueryRepository>();
+        _userRepositoryMock = new Mock<IGenericRepository<User>>();
         _sqlQueryRepositoryMock = new Mock<ISqlQueryRepository>();
 
         // Setup for duplicate email failure
