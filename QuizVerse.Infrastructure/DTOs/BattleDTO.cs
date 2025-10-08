@@ -22,6 +22,7 @@ public class BattleState
     public ConcurrentDictionary<int, bool> Completed { get; } = new();
     public ConcurrentDictionary<int, bool> Connected { get; } = new();
     public ConcurrentDictionary<int, DateTime> ConnectionBrokeTime { get; } = new();
+    public ConcurrentDictionary<int, bool> IsSkipInstruction { get; set; } = new();
     public bool IsReadyForStart => !string.IsNullOrEmpty(Player1ConnectionId) && !string.IsNullOrEmpty(Player2ConnectionId);
 }
 

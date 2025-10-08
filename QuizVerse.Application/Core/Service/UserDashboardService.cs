@@ -45,6 +45,7 @@ public class UserDashboardService(
 
         List<RecentQuizResponse> results = await query.Select(qa => new RecentQuizResponse
         {
+            QuizId = qa.QuizId,
             QuizName = qa.Quiz.Name,
             CategoryName = qa.Quiz.Category.CategoryName,
             DifficultyLevel = qa.Quiz.DifficultyLevel.Name,
@@ -69,8 +70,8 @@ public class UserDashboardService(
 
         IQueryable<Quiz> query = _quizRepository
             .GetQueryableInclude(q => q.Category, q => q.DifficultyLevel, q => q.QuizAttempteds)
-            .Where(q => q.IsFeatured 
-                        && q.Status == (int)QuizStatus.Active 
+            .Where(q => q.IsFeatured
+                        && q.Status == (int)QuizStatus.Active
                         && !q.IsDeleted
                         && q.CreatedDate >= today
                         && q.CreatedDate < tomorrow)
@@ -95,7 +96,8 @@ public class UserDashboardService(
                 CategoryName = q.Category.CategoryName,
                 DifficultyLevel = q.DifficultyLevel.Name,
                 TotalAttempts = q.QuizAttempteds.Count(),
-                Rating = q.Rating
+                Rating = q.Rating,
+                IsAttempted = q.QuizAttempteds.Any(qa => qa.UserId == UserId && qa.QuizId == q.Id)
             })
             .ToListAsync();
 
@@ -178,7 +180,7 @@ public class UserDashboardService(
 
     private static string GetTimeAgo(DateTime sendingDate)
     {
-        TimeSpan  timeSpan = DateTime.UtcNow - sendingDate.ToUniversalTime();
+        TimeSpan timeSpan = DateTime.UtcNow - sendingDate.ToUniversalTime();
 
         if (timeSpan.TotalSeconds < 5)
             return Constants.JUST_NOW;

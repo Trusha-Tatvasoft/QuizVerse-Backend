@@ -104,6 +104,7 @@ public class SqlConstants
     public const string GET_USER_AVAILABLE_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}})";
     public const string GET_USER_AVAILABLE_BATTLES_FUNCTION = "get_user_available_battles";
     public const string GET_Battle_QUESTIONS_QUERY_TEMPLATE = "SELECT * FROM get_battle_question({0}, {1})";
+    public const string AFTER_Battle_RESULT = "SELECT * FROM after_battle_result({0})";
     #endregion
 
     #region Quiz

@@ -1,13 +1,13 @@
 -- =============================================
 -- Author:      <Zeel Vaghasiya>
 -- Create date: <08-September-2025>
--- Description: <Get all available battles for a user including 
---               battle details, category, difficulty, XP, total questions, 
---               duration (in minutes), and participant count. 
+-- Description: <Get all available battles for a user including
+--               battle details, category, difficulty, XP, total questions,
+--               duration (in minutes), and participant count.
 --               Excludes battles already played by the user.>
--- Usage:       SELECT * FROM get_user_available_battles(p_user_id);
+-- Usage:       SELECT * FROM get_user_available_battles(93);
 -- =============================================
-
+ 
 CREATE OR REPLACE FUNCTION get_user_available_battles(p_user_id INT)
 RETURNS TABLE (
     "BattleId" INT,
@@ -22,6 +22,30 @@ RETURNS TABLE (
     "IsBattleRunning" BOOLEAN
 ) AS $$
 BEGIN
+    -- Mark battles as completed if end_date (date only) has already passed
+    UPDATE "Quiz" q
+    SET status = 2
+    FROM "BattleList" b
+    WHERE q.id = b.quiz_id
+    AND b.is_deleted = FALSE
+    AND q.is_deleted = FALSE
+    AND b.start_date IS NOT NULL
+    AND b.end_date IS NOT NULL
+    AND b.end_date::date < NOW()::date
+    AND q.status != 2;
+ 
+    -- Mark battles as active if end_date (date only) is today or later
+    UPDATE "Quiz" q
+    SET status = 1
+    FROM "BattleList" b
+    WHERE q.id = b.quiz_id
+    AND b.is_deleted = FALSE
+    AND q.is_deleted = FALSE
+    AND b.start_date IS NOT NULL
+    AND b.end_date IS NOT NULL
+    AND b.end_date::date >= NOW()::date
+    AND q.status != 1;
+ 
     RETURN QUERY
     WITH active_battles AS (
         SELECT bl.id AS battle_id,
@@ -39,8 +63,8 @@ BEGIN
                 bl.battle_time_limited = FALSE
                 -- Case 2: Time-limited -> must be active now
                 OR (bl.battle_time_limited = TRUE
-                    AND bl.start_date <= NOW()
-                    AND bl.end_date >= NOW())
+                    AND bl.start_date::date <= NOW()::date
+                    AND bl.end_date::date >= NOW()::date)
               )
     ),
     ques_stats AS (
@@ -61,8 +85,8 @@ BEGIN
     ),
     user_status AS (
         SELECT bs.battle_id,
-               MAX(CASE WHEN bs.battle_status = 3 THEN TRUE ELSE FALSE END) AS is_running,
-               MAX(CASE WHEN bs.battle_status IN (1,2) THEN TRUE ELSE FALSE END) AS is_completed
+               BOOL_OR(bs.battle_status = 3) AS is_running,
+               BOOL_OR(bs.battle_status IN (1,2)) AS is_completed
         FROM "BattleStatus" bs
         WHERE (bs.user1_id = p_user_id OR bs.user2_id = p_user_id)
           AND bs.is_deleted = FALSE

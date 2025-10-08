@@ -33,6 +33,7 @@ public class RawUserDashboardMetricsDTO
 
 public class RecentQuizResponse
 {
+    public int QuizId { get; set; }
     public string QuizName { get; set; } = null!;
     public string CategoryName { get; set; } = null!;
     public string DifficultyLevel { get; set; } = null!;
@@ -47,6 +48,7 @@ public class FeaturedQuizDTO
     public string CategoryName { get; set; } = null!;
     public string DifficultyLevel { get; set; } = null!;
     public int TotalAttempts { get; set; }
+    public bool IsAttempted { get; set; }
     public decimal Rating { get; set; }
 }
 

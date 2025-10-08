@@ -77,10 +77,12 @@ public class BattleService(
         state.CurrentIndex[dto.Player.UserId] = 1;
         state.Score[dto.Player.UserId] = 0;
         state.Completed[dto.Player.UserId] = false;
+        state.IsSkipInstruction[dto.Player.UserId] = false;
 
         state.CurrentIndex[dto.Opponent!.UserId] = 1;
         state.Score[dto.Opponent!.UserId] = 0;
         state.Completed[dto.Opponent!.UserId] = false;
+        state.IsSkipInstruction[dto.Opponent!.UserId] = false;
 
         // Use shared state manager
         BattleStateManager.AddBattle(state.BattleAttemptId, state);
@@ -352,6 +354,12 @@ public class BattleService(
         else
             battleStatus.BattleStatus1 = (int)Infrastructure.Enums.BattleStatus.Draw;
 
+        if (p1Score == 0 && p2Score == 0)
+        {
+            battleStatus.BattleStatus1 = (int)Infrastructure.Enums.BattleStatus.Draw;
+            winnerId=null;
+        }
+
         battleStatus.ModifiedDate = DateTime.UtcNow;
         await _battleStatusRepo.UpdateAsync(battleStatus);
 
@@ -368,6 +376,21 @@ public class BattleService(
         };
 
         await _battleResultRepo.AddAsync(result);
+
+        // Call the after battle result function to update user stats
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.AFTER_Battle_RESULT, state.BattleAttemptId));
+
+        // For player 1 streak and badges
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.RECALC_USER_STREAK_FUNCTION, state.Player1Id));
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.CHECK_AND_AWARD_BADGES_FUNCTION, state.Player1Id));
+
+        // For player 2 streak and badges
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.RECALC_USER_STREAK_FUNCTION, state.Player2Id));
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(string.Format(SqlConstants.CHECK_AND_AWARD_BADGES_FUNCTION, state.Player2Id));
+
+        //global ranks recalculation
+        await _sqlQueryRepository.SqlQuerySingleAsync<SuccessResponseDTO>(SqlConstants.RECALC_GLOBAL_RANKS_FUNCTION);
+
         return result;
     }
 
