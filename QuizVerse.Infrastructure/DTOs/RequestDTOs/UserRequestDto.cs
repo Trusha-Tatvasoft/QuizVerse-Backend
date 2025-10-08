@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
+using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Validators;
 
 namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
@@ -34,6 +35,8 @@ public class UserRequestDto
 
     [AllowedImage(ErrorMessage = "Invalid profile picture. Only .jpg, .jpeg, .png, and .gif files are allowed, with a maximum size of 10MB.")]
     public IFormFile? ProfilePic { get; set; }
+
+    public int? RoleId { get; set; } = (int)UserRoles.Player;
 
     public bool IsRegister { get; set; } = false;
 }

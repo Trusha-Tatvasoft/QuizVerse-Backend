@@ -6,12 +6,13 @@ using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    [Authorize(Roles = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin))]
     public class QuizController(IQuizService _quizService) : ControllerBase
     {
         [HttpGet("get-quiz-overview/{quizId}")]

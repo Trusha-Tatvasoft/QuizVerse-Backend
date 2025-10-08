@@ -12,7 +12,7 @@ namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = nameof(UserRoles.Admin))]
+[Authorize(Roles = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin))]
 public class EmailTemplatesController(IEmailTemplatesService emailTemplatesService) : ControllerBase
 {
     [HttpPost("get-all-email-templates")]
