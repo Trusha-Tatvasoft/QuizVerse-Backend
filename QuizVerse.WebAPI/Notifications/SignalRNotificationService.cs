@@ -20,7 +20,7 @@ public class SignalRNotificationService(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, SignalRMethods.FAILED_TO_SEND_BATTLE_REQUEST, receiverUserId);
+            _logger.LogError(ex, FAILED_TO_SEND_BATTLE_REQUEST, receiverUserId);
         }
     }
 }

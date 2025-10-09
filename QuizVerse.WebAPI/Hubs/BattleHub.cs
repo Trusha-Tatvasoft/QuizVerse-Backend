@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using AutoMapper;
 using Microsoft.AspNetCore.SignalR;
 using QuizVerse.Application.Core.Interface;
@@ -7,6 +8,7 @@ using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 using static QuizVerse.Infrastructure.Common.Constants;
 
@@ -19,9 +21,58 @@ public class BattleHub(
     IHubContext<BattleHub> _hubContext,
     IGenericRepository<QuizVerse.Domain.Entities.BattleStatus> _battleStatusRepo,
     IGenericRepository<BattleList> _battleListRepo,
+    IUserActivityCheckerService _userActivityCheckerService,
+    IGenericRepository<BattleRequest> _battleRequestRepository,
     IMapper _mapper
 ) : Hub
 {
+    public static readonly ConcurrentDictionary<int, string> OnlineUsers = new();
+    public static readonly ConcurrentDictionary<int, List<TaskCompletionSource<string>>> SenderOnlineWaiters = new();
+    public static readonly ConcurrentDictionary<int, (int OpponentId, BattleRequestDTO Request, DateTime AcceptTime)> PendingAccepts = new();
+
+    public override async Task OnConnectedAsync()
+    {
+        int? userId = Context.User?.GetUserId();
+
+        if (userId.HasValue)
+        {
+            // Register user as online
+            OnlineUsers.AddOrUpdate(userId.Value, Context.ConnectionId, (_, _) => Context.ConnectionId);
+
+            // Notify any pending waiters
+            if (SenderOnlineWaiters.TryRemove(userId.Value, out var waiters))
+            {
+                foreach (var tcs in waiters)
+                {
+                    if (!tcs.Task.IsCompleted)
+                        tcs.TrySetResult("online");
+                }
+            }
+
+            // Handle PendingAccepts if receiver already accepted
+            if (PendingAccepts.TryRemove(userId.Value, out var pending))
+            {
+                if (OnlineUsers.TryGetValue(pending.OpponentId, out var opponentConnId))
+                {
+                    // Notify both
+                    await Clients.Client(Context.ConnectionId).SendAsync(SignalRMethods.BATTLE_REQUEST_ACCEPTED, new
+                    {
+                        ReceiverId = pending.OpponentId,
+                        BattleRequest = pending.Request
+                    });
+
+                    await Clients.Client(opponentConnId).SendAsync(SignalRMethods.BATTLE_REQUEST_ACCEPTED_CONFIRMATION, new
+                    {
+                        SenderId = userId.Value,
+                        BattleRequest = pending.Request
+                    });
+                }
+            }
+        }
+
+        await base.OnConnectedAsync();
+    }
+
     public async Task StartMatchmaking(int battleId)
     {
         try
@@ -496,6 +547,23 @@ public class BattleHub(
     public override Task OnDisconnectedAsync(Exception? exception)
     {
         int? userId = Context.User?.GetUserId();
+
+        if (userId.HasValue)
+        {
+            // Remove user from online list
+            OnlineUsers.TryRemove(userId.Value, out _);
+
+            // Cancel any pending waiters for this user
+            if (SenderOnlineWaiters.TryRemove(userId.Value, out var waiters))
+            {
+                foreach (var tcs in waiters)
+                {
+                    if (!tcs.Task.IsCompleted)
+                        tcs.TrySetCanceled();
+                }
+            }
+        }
+
         if (userId.HasValue && Context.Items.TryGetValue(BATTLE_ID, out var battleIdObj) && battleIdObj is int battleId)
         {
             _battleMatchmakingService.CancelMatchmaking(battleId, userId.Value);
@@ -594,6 +662,230 @@ public class BattleHub(
         {
             // Inform the sender of the failure
             await Clients.Caller.SendAsync(SignalRMethods.ERROR, ex.Message);
+        }
+    }
+
+    public async Task AcceptBattleRequest(int senderUserId, BattleRequestDTO request)
+    {
+        try
+        {
+            int receiverUserId = Context.User?.GetUserId()
+                ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
+
+            if (await _userActivityCheckerService.IsUserBusy(senderUserId))
+            {
+                await Clients.Caller.SendAsync(SignalRMethods.ERROR, Constants.SENDER_IN_ACTIVE_BATTLE_OR_QUIZ);
+                PendingAccepts.TryRemove(senderUserId, out _);
+                return;
+            }
+
+            // Case 1: Sender is currently online -> notify immediately
+            if (OnlineUsers.TryGetValue(senderUserId, out var senderConnectionId))
+            {
+                await Clients.Client(senderConnectionId).SendAsync(SignalRMethods.BATTLE_REQUEST_ACCEPTED, new
+                {
+                    ReceiverId = receiverUserId,
+                    BattleRequest = request
+                });
+
+                await Clients.Caller.SendAsync(SignalRMethods.BATTLE_REQUEST_ACCEPTED_CONFIRMATION, new
+                {
+                    SenderId = senderUserId,
+                    BattleRequest = request
+                });
+
+                // Directly start battle if both connected
+                await StartFriendBattle(senderUserId, receiverUserId, request);
+                return;
+            }
+
+            // Case 2: Sender offline -> add to PendingAccepts
+            PendingAccepts[senderUserId] = (OpponentId: receiverUserId, Request: request, AcceptTime: DateTime.UtcNow);
+
+            var tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            SenderOnlineWaiters.AddOrUpdate(
+                senderUserId,
+                _ => [tcs],
+                (_, list) =>
+                {
+                    var updatedList = list.ToList();
+                    updatedList.Add(tcs);
+                    return updatedList;
+                });
+
+            var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(30000));
+
+            if (completedTask == tcs.Task && OnlineUsers.TryGetValue(senderUserId, out senderConnectionId))
+            {
+                // Re-check sender’s status after they reconnect
+                if (await _userActivityCheckerService.IsUserBusy(senderUserId))
+                {
+                    await Clients.Caller.SendAsync(SignalRMethods.ERROR, Constants.SENDER_IN_ACTIVE_BATTLE_OR_QUIZ);
+                    PendingAccepts.TryRemove(senderUserId, out _);
+                    return;
+                }
+
+                await Clients.Client(senderConnectionId).SendAsync(SignalRMethods.BATTLE_REQUEST_ACCEPTED, new
+                {
+                    ReceiverId = receiverUserId,
+                    BattleRequest = request
+                });
+
+                await Clients.Caller.SendAsync(SignalRMethods.BATTLE_REQUEST_ACCEPTED_CONFIRMATION, new
+                {
+                    SenderId = senderUserId,
+                    BattleRequest = request
+                });
+
+                PendingAccepts.TryRemove(senderUserId, out _);
+
+                // Now start battle after sender reconnects
+                await StartFriendBattle(senderUserId, receiverUserId, request);
+            }
+            else
+            {
+                // Timeout -> cleanup waiter and notify receiver
+                SenderOnlineWaiters.AddOrUpdate(
+                    senderUserId,
+                    _ => [],
+                    (_, list) =>
+                    {
+                        list.Remove(tcs);
+                        return list;
+                    });
+
+                PendingAccepts.TryRemove(senderUserId, out _);
+
+                await Clients.Caller.SendAsync(SignalRMethods.ERROR, BATTLE_REQUEST_ACCEPT_SENDER_OFFLINE);
+            }
+        }
+        catch (Exception ex)
+        {
+            await Clients.Caller.SendAsync(SignalRMethods.ERROR, ex.Message);
+        }
+    }
+
+    public async Task StartFriendBattle(int senderUserId, int receiverUserId, BattleRequestDTO request)
+    {
+        try
+        {
+            if (!OnlineUsers.TryGetValue(senderUserId, out var senderConn) ||
+                !OnlineUsers.TryGetValue(receiverUserId, out var receiverConn))
+            {
+                await Clients.Caller.SendAsync(SignalRMethods.ERROR, BOTH_USERS_MUST_BE_ONLINE);
+                return;
+            }
+
+            int battleId = request.BattleId;
+
+            var result = await _battleMatchmakingService.StartFriendBattle(battleId, senderUserId, receiverUserId);
+
+            if (result == null || !result.IsMatched)
+            {
+                await Clients.Client(senderConn).SendAsync(SignalRMethods.ERROR, FAILED_TO_START_FRIEND_BATTLE);
+                await Clients.Client(receiverConn).SendAsync(SignalRMethods.ERROR, FAILED_TO_START_FRIEND_BATTLE);
+                return;
+            }
+
+            // Assign connection IDs before creating battle
+            result.Player.ConnectionId = senderConn;
+            result.Opponent.ConnectionId = receiverConn;
+
+            var state = await _battleService.CreateBattleAsync(result, battleId);
+            if (state.BattleAttemptId <= 0)
+            {
+                await Clients.Client(senderConn).SendAsync(SignalRMethods.ERROR, FAILED_TO_CREATE_BATTLE);
+                await Clients.Client(receiverConn).SendAsync(SignalRMethods.ERROR, FAILED_TO_CREATE_BATTLE);
+                return;
+            }
+
+            await CancelOtherPendingRequests(senderUserId, request.BattleId);
+
+            // Add both to group
+            await Groups.AddToGroupAsync(senderConn, state.BattleAttemptId.ToString());
+            await Groups.AddToGroupAsync(receiverConn, state.BattleAttemptId.ToString());
+
+            // Mark both connected
+            state.Connected[state.Player1Id] = true;
+            state.Connected[state.Player2Id] = true;
+
+            // Get battle details
+            BattleInstructionDTO battleInstruction = await _battleService.GetBattleInstructions(state.BattleAttemptId);
+            BattleStartDetails battleDetails = new()
+            {
+                PlayerProfile = result.PlayerProfile!,
+                OpponentProfile = result.OpponentProfile!,
+                BattleAttemptId = state.BattleAttemptId,
+                TotalQuestions = state.TotalQuestions,
+                BattleName = battleInstruction.BattleName
+            };
+
+            // Notify both players
+            await Clients.Group(state.BattleAttemptId.ToString())
+                .SendAsync(SignalRMethods.BATTLE_STARTED, battleDetails);
+
+            // Wait for both to get ready
+            await Task.Delay(TimeSpan.FromSeconds(28));
+
+            // Send first question
+            var p1Q = await _battleService.GetQuestionForPlayerAsync(state, senderConn, state.Player1Id, 1);
+            var p2Q = await _battleService.GetQuestionForPlayerAsync(state, receiverConn, state.Player2Id, 1);
+
+            if (p1Q != null)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                await Clients.Client(senderConn).SendAsync(SignalRMethods.RECEIVE_QUESTION, p1Q);
+                var cts1 = new CancellationTokenSource();
+                state.ActiveTimers[state.Player1Id] = cts1;
+                StartTimeout(state.BattleAttemptId, senderConn, 1, state.Player1Id, cts1);
+            }
+
+            if (p2Q != null)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                await Clients.Client(receiverConn).SendAsync(SignalRMethods.RECEIVE_QUESTION, p2Q);
+                var cts2 = new CancellationTokenSource();
+                state.ActiveTimers[state.Player2Id] = cts2;
+                StartTimeout(state.BattleAttemptId, receiverConn, 1, state.Player2Id, cts2);
+            }
+        }
+        catch (Exception ex)
+        {
+            await Clients.Caller.SendAsync(SignalRMethods.ERROR, ex.Message);
+        }
+    }
+
+    private async Task CancelOtherPendingRequests(int senderUserId, int acceptedBattleId)
+    {
+        List<BattleRequest> pendingRequests = await _battleRequestRepository.FindAsync(br =>
+        br.SenderId == senderUserId &&
+        br.BattleId != acceptedBattleId &&
+        !br.IsDeleted &&
+        br.Status == (int)BattleRequestStatus.Pending);
+
+        if (pendingRequests == null || pendingRequests.Count == 0)
+            return;
+
+        foreach (BattleRequest req in pendingRequests)
+        {
+            req.Status = (int)BattleRequestStatus.Cancelled;
+            req.ModifiedDate = DateTime.UtcNow;
+            req.ModifiedBy = senderUserId;
+        }
+
+        await _battleRequestRepository.UpdateRangeAsync(pendingRequests);
+
+        foreach (BattleRequest request in pendingRequests)
+        {
+            if (OnlineUsers.TryGetValue(request.ReceiverId, out var receiverConnId))
+            {
+                await Clients.Client(receiverConnId).SendAsync(SignalRMethods.BATTLE_REQUEST_CANCELLED, new
+                {
+                    Request = request,
+                    SenderId = senderUserId
+                });
+            }
         }
     }
 

@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBattleMatchmakingService, BattleMatchmakingService>();
         services.AddScoped<IBattleService, BattleService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
+        services.AddScoped<IUserActivityCheckerService, UserActivityCheckerService>();
         
 
         //mappers
