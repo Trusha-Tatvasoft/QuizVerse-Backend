@@ -4,6 +4,7 @@ using Moq;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 using Xunit;
 
@@ -289,5 +290,121 @@ public class BattleMatchmakingServiceTest
         _service.CancelMatchmaking(1, 10);
 
         _matchmakingQueueRepoMock.Verify(r => r.RemovePlayer(1, 10), Times.Once);
+    }
+
+    [Fact]
+    public async Task StartFriendBattle_BothProfilesExist_ReturnsMatchedResult()
+    {
+        int battleId = 1, senderId = 10, receiverId = 20;
+
+        var senderProfile = new PlayerProfileDTO
+        {
+            UserId = senderId,
+            UserName = "Sender",
+            FullName = "Sender Name",
+            CurrentLevel = 5,
+            WinRate = 60
+        };
+
+        var receiverProfile = new PlayerProfileDTO
+        {
+            UserId = receiverId,
+            UserName = "Receiver",
+            FullName = "Receiver Name",
+            CurrentLevel = 6,
+            WinRate = 75
+        };
+
+        var serviceMock = new Mock<BattleMatchmakingService>(
+            _matchmakingQueueRepoMock.Object,
+            _userRepoMock.Object,
+            _battleStatusRepoMock.Object,
+            _battleResultRepoMock.Object
+        );
+
+        serviceMock
+            .Setup(s => s.GetPlayerProfile(senderId))
+            .ReturnsAsync(senderProfile);
+        serviceMock
+            .Setup(s => s.GetPlayerProfile(receiverId))
+            .ReturnsAsync(receiverProfile);
+
+        var result = await serviceMock.Object.StartFriendBattle(battleId, senderId, receiverId);
+
+        Assert.NotNull(result);
+        Assert.True(result!.IsMatched);
+        Assert.Equal(senderId, result.Player!.UserId);
+        Assert.Equal(receiverId, result.Opponent!.UserId);
+        Assert.Equal(senderProfile, result.PlayerProfile);
+        Assert.Equal(receiverProfile, result.OpponentProfile);
+    }
+
+    [Fact]
+    public async Task StartFriendBattle_SenderProfileMissing_ReturnsNull()
+    {
+        int battleId = 1, senderId = 10, receiverId = 20;
+
+        var serviceMock = new Mock<BattleMatchmakingService>(
+            _matchmakingQueueRepoMock.Object,
+            _userRepoMock.Object,
+            _battleStatusRepoMock.Object,
+            _battleResultRepoMock.Object
+        );
+
+        serviceMock
+            .Setup(s => s.GetPlayerProfile(senderId))
+            .ReturnsAsync((PlayerProfileDTO?)null);
+        serviceMock
+            .Setup(s => s.GetPlayerProfile(receiverId))
+            .ReturnsAsync(new PlayerProfileDTO { UserId = receiverId });
+
+        var result = await serviceMock.Object.StartFriendBattle(battleId, senderId, receiverId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task StartFriendBattle_ReceiverProfileMissing_ReturnsNull()
+    {
+        int battleId = 1, senderId = 10, receiverId = 20;
+
+        var serviceMock = new Mock<BattleMatchmakingService>(
+            _matchmakingQueueRepoMock.Object,
+            _userRepoMock.Object,
+            _battleStatusRepoMock.Object,
+            _battleResultRepoMock.Object
+        );
+
+        serviceMock
+            .Setup(s => s.GetPlayerProfile(senderId))
+            .ReturnsAsync(new PlayerProfileDTO { UserId = senderId });
+        serviceMock
+            .Setup(s => s.GetPlayerProfile(receiverId))
+            .ReturnsAsync((PlayerProfileDTO?)null);
+
+        var result = await serviceMock.Object.StartFriendBattle(battleId, senderId, receiverId);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task StartFriendBattle_BothProfilesMissing_ReturnsNull()
+    {
+        int battleId = 1, senderId = 10, receiverId = 20;
+
+        var serviceMock = new Mock<BattleMatchmakingService>(
+            _matchmakingQueueRepoMock.Object,
+            _userRepoMock.Object,
+            _battleStatusRepoMock.Object,
+            _battleResultRepoMock.Object
+        );
+
+        serviceMock
+            .Setup(s => s.GetPlayerProfile(It.IsAny<int>()))
+            .ReturnsAsync((PlayerProfileDTO?)null);
+
+        var result = await serviceMock.Object.StartFriendBattle(battleId, senderId, receiverId);
+
+        Assert.Null(result);
     }
 }

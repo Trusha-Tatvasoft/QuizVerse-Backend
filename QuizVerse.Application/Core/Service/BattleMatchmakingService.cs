@@ -45,6 +45,42 @@ public class BattleMatchmakingService(
         return new MatchmakingResultDTO { IsMatched = false };
     }
 
+    public async Task<MatchmakingResultDTO?> StartFriendBattle(int battleId, int senderUserId, int receiverUserId)
+    {
+        PlayerProfileDTO? senderProfile = await GetPlayerProfile(senderUserId);
+        PlayerProfileDTO? receiverProfile = await GetPlayerProfile(receiverUserId);
+
+        if (senderProfile == null || receiverProfile == null)
+            return null;
+
+        MatchmakingPlayerDTO sender = new()
+        {
+            ConnectionId = string.Empty,
+            UserId = senderUserId,
+            BattleId = battleId,
+            EnqueuedAt = DateTime.UtcNow
+        };
+
+        MatchmakingPlayerDTO receiver = new()
+        {
+            ConnectionId = string.Empty,
+            UserId = receiverUserId,
+            BattleId = battleId,
+            EnqueuedAt = DateTime.UtcNow
+        };
+
+        MatchmakingResultDTO result = new()
+        {
+            IsMatched = true,
+            Player = sender,
+            Opponent = receiver,
+            PlayerProfile = senderProfile,
+            OpponentProfile = receiverProfile
+        };
+
+        return result;
+    }
+
     public MatchmakingPlayerDTO? FindOpponent(MatchmakingPlayerDTO player)
     {
         _matchmakingQueueRepository.AddPlayer(player.BattleId, player);
@@ -74,7 +110,7 @@ public class BattleMatchmakingService(
         return Math.Round(wins * 100.0 / total, 2);
     }
 
-    public async Task<PlayerProfileDTO?> GetPlayerProfile(int userId)
+    public virtual async Task<PlayerProfileDTO?> GetPlayerProfile(int userId)
     {
         PlayerProfileDTO? user = await _userRepo.GetQueryableInclude(u => u.UserPerformanceDetail!)
         .Where(u => u.Id == userId && !u.IsDeleted)

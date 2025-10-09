@@ -89,7 +89,8 @@ namespace QuizVerse.Infrastructure.Enums
     {
         Accepted = 1,
         Rejected = 2,
-        Pending = 3
+        Pending = 3,
+        Cancelled = 4
     }
 
     public enum BadgeType

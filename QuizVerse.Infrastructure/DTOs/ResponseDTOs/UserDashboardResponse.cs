@@ -64,6 +64,7 @@ public class BattleRequestDTO
     public string SenderUserName { get; set; } = null!;
     public string SenderFullName { get; set; } = null!;
     public string? SenderProfilePic { get; set; }
+    public int BattleId { get; set; }
     public string? BattleName { get; set; } = null!;
     public string BattleCategory { get; set; } = null!;
     public string BattleDifficulty { get; set; } = null!;

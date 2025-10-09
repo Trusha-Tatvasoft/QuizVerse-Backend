@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Security.Claims;
@@ -9,6 +10,7 @@ using Moq;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
@@ -32,6 +34,8 @@ namespace QuizVerse.Tests.Hubs
         private readonly Mock<ISingleClientProxy> _mockClientProxy;
         private readonly Mock<IGroupManager> _mockGroups;
         private readonly BattleHub _hub;
+        private readonly Mock<IUserActivityCheckerService> _mockUserActivityCheckerService;
+        private readonly Mock<IGenericRepository<BattleRequest>> _mockBattleRequestRepository;
 
         public BattleHubTests()
         {
@@ -46,6 +50,8 @@ namespace QuizVerse.Tests.Hubs
             _mockClients = new Mock<IHubCallerClients>();
             _mockClientProxy = new Mock<ISingleClientProxy>();
             _mockGroups = new Mock<IGroupManager>();
+            _mockUserActivityCheckerService = new Mock<IUserActivityCheckerService>();
+            _mockBattleRequestRepository = new Mock<IGenericRepository<BattleRequest>>();
 
             _hub = new BattleHub(
                 _mockBattleMatchmakingService.Object,
@@ -54,6 +60,8 @@ namespace QuizVerse.Tests.Hubs
                 _mockHubContext.Object,
                 _mockBattleStatusRepo.Object,
                 _mockBattleListRepo.Object,
+                _mockUserActivityCheckerService.Object,
+                _mockBattleRequestRepository.Object,
                 _mockMapper.Object)
             {
                 Context = _mockContext.Object,
@@ -2158,7 +2166,350 @@ namespace QuizVerse.Tests.Hubs
             // Cleanup
             BattleStateManager.RemoveBattle(attemptId);
         }
+        #endregion
 
+        #region OnConnectedAsync Tests
+        [Fact]
+        public async Task OnConnectedAsync_UserRegisteredAsOnline_ShouldAddToOnlineUsers()
+        {
+            int userId = 1;
+            SetupMockContext(userId);
+
+            await _hub.OnConnectedAsync();
+
+            Assert.True(BattleHub.OnlineUsers.ContainsKey(userId));
+            Assert.Equal("test-connection-id", BattleHub.OnlineUsers[userId]);
+        }
+
+        [Fact]
+        public async Task OnConnectedAsync_PendingWaiters_ShouldSetResult()
+        {
+            int userId = 2;
+            SetupMockContext(userId);
+
+            var tcs = new TaskCompletionSource<string>();
+            BattleHub.SenderOnlineWaiters[userId] = new List<TaskCompletionSource<string>> { tcs };
+
+            await _hub.OnConnectedAsync();
+
+            Assert.True(tcs.Task.IsCompletedSuccessfully);
+            Assert.Equal("online", tcs.Task.Result);
+            Assert.False(BattleHub.SenderOnlineWaiters.ContainsKey(userId));
+        }
+        #endregion
+
+        #region AcceptBattleRequest Tests
+        private void SetupClientsCallerMock(out Mock<ISingleClientProxy> mockCaller, params string[] clientConnectionIds)
+        {
+            // Caller mock
+            mockCaller = new Mock<ISingleClientProxy>();
+            mockCaller
+                .Setup(x => x.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            var clientsMock = new Mock<IHubCallerClients>();
+            clientsMock.Setup(c => c.Caller).Returns(mockCaller.Object);
+
+            // Mock individual client connections
+            foreach (var connId in clientConnectionIds)
+            {
+                var clientProxy = new Mock<ISingleClientProxy>();
+                clientProxy
+                    .Setup(x => x.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<CancellationToken>()))
+                    .Returns(Task.CompletedTask);
+                clientsMock.Setup(c => c.Client(connId)).Returns(clientProxy.Object);
+            }
+
+            _hub.Clients = clientsMock.Object;
+        }
+
+        [Fact]
+        public async Task AcceptBattleRequest_SenderBusy_ShouldSendErrorAndRemovePending()
+        {
+            int senderId = 3;
+            SetupMockContext(userId: 4);
+            var request = new BattleRequestDTO { BattleId = 100 };
+
+            _mockUserActivityCheckerService
+                .Setup(x => x.IsUserBusy(senderId))
+                .ReturnsAsync(true);
+
+            BattleHub.PendingAccepts[senderId] = (4, request, DateTime.UtcNow);
+
+            SetupClientsCallerMock(out var mockCaller);
+
+            await _hub.AcceptBattleRequest(senderId, request);
+
+            mockCaller.Verify(x => x.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(o => o.Length == 1 && o[0].ToString() == Constants.SENDER_IN_ACTIVE_BATTLE_OR_QUIZ),
+                It.IsAny<CancellationToken>()), Times.Once);
+
+            Assert.False(BattleHub.PendingAccepts.ContainsKey(senderId));
+        }
+
+        [Fact]
+        public async Task AcceptBattleRequest_SenderOnline_ShouldNotifyAndStartBattle()
+        {
+            int senderId = 5;
+            int receiverId = 6;
+            SetupMockContext(userId: receiverId);
+            var request = new BattleRequestDTO { BattleId = 101 };
+
+            BattleHub.OnlineUsers[senderId] = "sender-connection-id";
+
+            _mockUserActivityCheckerService
+                .Setup(x => x.IsUserBusy(senderId))
+                .ReturnsAsync(false);
+
+            _mockBattleMatchmakingService
+                .Setup(x => x.StartFriendBattle(request.BattleId, senderId, receiverId))
+                .ReturnsAsync(new MatchmakingResultDTO
+                {
+                    IsMatched = true,
+                    PlayerProfile = new PlayerProfileDTO { UserId = senderId, UserName = "SenderUser", FullName = "Sender FullName", CurrentLevel = 1 },
+                    OpponentProfile = new PlayerProfileDTO { UserId = receiverId, UserName = "ReceiverUser", FullName = "Receiver FullName", CurrentLevel = 1 },
+                    Player = new MatchmakingPlayerDTO { ConnectionId = "sender-connection-id", UserId = senderId, BattleId = request.BattleId },
+                    Opponent = new MatchmakingPlayerDTO { ConnectionId = "receiver-connection-id", UserId = receiverId, BattleId = request.BattleId }
+                });
+
+            var battleState = new BattleState
+            {
+                BattleAttemptId = 200,
+                Player1Id = senderId,
+                Player2Id = receiverId
+            };
+            battleState.Connected.TryAdd(senderId, true);
+            battleState.Connected.TryAdd(receiverId, true);
+
+            _mockBattleService
+                .Setup(x => x.CreateBattleAsync(It.IsAny<MatchmakingResultDTO>(), request.BattleId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(battleState);
+
+            // Mock caller + sender client
+            SetupClientsCallerMock(out var mockCaller, "sender-connection-id");
+
+            await _hub.AcceptBattleRequest(senderId, request);
+
+            mockCaller.Verify(x => x.SendCoreAsync(
+                SignalRMethods.BATTLE_REQUEST_ACCEPTED_CONFIRMATION,
+                It.IsAny<object[]>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task AcceptBattleRequest_SenderOffline_ShouldWaitThenNotifyOnReconnect()
+        {
+            int senderId = 7;
+            int receiverId = 8;
+            SetupMockContext(userId: receiverId);
+            var request = new BattleRequestDTO { BattleId = 102 };
+
+            _mockUserActivityCheckerService
+                .Setup(x => x.IsUserBusy(senderId))
+                .ReturnsAsync(false);
+
+            SetupClientsCallerMock(out var mockCaller, "sender-conn");
+
+            var acceptTask = _hub.AcceptBattleRequest(senderId, request);
+
+            // Simulate sender coming online
+            BattleHub.OnlineUsers[senderId] = "sender-conn";
+            if (BattleHub.SenderOnlineWaiters.TryGetValue(senderId, out var waiters))
+            {
+                foreach (var tcs in waiters)
+                    tcs.TrySetResult("online");
+            }
+
+            await acceptTask;
+
+            Assert.False(BattleHub.PendingAccepts.ContainsKey(senderId));
+        }
+
+        [Fact]
+        public async Task AcceptBattleRequest_SenderOffline_TimesOut_ShouldSendOfflineError()
+        {
+            int senderId = 10;
+            int receiverId = 20;
+            SetupMockContext(userId: receiverId); // Receiver is current user
+
+            var request = new BattleRequestDTO { BattleId = 500 };
+
+            _mockUserActivityCheckerService
+                .Setup(x => x.IsUserBusy(senderId))
+                .ReturnsAsync(false);
+
+            SetupClientsCallerMock(out var mockCaller);
+
+            var acceptTask = _hub.AcceptBattleRequest(senderId, request);
+
+            await acceptTask;
+
+            mockCaller.Verify(x => x.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(o => o.Length == 1 && o[0].ToString() == BATTLE_REQUEST_ACCEPT_SENDER_OFFLINE),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            Assert.False(BattleHub.PendingAccepts.ContainsKey(senderId));
+
+            Assert.True(!BattleHub.SenderOnlineWaiters.ContainsKey(senderId) || BattleHub.SenderOnlineWaiters[senderId].Count == 0);
+        }
+        #endregion
+
+        #region StartFriendBattle Tests
+        [Fact]
+        public async Task StartFriendBattle_BothUsersOffline_ShouldSendError()
+        {
+            int senderId = 1;
+            int receiverId = 2;
+            var request = new BattleRequestDTO { BattleId = 101 };
+
+            SetupMockContext(userId: receiverId);
+
+            SetupClientsCallerMock(out var mockCaller);
+
+            await _hub.StartFriendBattle(senderId, receiverId, request);
+
+            mockCaller.Verify(x => x.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(o => o.Length == 1 && o[0].ToString() == BOTH_USERS_MUST_BE_ONLINE),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task StartFriendBattle_MatchmakingFails_ShouldSendErrorToBothClients()
+        {
+            int senderId = 3;
+            int receiverId = 4;
+            var request = new BattleRequestDTO { BattleId = 102 };
+
+            // Make both users online
+            BattleHub.OnlineUsers[senderId] = "sender-conn";
+            BattleHub.OnlineUsers[receiverId] = "receiver-conn";
+
+            SetupClientsCallerMock(out var mockCaller, "sender-conn", "receiver-conn");
+
+            // Mock matchmaking fails
+            _mockBattleMatchmakingService
+                .Setup(x => x.StartFriendBattle(request.BattleId, senderId, receiverId))
+                .ReturnsAsync((MatchmakingResultDTO)null);
+
+            await _hub.StartFriendBattle(senderId, receiverId, request);
+
+            var clients = _hub.Clients;
+            Mock.Get(clients.Client("sender-conn")).Verify(x => x.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(o => o.Length == 1 && o[0].ToString() == FAILED_TO_START_FRIEND_BATTLE),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            Mock.Get(clients.Client("receiver-conn")).Verify(x => x.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(o => o.Length == 1 && o[0].ToString() == FAILED_TO_START_FRIEND_BATTLE),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task StartFriendBattle_CreateBattleFails_ShouldSendErrorToBothClients()
+        {
+            int senderId = 5;
+            int receiverId = 6;
+            var request = new BattleRequestDTO { BattleId = 103 };
+
+            BattleHub.OnlineUsers[senderId] = "sender-conn";
+            BattleHub.OnlineUsers[receiverId] = "receiver-conn";
+
+            SetupClientsCallerMock(out var mockCaller, "sender-conn", "receiver-conn");
+
+            _mockBattleMatchmakingService
+                .Setup(x => x.StartFriendBattle(request.BattleId, senderId, receiverId))
+                .ReturnsAsync(new MatchmakingResultDTO
+                {
+                    IsMatched = true,
+                    Player = new MatchmakingPlayerDTO { UserId = senderId },
+                    Opponent = new MatchmakingPlayerDTO { UserId = receiverId },
+                    PlayerProfile = new PlayerProfileDTO(),
+                    OpponentProfile = new PlayerProfileDTO()
+                });
+
+            _mockBattleService
+                .Setup(x => x.CreateBattleAsync(
+                    It.IsAny<MatchmakingResultDTO>(),
+                    It.IsAny<int>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new BattleState { BattleAttemptId = 0 });
+
+            await _hub.StartFriendBattle(senderId, receiverId, request);
+
+            var clients = _hub.Clients;
+            Mock.Get(clients.Client("sender-conn")).Verify(x => x.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(o => o.Length == 1 && o[0].ToString() == FAILED_TO_CREATE_BATTLE),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            Mock.Get(clients.Client("receiver-conn")).Verify(x => x.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(o => o.Length == 1 && o[0].ToString() == FAILED_TO_CREATE_BATTLE),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+        #endregion
+
+        #region PendingBattleRequestManagement
+        [Fact]
+        public async Task StartFriendBattle_ShouldUpdateAcceptedRequest_AndCancelPendingRequests()
+        {
+            int senderId = 1;
+            int receiverId = 2;
+            var request = new BattleRequestDTO { BattleId = 101, RequestId = 10 };
+
+            BattleHub.OnlineUsers[senderId] = "sender-conn";
+            BattleHub.OnlineUsers[receiverId] = "receiver-conn";
+
+            SetupClientsCallerMock(out var mockCaller, "sender-conn", "receiver-conn");
+
+            var matchmakingResult = new MatchmakingResultDTO
+            {
+                IsMatched = true,
+                Player = new MatchmakingPlayerDTO { UserId = senderId },
+                Opponent = new MatchmakingPlayerDTO { UserId = receiverId },
+                PlayerProfile = new PlayerProfileDTO(),
+                OpponentProfile = new PlayerProfileDTO()
+            };
+
+            _mockBattleMatchmakingService
+                .Setup(x => x.StartFriendBattle(request.BattleId, senderId, receiverId))
+                .ReturnsAsync(matchmakingResult);
+
+            var battleState = new BattleState { BattleAttemptId = 100 };
+            battleState.Connected.TryAdd(senderId, true);
+            battleState.Connected.TryAdd(receiverId, true);
+
+            _mockBattleService.Setup(x => x.CreateBattleAsync(It.IsAny<MatchmakingResultDTO>(), request.BattleId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(battleState);
+
+            var pendingRequests = new List<BattleRequest>
+            {
+                new BattleRequest { Id = 11, SenderId = senderId, ReceiverId = 3, Status = (int)Infrastructure.Enums.BattleRequestStatus.Pending }
+            };
+
+            _mockBattleRequestRepository.Setup(x => x.FindAsync(It.IsAny<Expression<Func<BattleRequest, bool>>>()))
+                .ReturnsAsync(pendingRequests);
+
+            var acceptedRequest = new BattleRequest { Id = request.RequestId, SenderId = senderId, Status = (int)Infrastructure.Enums.BattleRequestStatus.Pending };
+            _mockBattleRequestRepository.Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleRequest, bool>>>(), It.IsAny<Func<IQueryable<BattleRequest>, IQueryable<BattleRequest>>>()))
+                .ReturnsAsync(acceptedRequest);
+
+            await _hub.StartFriendBattle(senderId, receiverId, request);
+
+            Assert.Equal((int)Infrastructure.Enums.BattleRequestStatus.Accepted, acceptedRequest.Status);
+            _mockBattleRequestRepository.Verify(x => x.UpdateAsync(acceptedRequest), Times.Once);
+            _mockBattleRequestRepository.Verify(x => x.UpdateRangeAsync(pendingRequests), Times.Once);
+        }
         #endregion
     }
 }
