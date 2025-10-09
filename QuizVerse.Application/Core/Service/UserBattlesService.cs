@@ -16,6 +16,8 @@ using QuizVerse.Infrastructure.Interface;
 namespace QuizVerse.Application.Core.Service;
 
 public class UserBattlesService(
+    IGenericRepository<Domain.Entities.BattleStatus> _battleStatusReposiory,
+    IGenericRepository<QuizPlayStatus> _quizPlayStatusRepository,
     IGenericRepository<BattleList> _battleListRepository,
     IGenericRepository<User> _userRepository,
     IGenericRepository<BattleRequest> _battleRequestRepository,
@@ -105,6 +107,22 @@ public class UserBattlesService(
 
         if (UserId == receiver.Id)
             throw new AppException(Constants.SELF_CHALLENGE_NOT_ALLOWED, StatusCodes.Status400BadRequest);
+
+        bool receiverInBattle = await _battleStatusReposiory.Exists(bs =>
+            !bs.IsDeleted &&
+            bs.BattleStatus1 == (int)Infrastructure.Enums.BattleStatus.Running &&
+            (bs.User1Id == receiver.Id || bs.User2Id == receiver.Id)
+        );
+
+        if (receiverInBattle)
+            throw new AppException(Constants.USER_IN_ACTIVE_BATTLE, StatusCodes.Status409Conflict);
+
+        bool receiverInQuiz = await _quizPlayStatusRepository.Exists(qs =>
+            (qs.IsCompleted ?? false) == false && qs.UserId == receiver.Id
+        );
+
+        if (receiverInQuiz)
+            throw new AppException(Constants.USER_IN_ACTIVE_QUIZ, StatusCodes.Status409Conflict);
 
         bool anyAccepted = await _battleRequestRepository.Exists(br =>
             br.SenderId == UserId &&

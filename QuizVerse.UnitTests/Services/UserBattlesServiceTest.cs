@@ -21,6 +21,8 @@ namespace QuizVerse.UnitTests.Services
 {
     public class UserBattlesServiceTest
     {
+        private readonly Mock<IGenericRepository<Domain.Entities.BattleStatus>> _mockBattleStatusReposiory;
+        private readonly Mock<IGenericRepository<QuizPlayStatus>> _mockQuizPlayStatusRepository;
         private readonly Mock<IGenericRepository<BattleList>> _mockBattleListRepository;
         private readonly Mock<IGenericRepository<User>> _mockUserRepository;
         private readonly Mock<IGenericRepository<BattleRequest>> _mockBattleRequestRepository;
@@ -45,8 +47,12 @@ namespace QuizVerse.UnitTests.Services
             _mockSqlQueryRepository = new Mock<ISqlQueryRepository>();
             _mockMapper = new Mock<IMapper>();
             _mockNotificationService = new Mock<INotificationService>();
+            _mockBattleStatusReposiory = new Mock<IGenericRepository<Domain.Entities.BattleStatus>>();
+            _mockQuizPlayStatusRepository = new Mock<IGenericRepository<QuizPlayStatus>>();
 
             _service = new UserBattlesService(
+                _mockBattleStatusReposiory.Object,
+                _mockQuizPlayStatusRepository.Object,
                 _mockBattleListRepository.Object,
                 _mockUserRepository.Object,
                 _mockBattleRequestRepository.Object,
