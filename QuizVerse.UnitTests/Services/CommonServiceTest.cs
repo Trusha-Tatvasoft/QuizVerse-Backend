@@ -288,6 +288,78 @@ namespace QuizVerse.UnitTests.Services
         }
         #endregion
 
+        #region DeleteFile
+        [Fact]
+        public void DeleteFile_ShouldReturnFalse_WhenPathIsNull()
+        {
+            var result = _service.DeleteFile(null!);
+            result.Should().BeFalse();
+        }
+
+        [Fact]
+        public void DeleteFile_ShouldReturnFalse_WhenPathIsEmpty()
+        {
+            var result = _service.DeleteFile(string.Empty);
+            result.Should().BeFalse();
+        }
+
+        [Fact]
+        public void DeleteFile_ShouldReturnFalse_WhenFileDoesNotExist()
+        {
+            string fakePath = "unittestfiles/nonexistent.txt";
+            var result = _service.DeleteFile(fakePath);
+            result.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task DeleteFile_ShouldReturnTrue_WhenFileExistsAndDeletedSuccessfully()
+        {
+            // Arrange: create a file using SaveFile to ensure structure is consistent
+            string folderName = "unittestfiles";
+            string fileContent = "Temporary File";
+            byte[] fileBytes = Encoding.UTF8.GetBytes(fileContent);
+            using var stream = new MemoryStream(fileBytes);
+
+            var formFile = new FormFile(stream, 0, fileBytes.Length, "Data", "tempfile.txt")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "text/plain"
+            };
+
+            var relativePath = await _service.SaveFile(formFile, folderName);
+            relativePath.Should().NotBeNull();
+
+            // Act
+            var result = _service.DeleteFile(relativePath!);
+
+            // Assert
+            result.Should().BeTrue();
+
+            string fullPath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot",
+                "uploads",
+                relativePath!.Replace("/", Path.DirectorySeparatorChar.ToString())
+            );
+            File.Exists(fullPath).Should().BeFalse();
+        }
+
+        [Fact]
+        public void DeleteFile_ShouldReturnFalse_WhenExceptionThrown()
+        {
+            // Arrange
+            // Passing invalid path with illegal characters to trigger exception
+            string invalidPath = "invalid<>path/test.txt";
+
+            // Act
+            var result = _service.DeleteFile(invalidPath);
+
+            // Assert
+            result.Should().BeFalse();
+        }
+        #endregion
+
+
         #region Create CSV Helper
         [Fact]
         public void EscapeCsv_NullInput_ReturnsEmptyString()

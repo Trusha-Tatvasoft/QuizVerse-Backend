@@ -334,6 +334,11 @@ BEGIN
             v_question_id := v_q.id;
         END IF;
 
+         -- Update existing records where is_deleted = TRUE to set is_deleted = FALSE
+        UPDATE "QuizToBaseQuestionMap"
+        SET is_deleted = FALSE, modified_by = p_created_by, modified_date = CURRENT_TIMESTAMP
+        WHERE quiz_id = v_quiz_id AND que_id = v_question_id AND is_deleted = TRUE;
+
         -- Add mapping if not exists
         INSERT INTO "QuizToBaseQuestionMap" (quiz_id, que_id, created_by)
         SELECT v_quiz_id, v_question_id, p_created_by

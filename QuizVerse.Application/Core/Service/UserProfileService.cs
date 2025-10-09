@@ -148,6 +148,10 @@ public class UserProfileService(
     public async Task<bool> UpdateProfilePicture(UpdateProfilePicRequestDto updateProfilePicRequestDto)
     {
         var user = await userRepository.GetAsync(u => u.Id == UserId) ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, UserId));
+        if(user.ProfilePic != null)
+        {
+            commonService.DeleteFile(user.ProfilePic);
+        }
 
         var profilePicPath = await commonService.SaveFile(updateProfilePicRequestDto.ProfilePic, "users");
 

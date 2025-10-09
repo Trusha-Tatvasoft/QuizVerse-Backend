@@ -109,6 +109,14 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
 
         if (dto.ProfilePic != null && dto.ProfilePic.Length > 0)
         {
+            if (dto.Id != null)
+            {
+                var user = await userRepository.GetAsync(u => u.Id == dto.Id) ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, dto.Id));
+                if (!string.IsNullOrEmpty(user.ProfilePic))
+                {
+                    commonService.DeleteFile(user.ProfilePic);
+                }
+            }
             imagePath = await commonService.SaveFile(dto.ProfilePic, "users");
         }
 

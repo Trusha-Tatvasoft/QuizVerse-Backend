@@ -11,6 +11,7 @@ namespace QuizVerse.Application.Core.Interface
         DateTime ToDate(string dateString);
         MemoryStream ExportToExcel<T>(List<T> data, string sheetName, XLTableTheme? tableTheme, int startRow = 10, int startCol = 1, Action<IXLWorksheet>? setup = null);
         Task<string?> SaveFile(IFormFile file, string folderName);
+        bool DeleteFile(string relativeFilePath);
         string EscapeCsv(string input);
         Task<string> GenerateOtp(string email);
         Task<string> SendEmailFromTemplate(TemplatedEmailRequestDto dto);
