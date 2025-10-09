@@ -800,6 +800,7 @@ public class BattleHub(
                 return;
             }
 
+            await UpdateAcceptedBattleRequest(senderUserId, request.RequestId);
             await CancelOtherPendingRequests(senderUserId, request.BattleId);
 
             // Add both to group
@@ -860,7 +861,7 @@ public class BattleHub(
     {
         List<BattleRequest> pendingRequests = await _battleRequestRepository.FindAsync(br =>
         br.SenderId == senderUserId &&
-        br.BattleId != acceptedBattleId &&
+        br.BattleId == acceptedBattleId &&
         !br.IsDeleted &&
         br.Status == (int)BattleRequestStatus.Pending);
 
@@ -887,6 +888,23 @@ public class BattleHub(
                 });
             }
         }
+    }
+
+    private async Task UpdateAcceptedBattleRequest(int senderUserId, int acceptedRequestId)
+    {
+        var request = await _battleRequestRepository.GetAsync(br =>
+            br.Id == acceptedRequestId &&
+            br.SenderId == senderUserId &&
+            !br.IsDeleted);
+
+        if (request == null)
+            return;
+
+        request.Status = (int)BattleRequestStatus.Accepted;
+        request.ModifiedDate = DateTime.UtcNow;
+        request.ModifiedBy = senderUserId;
+
+        await _battleRequestRepository.UpdateAsync(request);
     }
 
     public async Task SkipInstructions(int battleAttemptId)
