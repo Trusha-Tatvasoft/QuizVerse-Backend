@@ -141,12 +141,12 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
             new("p_password", NpgsqlDbType.Text) { Value = (object?)password ?? DBNull.Value },
             new("p_profile_pic", NpgsqlDbType.Text) { Value = (object?)imagePath ?? DBNull.Value },
             new("p_bio", NpgsqlDbType.Text) { Value = (object?)dto.Bio ?? DBNull.Value },
-            new("p_player_role_id", NpgsqlDbType.Integer) { Value = (int)UserRoles.Player },
+            new("p_role_id", NpgsqlDbType.Integer) { Value = dto.RoleId },
             new("p_status_active", NpgsqlDbType.Integer) { Value = (int)UserStatus.Active },
             new("p_status_inactive", NpgsqlDbType.Integer) { Value = (int)UserStatus.Inactive },
             new("p_status_suspended", NpgsqlDbType.Integer) { Value = (int)UserStatus.Suspended },
             new("p_modified_by", NpgsqlDbType.Integer) { Value = !dto.IsRegister ? UserId : DBNull.Value },
-            new("p_first_time_login", NpgsqlDbType.Boolean) { Value = !dto.IsRegister }
+            new("p_first_time_login", NpgsqlDbType.Boolean) { Value = !dto.IsRegister },
         };
 
 

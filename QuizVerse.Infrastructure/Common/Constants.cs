@@ -4,6 +4,14 @@ namespace QuizVerse.Infrastructure.Common;
 
 public static class Constants
 {
+    #region Authorize attribute Roles
+    public static class RoleGroups
+    {
+        public const string Admins = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin);
+        public const string AllUsers = nameof(UserRoles.Admin) + "," + nameof(UserRoles.SuperAdmin) + "," + nameof(UserRoles.Player);
+    }
+
+    #endregion
     #region General Messages
     public const string PLATFORM_NAME = "QuizVerse";
     public const string QUIZVERSE_DEFAULT_QUOTE = "Welcome to QuizVerse!";

@@ -10,7 +10,7 @@ using QuizVerse.Infrastructure.Enums;
 namespace QuizVerse.WebAPI.Controllers;
 
 [ApiController]
-[Authorize(Roles = nameof(UserRoles.Admin))]
+[Authorize(Roles = Constants.RoleGroups.Admins)]
 [Route("api/[controller]")]
 public class QuizCategoryController(IQuizCategoryService _quizCategoryService) : ControllerBase
 {
@@ -81,7 +81,7 @@ public class QuizCategoryController(IQuizCategoryService _quizCategoryService) :
     {
         return Ok(new ApiResponse<string>
         {
-            Result =  await _quizCategoryService.IsCategoryNameAvailable(categoryName, id),
+            Result = await _quizCategoryService.IsCategoryNameAvailable(categoryName, id),
             Message = Constants.VALID_DATA,
             StatusCode = StatusCodes.Status200OK,
             Data = null

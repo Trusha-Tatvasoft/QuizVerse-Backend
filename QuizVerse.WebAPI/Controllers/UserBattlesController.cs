@@ -12,7 +12,7 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 [Authorize(Roles = nameof(UserRoles.Player))]
 [Route("api/[controller]")]
-public class UserBattlesController(IUserBattlesService userBattlesService,IBattleService battleService) : ControllerBase
+public class UserBattlesController(IUserBattlesService userBattlesService, IBattleService battleService) : ControllerBase
 {
     #region User Available Battles
     [HttpGet("get-user-available-battles")]
@@ -89,7 +89,7 @@ public class UserBattlesController(IUserBattlesService userBattlesService,IBattl
             Result = true,
             StatusCode = StatusCodes.Status200OK,
             Message = Constants.USER_SEARCH_SUCCESS,
-            Data = await userBattlesService.SearchUsersAsync(userName,battleId)
+            Data = await userBattlesService.SearchUsersAsync(userName, battleId)
         });
     }
     #endregion
