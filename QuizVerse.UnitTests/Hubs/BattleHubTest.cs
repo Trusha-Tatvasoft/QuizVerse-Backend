@@ -2511,5 +2511,153 @@ namespace QuizVerse.Tests.Hubs
             _mockBattleRequestRepository.Verify(x => x.UpdateRangeAsync(pendingRequests), Times.Once);
         }
         #endregion
+
+        #region Decline Battle Request Tests
+        [Fact]
+        public async Task DeclineBattleRequest_RequestNotFound_ShouldSendError()
+        {
+            int requestId = 1;
+            int receiverId = 5;
+            SetupMockContext(userId: receiverId);
+
+            _mockBattleRequestRepository
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleRequest, bool>>>(), It.IsAny<Func<IQueryable<BattleRequest>, IQueryable<BattleRequest>>>()))
+                .ReturnsAsync((BattleRequest?)null);
+
+            SetupClientsCallerMock(out var mockCaller);
+
+            await _hub.DeclineBattleRequest(requestId);
+
+            mockCaller.Verify(x => x.SendCoreAsync(
+                SignalRMethods.ERROR,
+                It.Is<object[]>(o => o.Length == 1 && o[0].ToString() == Constants.BATTLE_REQUEST_NOT_FOUND_OR_ALREADY_HANDLED),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task DeclineBattleRequest_SenderOnline_ShouldUpdateAndNotifyBoth()
+        {
+            int requestId = 10;
+            int receiverId = 20;
+            int senderId = 30;
+            SetupMockContext(userId: receiverId);
+
+            var mockBattle = new BattleList { Quiz = new Quiz { Name = "Science Quiz" } };
+            var mockReceiver = new User { UserName = "ReceiverUser" };
+
+            var request = new BattleRequest
+            {
+                Id = requestId,
+                SenderId = senderId,
+                ReceiverId = receiverId,
+                Status = (int)Infrastructure.Enums.BattleRequestStatus.Pending,
+                IsDeleted = false,
+                Battle = mockBattle,
+                Receiver = mockReceiver
+            };
+
+            _mockBattleRequestRepository
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleRequest, bool>>>(),
+                    It.IsAny<Func<IQueryable<BattleRequest>, IQueryable<BattleRequest>>>()))
+                .ReturnsAsync(request);
+
+            BattleHub.OnlineUsers[senderId] = "sender-connection-id";
+
+            var mockSenderClient = new Mock<ISingleClientProxy>();
+            object? capturedSenderMsg = null;
+            mockSenderClient
+                .Setup(x => x.SendCoreAsync(SignalRMethods.BATTLE_REQUEST_DECLINED,
+                    It.IsAny<object[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, object[], CancellationToken>((method, args, token) => capturedSenderMsg = args[0])
+                .Returns(Task.CompletedTask);
+
+            var mockReceiverClient = new Mock<ISingleClientProxy>();
+            object? capturedReceiverMsg = null;
+            mockReceiverClient
+                .Setup(x => x.SendCoreAsync(SignalRMethods.BATTLE_REQUEST_DECLINED,
+                    It.IsAny<object[]>(),
+                    It.IsAny<CancellationToken>()))
+                .Callback<string, object[], CancellationToken>((method, args, token) => capturedReceiverMsg = args[0])
+                .Returns(Task.CompletedTask);
+
+            var clientsMock = new Mock<IHubCallerClients>();
+            clientsMock.Setup(c => c.Caller).Returns(mockReceiverClient.Object);
+            clientsMock.Setup(c => c.Client("sender-connection-id")).Returns(mockSenderClient.Object);
+
+            _hub.Clients = clientsMock.Object;
+
+            await _hub.DeclineBattleRequest(requestId);
+
+            _mockBattleRequestRepository.Verify(x => x.UpdateAsync(It.Is<BattleRequest>(r =>
+                r.Status == (int)Infrastructure.Enums.BattleRequestStatus.Rejected)), Times.Once);
+
+            Assert.NotNull(capturedSenderMsg);
+            Assert.Equal("Science Quiz", capturedSenderMsg!.GetType().GetProperty("BattleName")!.GetValue(capturedSenderMsg));
+            Assert.Equal("ReceiverUser", capturedSenderMsg!.GetType().GetProperty("ReceiverName")!.GetValue(capturedSenderMsg));
+
+            Assert.NotNull(capturedReceiverMsg);
+            Assert.Equal("Science Quiz", capturedReceiverMsg!.GetType().GetProperty("BattleName")!.GetValue(capturedReceiverMsg));
+            Assert.Equal("ReceiverUser", capturedReceiverMsg!.GetType().GetProperty("ReceiverName")!.GetValue(capturedReceiverMsg));
+        }
+
+        [Fact]
+        public async Task DeclineBattleRequest_SenderOffline_ShouldNotifyOnlyReceiver()
+        {
+            int requestId = 100;
+            int receiverId = 200;
+            int senderId = 300;
+            SetupMockContext(userId: receiverId);
+
+            var mockBattle = new BattleList { Quiz = new Quiz { Name = "Math Battle" } };
+            var mockReceiver = new User { UserName = "ReceiverUser" };
+
+            var request = new BattleRequest
+            {
+                Id = requestId,
+                SenderId = senderId,
+                ReceiverId = receiverId,
+                Status = (int)Infrastructure.Enums.BattleRequestStatus.Pending,
+                IsDeleted = false,
+                Battle = mockBattle,
+                Receiver = mockReceiver
+            };
+
+            _mockBattleRequestRepository
+                .Setup(x => x.GetAsync(It.IsAny<Expression<Func<BattleRequest, bool>>>(),
+                    It.IsAny<Func<IQueryable<BattleRequest>, IQueryable<BattleRequest>>>()))
+                .ReturnsAsync(request);
+
+            BattleHub.OnlineUsers.Clear();
+
+            SetupClientsCallerMock(out var mockCaller);
+
+            await _hub.DeclineBattleRequest(requestId);
+
+            _mockBattleRequestRepository.Verify(x => x.UpdateAsync(It.Is<BattleRequest>(r => r.Status == (int)Infrastructure.Enums.BattleRequestStatus.Rejected)),
+                Times.Once);
+
+            mockCaller.Verify(x => x.SendCoreAsync(
+                SignalRMethods.BATTLE_REQUEST_DECLINED,
+                It.IsAny<object[]>(),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+
+            _mockClientProxy.Verify(x => x.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task DeclineBattleRequest_Unauthorized_ShouldThrowException()
+        {
+            var mockContext = new Mock<HubCallerContext>();
+            mockContext.Setup(c => c.User).Returns((ClaimsPrincipal?)null);
+
+            _hub.Context = mockContext.Object;
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _hub.DeclineBattleRequest(1));
+        }
+        #endregion
     }
 }

@@ -392,6 +392,7 @@ public static class Constants
         public const string BATTLE_REQUEST_ACCEPTED_CONFIRMATION = "BattleRequestAcceptedConfirmation";
         public const string BATTLE_REQUEST_ACCEPT_CONFIRMATION = "BattleRequestAcceptConfirmation";
         public const string BATTLE_REQUEST_CANCELLED = "BattleRequestCancelled";
+        public const string BATTLE_REQUEST_DECLINED = "BattleRequestDeclined";
     }
     public const string YOU_HAVE_UNFINISHED_BATTLE = "You have an unfinished battle.";
     public const string BATTLE_SESSION_EXPIRED = "Battle session expired.";
@@ -413,5 +414,6 @@ public static class Constants
     public const string FAILED_TO_START_FRIEND_BATTLE = "Failed to start friend battle.";
     public const string BATTLE_REQUEST_ACCEPT_SENDER_OFFLINE = "Sender did not come online to receive the accept notification.";
     public const string SENDER_IN_ACTIVE_BATTLE_OR_QUIZ = "Your friend is currently busy.";
+    public const string BATTLE_REQUEST_NOT_FOUND_OR_ALREADY_HANDLED = "Battle request not found or already handled.";
     #endregion
 }
