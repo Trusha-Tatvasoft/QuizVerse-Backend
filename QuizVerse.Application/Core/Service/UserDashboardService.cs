@@ -137,6 +137,7 @@ public class UserDashboardService(
         List<BattleRequestDTO> result = await query.Select(br => new BattleRequestDTO
         {
             RequestId = br.Id,
+            SenderId = br.Sender.Id,
             SenderUserName = br.Sender.UserName,
             SenderProfilePic = br.Sender.ProfilePic,
             SenderFullName = br.Sender.FullName,

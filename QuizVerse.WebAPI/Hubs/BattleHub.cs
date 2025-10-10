@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using AutoMapper;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
@@ -905,6 +906,53 @@ public class BattleHub(
         request.ModifiedBy = senderUserId;
 
         await _battleRequestRepository.UpdateAsync(request);
+    }
+
+    public async Task DeclineBattleRequest(int requestId)
+    {
+        int receiverUserId = Context.User?.GetUserId()
+                ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
+
+        BattleRequest? request = await _battleRequestRepository.GetAsync(
+            br => br.Id == requestId &&
+                br.Status == (int)BattleRequestStatus.Pending &&
+                !br.IsDeleted,
+            include => include
+                .Include(br => br.Battle)
+                    .ThenInclude(b => b.Quiz)
+                .Include(br => br.Receiver)
+        );
+
+        if (request == null)
+        {
+            await Clients.Caller.SendAsync(SignalRMethods.ERROR, Constants.BATTLE_REQUEST_NOT_FOUND_OR_ALREADY_HANDLED);
+            return;
+        }
+
+        request.Status = (int)BattleRequestStatus.Rejected;
+        request.ModifiedDate = DateTime.UtcNow;
+        request.ModifiedBy = receiverUserId;
+
+        await _battleRequestRepository.UpdateAsync(request);
+
+        // Notify sender in real-time if they’re online
+        if (OnlineUsers.TryGetValue(request.SenderId, out var senderConnId))
+        {
+            await Clients.Client(senderConnId).SendAsync(SignalRMethods.BATTLE_REQUEST_DECLINED, new
+            {
+                RequestId = request.Id,
+                ReceiverName = request.Receiver.UserName,
+                BattleName = request.Battle.Quiz.Name
+            });
+        }
+
+        // Notify receiver (confirmation)
+        await Clients.Caller.SendAsync(SignalRMethods.BATTLE_REQUEST_DECLINED, new
+        {
+            RequestId = request.Id,
+            ReceiverName = request.Receiver.UserName,
+            BattleName = request.Battle.Quiz.Name
+        });
     }
 
     public async Task SkipInstructions(int battleAttemptId)

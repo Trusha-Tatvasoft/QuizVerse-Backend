@@ -61,6 +61,7 @@ public class FeaturedQuizListDTO
 public class BattleRequestDTO
 {
     public int RequestId { get; set; }
+    public int SenderId { get; set; }
     public string SenderUserName { get; set; } = null!;
     public string SenderFullName { get; set; } = null!;
     public string? SenderProfilePic { get; set; }
