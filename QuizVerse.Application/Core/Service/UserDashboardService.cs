@@ -145,6 +145,7 @@ public class UserDashboardService(
             BattleName = br.Battle.Quiz.Name,
             BattleCategory = br.Battle.Quiz.Category.CategoryName,
             BattleDifficulty = br.Battle.Quiz.DifficultyLevel.Name,
+            TotalXp = br.Battle.Quiz.TotalXp,
             SendingDate = br.SendingDate,
         }).ToListAsync();
 

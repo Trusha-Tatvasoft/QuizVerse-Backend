@@ -820,7 +820,8 @@ public class BattleHub(
                 OpponentProfile = result.OpponentProfile!,
                 BattleAttemptId = state.BattleAttemptId,
                 TotalQuestions = state.TotalQuestions,
-                BattleName = battleInstruction.BattleName
+                BattleName = battleInstruction.BattleName,
+                BattleId = request.BattleId
             };
 
             // Notify both players
@@ -828,7 +829,7 @@ public class BattleHub(
                 .SendAsync(SignalRMethods.BATTLE_STARTED, battleDetails);
 
             // Wait for both to get ready
-            await Task.Delay(TimeSpan.FromSeconds(28));
+            await Task.Delay(TimeSpan.FromSeconds(10));
 
             // Send first question
             var p1Q = await _battleService.GetQuestionForPlayerAsync(state, senderConn, state.Player1Id, 1);
@@ -945,14 +946,6 @@ public class BattleHub(
                 BattleName = request.Battle.Quiz.Name
             });
         }
-
-        // Notify receiver (confirmation)
-        await Clients.Caller.SendAsync(SignalRMethods.BATTLE_REQUEST_DECLINED, new
-        {
-            RequestId = request.Id,
-            ReceiverName = request.Receiver.UserName,
-            BattleName = request.Battle.Quiz.Name
-        });
     }
 
     public async Task SkipInstructions(int battleAttemptId)

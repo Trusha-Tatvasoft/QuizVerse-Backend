@@ -163,9 +163,11 @@ public class UserBattlesService(
         BattleRequestDTO battleRequestDTO = new()
         {
             RequestId = battleRequest.Id,
+            SenderId = sender!.Id,
             SenderUserName = sender?.UserName!,
             SenderFullName = sender?.FullName!,
             SenderProfilePic = sender?.ProfilePic,
+            BattleId = battleRequest.BattleId,
             BattleName = battle?.Quiz.Name,
             BattleCategory = battle?.Quiz.Category?.CategoryName!,
             BattleDifficulty = battle?.Quiz.DifficultyLevel?.Name!,

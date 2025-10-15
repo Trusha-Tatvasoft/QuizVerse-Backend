@@ -69,6 +69,7 @@ public class BattleRequestDTO
     public string? BattleName { get; set; } = null!;
     public string BattleCategory { get; set; } = null!;
     public string BattleDifficulty { get; set; } = null!;
+    public int TotalXp { get; set; }
     public DateTime SendingDate { get; set; }
     public string TimeAgo { get; set; } = null!;
 }
