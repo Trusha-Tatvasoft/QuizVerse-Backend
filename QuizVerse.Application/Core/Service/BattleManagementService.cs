@@ -28,27 +28,30 @@ public class BattleManagementService(
 
     #region Battle List Data 
 
-    public async Task<List<BattleManagementData>> GetBattleList()
+    public async Task<BattleManagementDataResponseDto> GetBattleList(int batchNumber)
     {
         string query = string.Format(
             SqlConstants.GET_BATTLE_LIST_TEMPLATE,
             SqlConstants.GET_BATTLE_LIST_FUNCTION
         );
 
-        var parameters = new NpgsqlParameter[]
-        {
+        NpgsqlParameter[] parameters =
+        [
             new("p_permanent_type", NpgsqlDbType.Integer) { Value = (int)BattleType.Permanent },
             new("p_time_limited_type", NpgsqlDbType.Integer) { Value = (int)BattleType.TimeLimited },
             new("p_active_battle_status", NpgsqlDbType.Integer) { Value = (int)BattleCreationStatus.Active },
             new("p_completed_battle_status", NpgsqlDbType.Integer) { Value = (int)BattleCreationStatus.Completed },
-            new("p_running_status", NpgsqlDbType.Integer) { Value = (int)Infrastructure.Enums.BattleStatus.Running }
-        };
+            new("p_running_status", NpgsqlDbType.Integer) { Value = (int)Infrastructure.Enums.BattleStatus.Running },
+            new("p_batch_number", NpgsqlDbType.Integer) { Value = batchNumber }
+        ];
 
-        // Execute query
-        List<BattleManagementData> battleList =
-            await _sqlQueryRepository.SqlQueryListAsync<BattleManagementData>(query, parameters);
+        //Map (HasMore + raw JSON → List<BattleManagementData>)
+        BattleManagementDataResponseDto response = mapper.Map<BattleManagementDataResponseDto>(await _sqlQueryRepository
+                .SqlQuerySingleAsync<BattleManagementRawResult>(query, parameters));
 
-        return mapper.Map<List<BattleManagementData>>(battleList);
+        response.Battles = [.. response.Battles.Select(mapper.Map<BattleManagementData>)];
+
+        return response;
     }
     #endregion
     #region Create/Update Battle

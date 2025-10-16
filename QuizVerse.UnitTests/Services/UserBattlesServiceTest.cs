@@ -16,6 +16,7 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Application.Core.Interface;
+using System.Text.Json;
 
 namespace QuizVerse.UnitTests.Services
 {
@@ -64,9 +65,13 @@ namespace QuizVerse.UnitTests.Services
 
         #region User Available Battles
         [Fact]
-        public async Task GetUserAvailableBattles_ReturnsAvailableBattlesList()
+        public async Task GetUserAvailableBattles_ReturnsPagedResponse()
         {
-            var rawAvailableBattles = new List<UserAvailableBattleDto>
+            // Arrange
+            int batchNumber = 1;
+
+            // Mock raw result from SQL function
+            var battleList = new List<UserAvailableBattleDto>
             {
                 new()
                 {
@@ -78,22 +83,42 @@ namespace QuizVerse.UnitTests.Services
                     MaxXP = 500,
                     TotalQuestions = 10,
                     Duration = TimeSpan.FromMinutes(15),
-                    Participants = 5
+                    Participants = 5,
+                    IsBattleRunning = false
                 }
             };
 
+            var rawBattleResult = new UserAvailableBattleRawResult
+            {
+                Battles = JsonSerializer.Serialize(battleList), // Raw JSON string as returned from SQL
+                HasMore = false
+            };
+
+            var mappedResponse = new UserAvailableBattleDtoResponseDto
+            {
+                Battles = battleList,
+                HasMore = false
+            };
+
             _mockSqlQueryRepository
-                .Setup(repo => repo.SqlQueryListAsync<UserAvailableBattleDto>(
+                .Setup(repo => repo.SqlQuerySingleAsync<UserAvailableBattleRawResult>(
                     It.IsAny<string>(),
-                    It.IsAny<NpgsqlParameter>()))
-                .ReturnsAsync(rawAvailableBattles);
+                    It.IsAny<NpgsqlParameter[]>()))
+                .ReturnsAsync(rawBattleResult);
 
-            var result = await _service.GetUserAvailableBattles();
+            _mockMapper
+                .Setup(m => m.Map<UserAvailableBattleDtoResponseDto>(It.IsAny<UserAvailableBattleRawResult>()))
+                .Returns(mappedResponse);
 
+            // Act
+            var result = await _service.GetUserAvailableBattles(batchNumber);
+
+            // Assert
             Assert.NotNull(result);
-            Assert.Single(result);
+            Assert.False(result.HasMore);
+            Assert.Single(result.Battles);
 
-            var battle = result[0];
+            var battle = result.Battles.First();
             Assert.Equal(1, battle.BattleId);
             Assert.Equal("Battle1", battle.BattleName);
             Assert.Equal("Strategy", battle.Category);
@@ -103,11 +128,17 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal(10, battle.TotalQuestions);
             Assert.Equal(TimeSpan.FromMinutes(15), battle.Duration);
             Assert.Equal(5, battle.Participants);
+            Assert.False(battle.IsBattleRunning);
 
             _mockSqlQueryRepository.Verify(repo =>
-                repo.SqlQueryListAsync<UserAvailableBattleDto>(
+                repo.SqlQuerySingleAsync<UserAvailableBattleRawResult>(
                     It.IsAny<string>(),
-                    It.Is<NpgsqlParameter>(p => p.ParameterName == "p_user_id" && (int)p.Value == _service.UserId)), Times.Once);
+                    It.Is<NpgsqlParameter[]>(p =>
+                        p.Any(x => x.ParameterName == "p_user_id" && (int)x.Value == _service.UserId) &&
+                        p.Any(x => x.ParameterName == "p_batch_number" && (int)x.Value == batchNumber)
+                    )), Times.Once);
+
+            _mockMapper.Verify(m => m.Map<UserAvailableBattleDtoResponseDto>(rawBattleResult), Times.Once);
         }
         #endregion
 

@@ -30,16 +30,20 @@ public class UserBattlesService(
     public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     #region User Available Battles
-    public async Task<List<UserAvailableBattleDto>> GetUserAvailableBattles()
+    public async Task<UserAvailableBattleDtoResponseDto> GetUserAvailableBattles(int batchNumber)
     {
         string query = string.Format(SqlConstants.GET_USER_AVAILABLE_BATTLES_QUERY_TEMPLATE,
                                   SqlConstants.GET_USER_AVAILABLE_BATTLES_FUNCTION);
 
-        NpgsqlParameter paramUserId = new("p_user_id", NpgsqlDbType.Integer) { Value = UserId };
+        NpgsqlParameter[] parameters = [
+            new("p_user_id", NpgsqlDbType.Integer) { Value = UserId },
+            new("p_batch_number", NpgsqlDbType.Integer) { Value = batchNumber }
+        ];
 
-        List<UserAvailableBattleDto> rawResult = await sqlQueryRepository.SqlQueryListAsync<UserAvailableBattleDto>(query, paramUserId);
+         UserAvailableBattleDtoResponseDto response = mapper.Map<UserAvailableBattleDtoResponseDto>(await sqlQueryRepository
+                .SqlQuerySingleAsync<UserAvailableBattleRawResult>(query, parameters));
 
-        return rawResult;
+        return response;
     }
     #endregion
 
@@ -222,7 +226,7 @@ public class UserBattlesService(
         {
             var dto = mapper.Map<SearchUserResponseDto>(u);
             dto.HasRequest = battleRequests.Any(br =>
-                br.SenderId == currentUserId && br.ReceiverId == u.Id && br.BattleId == battleId) ;
+                br.SenderId == currentUserId && br.ReceiverId == u.Id && br.BattleId == battleId);
             return dto;
         }).ToList();
 
