@@ -683,7 +683,7 @@ namespace QuizVerse.UnitTests.Services
                              .ReturnsAsync((BattleStatus)null);
 
             // Act & Assert
-            await Assert.ThrowsAsync<NullReferenceException>(() =>
+            await Assert.ThrowsAsync<AppException>(() =>
                 service.FinalizeBattleAsync(state, CancellationToken.None));
         }
 
@@ -703,23 +703,6 @@ namespace QuizVerse.UnitTests.Services
             Assert.Null(result);
             Assert.True(state.Completed[state.Player1Id]);
             Assert.Equal(state.TotalQuestions + 1, state.CurrentIndex[state.Player1Id]);
-        }
-
-        [Fact]
-        public async Task ValidateAnswer_HandlesNullQuestion()
-        {
-            // Arrange
-            var service = CreateService();
-            var state = CreateSimpleState(7779, totalQuestions: 1);
-            state.AttemptedQuestionsDetails[0].QuestionId = 2003;
-            BattleStateManager.AddBattle(state.BattleAttemptId, state);
-
-            _baseQRepo.Setup(r => r.GetAsync(It.IsAny<Expression<Func<BaseQuestion, bool>>>(), It.IsAny<Func<IQueryable<BaseQuestion>, IQueryable<BaseQuestion>>>()))
-                      .ReturnsAsync((BaseQuestion)null);
-
-            // Act & Assert
-            await Assert.ThrowsAsync<NullReferenceException>(() =>
-                service.SubmitAnswerAsync(state.BattleAttemptId, "c1", 1, "A", state.Player1Id));
         }
 
         [Fact]

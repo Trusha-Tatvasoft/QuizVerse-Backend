@@ -22,16 +22,11 @@ public class UserProfileServiceTests
 {
     private readonly Mock<ISqlQueryRepository> _sqlQueryRepositoryMock = new();
     private readonly Mock<IGenericRepository<User>> _userRepositoryMock = new();
-    private readonly Mock<IGenericRepository<UserPerformanceDetail>> _userPerformanceDetailRepositoryMock = new();
-    private readonly Mock<IGenericRepository<UserNotification>> _userNotificationRepositoryMock = new();
-    private readonly Mock<IGenericRepository<LevelByExp>> _levelByExpRepositoryMock = new();
     private readonly Mock<ICommonService> _commonServiceMock = new();
     private readonly Mock<IGenericRepository<Badge>> _badgeRepositoryMock = new();
     private readonly Mock<IGenericRepository<UserBadgesEarned>> _userBadgeRepositoryMock = new();
     private readonly Mock<IMapper> _mapperMock = new();
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
-    private readonly Mock<IEmailService> _emailServiceMock = new();
-
     private readonly UserProfileService _service;
 
     public UserProfileServiceTests()
@@ -51,15 +46,11 @@ public class UserProfileServiceTests
         _service = new UserProfileService(
             _sqlQueryRepositoryMock.Object,
             _userRepositoryMock.Object,
-            _userPerformanceDetailRepositoryMock.Object,
-            _userNotificationRepositoryMock.Object,
-            _levelByExpRepositoryMock.Object,
             _commonServiceMock.Object,
             _badgeRepositoryMock.Object,
             _userBadgeRepositoryMock.Object,
             _mapperMock.Object,
-            _httpContextAccessorMock.Object,
-            _emailServiceMock.Object
+            _httpContextAccessorMock.Object
         );
     }
 

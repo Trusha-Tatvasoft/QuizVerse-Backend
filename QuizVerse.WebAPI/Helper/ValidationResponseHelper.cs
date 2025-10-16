@@ -11,11 +11,11 @@ public static class ValidationResponseHelper
         try
         {
             var errors = context.ModelState
-                .Where(ms => ms.Value.Errors.Any())
+                .Where(ms => ms.Value != null && ms.Value.Errors.Any())
                 .Select(ms => new
                 {
                     Field = isDevelopment ? ms.Key : null,
-                    Errors = ms.Value.Errors.Select(e => isDevelopment ? e.ErrorMessage : "Invalid input.")
+                    Errors = ms.Value?.Errors?.Select(e => isDevelopment ? e.ErrorMessage : "Invalid input.") ?? Enumerable.Empty<string>()
                 });
 
             var errorMessage = errors.First().Errors.First();

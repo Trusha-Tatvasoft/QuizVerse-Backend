@@ -44,7 +44,7 @@ public class SubmitAnswerDTO
     [Required(ErrorMessage = "Answer id is required")]
     public int questionId { get; set; }
     [Required(ErrorMessage = "Answer is required")]
-    public string answer { get; set; }
+    public string answer { get; set; } = string.Empty;
 }
 
 public class ScoreUpdateDto
@@ -122,7 +122,7 @@ public class BattleStartDetails
 {
     public int BattleAttemptId { get; set; }
     public string BattleName { get; set; } = null!;
-    public PlayerProfileDTO PlayerProfile { get; set; }
-    public PlayerProfileDTO OpponentProfile { get; set; }
+    public PlayerProfileDTO PlayerProfile { get; set; } = new();
+    public PlayerProfileDTO OpponentProfile { get; set; } = new();
     public int TotalQuestions { get; set; }
 }

@@ -49,7 +49,7 @@ BEGIN
             SELECT DISTINCT ON (qoa.question_id) 
                    qoa.question_id, qoa.value AS correct_answer
             FROM public."QuestionOptionsAnswers" qoa
-            WHERE qoa.key = 'answer' AND qoa.is_deleted = false
+            WHERE qoa.key = 'answer'
             ORDER BY qoa.question_id, qoa.id ASC
         ) ca ON ca.question_id = bq.id
     ),

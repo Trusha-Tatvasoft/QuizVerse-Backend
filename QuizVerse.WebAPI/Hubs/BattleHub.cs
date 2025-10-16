@@ -124,7 +124,7 @@ public class BattleHub(
             if (battleResult != null && battleResult.BattleStatus1 == (int)QuizVerse.Infrastructure.Enums.BattleStatus.Running)
             {
                 // Check if battle state exists in memory (active battle)
-                if (BattleStateManager.TryGetBattle(battleResult.Id, out BattleState stateOld) && stateOld != null)
+                if (BattleStateManager.TryGetBattle(battleResult.Id, out BattleState? stateOld) && stateOld != null)
                 {
                     // User disconnected previously - check if they can resume
                     if (stateOld.ConnectionBrokeTime.TryGetValue(userId, out var brokeAt))
@@ -270,7 +270,7 @@ public class BattleHub(
 
                 if (BattleStateManager.TryGetBattle(battleId, out var state))
                 {
-                    state.ActiveTimers[userId] = nextCts;
+                    state!.ActiveTimers[userId] = nextCts;
                     StartTimeout(battleId, r.NextQuestion.ConnectionId, nextIndex, userId, nextCts);
                 }
             }
@@ -339,7 +339,7 @@ public class BattleHub(
 
                     if (BattleStateManager.TryGetBattle(battleId, out var nextState))
                     {
-                        nextState.ActiveTimers[userId] = nextCts;
+                        nextState!.ActiveTimers[userId] = nextCts;
                         StartTimeout(battleId, result.NextQuestion.ConnectionId, nextIndex, userId, nextCts);
                     }
                 }
@@ -371,7 +371,7 @@ public class BattleHub(
             if (BattleStateManager.TryGetBattle(attemptId, out var state))
             {
                 // Prevent duplicate connections
-                if (state.Connected[userId])
+                if (state != null && state.Connected[userId])
                 {
                     await Clients.Client(Context.ConnectionId)
                         .SendAsync(SignalRMethods.ERROR, YOU_ARE_ALREADY_CONNECTED_TO_THIS_BATTLE);
@@ -379,17 +379,17 @@ public class BattleHub(
                 }
 
                 // Check if resume window is still valid (within 10 minutes)
-                if (DateTime.UtcNow - state.ConnectionBrokeTime[userId] < TimeSpan.FromMinutes(10))
+                if (DateTime.UtcNow - state?.ConnectionBrokeTime[userId] < TimeSpan.FromMinutes(10))
                 {
                     // Cancel any existing timers for this user
-                    try { state.ActiveTimers[userId].Cancel(); state.ActiveTimers[userId].Dispose(); } catch { }
+                    try { state?.ActiveTimers[userId].Cancel(); state?.ActiveTimers[userId].Dispose(); } catch { }
 
                     // Update connection ID based on player identity
-                    if (userId == state.Player1Id)
+                    if (userId == state?.Player1Id)
                     {
                         state.Player1ConnectionId = Context.ConnectionId;
                     }
-                    else if (userId == state.Player2Id)
+                    else if (userId == state?.Player2Id)
                     {
                         state.Player2ConnectionId = Context.ConnectionId;
                     }
@@ -406,8 +406,8 @@ public class BattleHub(
                     // Prepare resume data with current battle state
                     BattleStartDetails battleDetails = new BattleStartDetails()
                     {
-                        PlayerProfile = await _battleMatchmakingService.GetPlayerProfile(userId),
-                        OpponentProfile = await _battleMatchmakingService.GetPlayerProfile(userId == state.Player1Id ? state.Player2Id : state.Player1Id),
+                        PlayerProfile = await _battleMatchmakingService.GetPlayerProfile(userId) ?? throw new Exception("Your Profile was not found"),
+                        OpponentProfile = await _battleMatchmakingService.GetPlayerProfile(userId == state.Player1Id ? state.Player2Id : state.Player1Id) ?? throw new Exception("Opponent Profile was not found"),
                         BattleAttemptId = state.BattleAttemptId,
                         TotalQuestions = state.TotalQuestions,
                         BattleName = battleInstruction.BattleName
@@ -472,7 +472,7 @@ public class BattleHub(
             }
 
             //  Check if user is part of this battle
-            if (userId != state.Player1Id && userId != state.Player2Id)
+            if (userId != state?.Player1Id && userId != state?.Player2Id)
             {
                 await Clients.Client(Context.ConnectionId)
                     .SendAsync(SignalRMethods.ERROR, YOU_ARE_NOT_PART_OF_BATTLE);
@@ -571,11 +571,11 @@ public class BattleHub(
         }
 
         int? battleAttemptId = Context.Items.TryGetValue(BATTLE_ATTEMPT_ID_KEY, out var attemptObj) && attemptObj is int id ? id : null;
-        BattleState state = null;
+        BattleState state = null!;
 
         if (battleAttemptId.HasValue)
         {
-            BattleStateManager.TryGetBattle(battleAttemptId.Value, out state);
+            BattleStateManager.TryGetBattle(battleAttemptId.Value, out state!);
         }
         else
         {
@@ -585,7 +585,7 @@ public class BattleHub(
             {
                 foreach (BattleState item in stateStored)
                 {
-                    if (item.Connected[(int)userId])
+                    if (item.Connected[(int)userId!])
                     {
                         state = item;
                         break;
@@ -599,7 +599,7 @@ public class BattleHub(
             return Task.CompletedTask;
         }
 
-        if (!state.Connected[userId.Value])
+        if (!state.Connected[userId!.Value])
         {
             return Task.CompletedTask;
         }
@@ -790,8 +790,8 @@ public class BattleHub(
             }
 
             // Assign connection IDs before creating battle
-            result.Player.ConnectionId = senderConn;
-            result.Opponent.ConnectionId = receiverConn;
+            result.Player!.ConnectionId = senderConn;
+            result.Opponent!.ConnectionId = receiverConn;
 
             var state = await _battleService.CreateBattleAsync(result, battleId);
             if (state.BattleAttemptId <= 0)
@@ -961,7 +961,7 @@ public class BattleHub(
 
         if (BattleStateManager.TryGetBattle(battleAttemptId, out var state))
         {
-            state.IsSkipInstruction[userId] = true;
+            state!.IsSkipInstruction[userId] = true;
         }
         else
         {
@@ -984,17 +984,17 @@ public class BattleHub(
             // Immediately send question to this player
             var question = await battleSvc.GetQuestionForPlayerAsync(
                 state,
-                connectionId,
+                connectionId!,
                 userId,
                 1
             );
 
             if (question != null)
             {
-                await _hubContext.Clients.Client(connectionId).SendAsync(SignalRMethods.RECEIVE_QUESTION, question);
+                await _hubContext.Clients.Client(connectionId!).SendAsync(SignalRMethods.RECEIVE_QUESTION, question);
                 var cts = new CancellationTokenSource();
                 state.ActiveTimers[userId] = cts;
-                StartTimeout(state.BattleAttemptId, connectionId, 1, userId, cts);
+                StartTimeout(state.BattleAttemptId, connectionId!, 1, userId, cts);
             }
         }
     }
