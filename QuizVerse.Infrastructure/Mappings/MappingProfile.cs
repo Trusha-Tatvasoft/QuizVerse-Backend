@@ -243,6 +243,15 @@ public class MappingProfile : Profile
           .ForMember(dest => dest.QuestionDifficultyId, opt => opt.MapFrom(src => src.Id))
           .ForMember(dest => dest.QuestionDifficultyName, opt => opt.MapFrom(src => CapitalizeFirst(src.Name)))
           .ForMember(dest => dest.XpGained, opt => opt.MapFrom(src => src.XpGained));
+
+        CreateMap<BattleManagementRawResult, BattleManagementDataResponseDto>()
+           .ConvertUsing(src => new BattleManagementDataResponseDto
+           {
+               HasMore = src.HasMore,
+               Battles = string.IsNullOrWhiteSpace(src.Battles)
+                   ? new List<BattleManagementData>()
+                   : JsonSerializer.Deserialize<List<BattleManagementData>>(src.Battles, new JsonSerializerOptions())!
+           });
         #endregion
 
         #region UserProfile
@@ -306,6 +315,15 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.TimeInSeconds, opt => opt.MapFrom(src => src.Time));
 
         CreateMap<BattleResult, BattleCompletionResult>();
+
+         CreateMap<UserAvailableBattleRawResult, UserAvailableBattleDtoResponseDto>()
+           .ConvertUsing(src => new UserAvailableBattleDtoResponseDto
+           {
+               HasMore = src.HasMore,
+               Battles = string.IsNullOrWhiteSpace(src.Battles)
+                   ? new List<UserAvailableBattleDto>()
+                   : JsonSerializer.Deserialize<List<UserAvailableBattleDto>>(src.Battles, new JsonSerializerOptions())!
+           });
         #endregion
 
         #region Browse Quizzes

@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 public class BattleManagementData
@@ -14,4 +17,17 @@ public class BattleManagementData
     public int TotalParticipants { get; set; }
     public int TotalQuestion { get; set; }
     public int BattleStatus { get; set; }
+}
+
+public class BattleManagementDataResponseDto
+{
+    public List<BattleManagementData> Battles { get; set; } = new();
+    public bool HasMore { get; set; }
+}
+
+public class BattleManagementRawResult
+{
+    public string Battles { get; set; } = string.Empty;
+
+    public bool HasMore { get; set; }
 }

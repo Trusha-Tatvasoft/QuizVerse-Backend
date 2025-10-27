@@ -16,15 +16,15 @@ namespace QuizVerse.WebAPI.Controllers;
 public class BattleManagementController(IBattleManagementService battleManagementService) : ControllerBase
 {
     #region Battle List Data 
-    [HttpGet("get-battle-list")]
-    public async Task<IActionResult> GetBattleList()
+    [HttpPost("get-battle-list")]
+    public async Task<IActionResult> GetBattleList([FromBody] BatchNumberRequestDto batchNumberDto)
     {
-        return Ok(new ApiResponse<List<BattleManagementData>>
+        return Ok(new ApiResponse<BattleManagementDataResponseDto>
         {
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
-            Data = await battleManagementService.GetBattleList()
+            Data = await battleManagementService.GetBattleList(batchNumberDto.BatchNumber)
         });
     }
     #endregion

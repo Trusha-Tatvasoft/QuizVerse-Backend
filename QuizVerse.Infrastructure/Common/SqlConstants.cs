@@ -51,8 +51,8 @@ public class SqlConstants
 
     #region BattleManagement
     public const string GET_BATTLE_LIST_TEMPLATE =
-       "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})";
-    public const string GET_BATTLE_LIST_FUNCTION = "get_battle_list_data";
+       "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}})";
+    public const string GET_BATTLE_LIST_FUNCTION = "get_battles_list_data";
 
     public const string CREATE_UPDATE_BATTLE_FUNCTION = "create_update_battle";
     public const string CREATE_UPDATE_BATTLE_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}}, {{6}}, {{7}}, {{8}}, {{9}}, {{10}}, {{11}}, {{12}}, {{13}}, {{14}}, {{15}})";
@@ -101,8 +101,8 @@ public class SqlConstants
         "SELECT * FROM {0}(@p_user_id, @p_status_draw, @p_status_completed, @p_batch_number, @p_filter_by, @p_time_filter_by)";
     public const string GET_USER_BATTLE_LEADERBOARD_LIST_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}})";
     public const string GET_USER_BATTLE_LEADERBOARD_LIST_FUNCTION = "get_user_battles_leaderboard_list";
-    public const string GET_USER_AVAILABLE_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}})";
-    public const string GET_USER_AVAILABLE_BATTLES_FUNCTION = "get_user_available_battles";
+    public const string GET_USER_AVAILABLE_BATTLES_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}})";
+    public const string GET_USER_AVAILABLE_BATTLES_FUNCTION = "get_user_available_battle";
     public const string GET_Battle_QUESTIONS_QUERY_TEMPLATE = "SELECT * FROM get_battle_question({0}, {1})";
     public const string AFTER_Battle_RESULT = "SELECT * FROM after_battle_result({0})";
     #endregion

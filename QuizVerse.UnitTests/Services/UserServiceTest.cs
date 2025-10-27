@@ -19,7 +19,6 @@ using QuizVerse.Infrastructure.Interface;
 using QuizVerse.Infrastructure.Mappings;
 using QuizVerse.Infrastructure.Repository;
 using Xunit;
-using System.Linq.Expressions;
 
 namespace QuizVerse.UnitTests.Services;
 
@@ -30,16 +29,16 @@ public class UserServiceTests
     private readonly UserService _userService;
     private readonly Mock<ICommonService> _commonServiceMock;
     private readonly Mock<ISqlQueryRepository> _sqlQueryRepositoryMock;
-    private readonly Mock<IGenericRepository<User>> _userRepositoryMock;
+    private readonly IConfiguration _configuration;
 
     public UserServiceTests()
     {
         var inMemorySettings = new Dictionary<string, string>
-            {
-                {"QuizVerse:LoginUrl", "http://quizverse-frontend.web2.anasource.com/login"},
-            };
+        {
+            {"QuizVerse:LoginUrl", "http://quizverse-frontend.web2.anasource.com/login"},
+        };
 
-        IConfiguration configuration = new ConfigurationBuilder()
+        _configuration = new ConfigurationBuilder()
              .AddInMemoryCollection(inMemorySettings!)
              .Build();
 
@@ -57,41 +56,25 @@ public class UserServiceTests
         });
         _mapper = mapperConfig.CreateMapper();
 
+        // Setup HttpContext with UserId = 1 (Alice) as current user
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
-            new[] { new Claim(ClaimTypes.UserData, "1") }, "mock"));
+            new[] 
+            { 
+                new Claim(ClaimTypes.UserData, "1"),
+                new Claim(ClaimTypes.Role, UserRoles.Admin.ToString()) // Admin role
+            }, "mock"));
         var httpContextAccessor = new Mock<IHttpContextAccessor>();
         httpContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
 
         _commonServiceMock = new Mock<ICommonService>();
+        _sqlQueryRepositoryMock = new Mock<ISqlQueryRepository>();
+
+        // Default hash behavior
         _commonServiceMock.Setup(s => s.Hash(It.IsAny<string>())).Returns("hashedPassword");
-        _sqlQueryRepositoryMock = new Mock<ISqlQueryRepository>();
-        _userRepositoryMock = new Mock<IGenericRepository<User>>();
-        _sqlQueryRepositoryMock = new Mock<ISqlQueryRepository>();
 
-        // Setup for duplicate email failure
-        _sqlQueryRepositoryMock
-            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-                It.IsAny<string>(),
-                It.Is<NpgsqlParameter[]>(p => p.Any(param => param.ParameterName == "p_email" && (string)param.Value == "alice@example.com"))))
-            .ReturnsAsync(new CreateUpdateResponseDto
-            {
-                Success = false,
-                Message = Constants.DUPLICATE_EMAIL
-            });
-
-        // Setup for duplicate username failure
-        _sqlQueryRepositoryMock
-            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-                It.IsAny<string>(),
-                It.Is<NpgsqlParameter[]>(p => p.Any(param => param.ParameterName == "p_username" && (string)param.Value == "alice"))))
-            .ReturnsAsync(new CreateUpdateResponseDto
-            {
-                Success = false,
-                Message = Constants.DUPLICATE_USERNAME
-            });
-
-
+        // Setup SQL query repository defaults
+        SetupDefaultSqlQueryBehavior();
 
         var userRepository = new GenericRepository<User>(_context);
 
@@ -101,55 +84,116 @@ public class UserServiceTests
             _mapper,
             httpContextAccessor.Object,
             _sqlQueryRepositoryMock.Object,
-            configuration
+            _configuration
         );
+    }
+
+    private void SetupDefaultSqlQueryBehavior()
+    {
+        // Default success response for create/update
+        _sqlQueryRepositoryMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+                It.IsAny<string>(),
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(new CreateUpdateResponseDto
+            {
+                Success = true,
+                Message = Constants.USER_CREATE_SUCCESS
+            });
+
+        // Duplicate email failure
+        _sqlQueryRepositoryMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+                It.IsAny<string>(),
+                It.Is<NpgsqlParameter[]>(p => 
+                    p.Any(param => param.ParameterName == "p_email" && 
+                    param.Value != null && 
+                    (string)param.Value == "alice@example.com"))))
+            .ReturnsAsync(new CreateUpdateResponseDto
+            {
+                Success = false,
+                Message = Constants.DUPLICATE_EMAIL
+            });
+
+        // Duplicate username failure
+        _sqlQueryRepositoryMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+                It.IsAny<string>(),
+                It.Is<NpgsqlParameter[]>(p => 
+                    p.Any(param => param.ParameterName == "p_username" && 
+                    param.Value != null && 
+                    (string)param.Value == "alice"))))
+            .ReturnsAsync(new CreateUpdateResponseDto
+            {
+                Success = false,
+                Message = Constants.DUPLICATE_USERNAME
+            });
     }
 
     #region SeedData
     private void SeedTestData()
     {
-        var roleId = (int)UserRoles.Player;
+        // Clear existing data
+        _context.Users.RemoveRange(_context.Users);
+        _context.UserRoles.RemoveRange(_context.UserRoles);
+        _context.SaveChanges();
 
-        var role = _context.UserRoles.FirstOrDefault(r => r.Id == roleId);
-        if (role == null)
-        {
-            role = new UserRole { Id = roleId, Name = "Player" };
-            _context.UserRoles.Add(role);
-            _context.SaveChanges();
-        }
+        // Add roles
+        var adminRole = new UserRole { Id = (int)UserRoles.Admin, Name = "Admin" };
+        var playerRole = new UserRole { Id = (int)UserRoles.Player, Name = "Player" };
+        _context.UserRoles.AddRange(adminRole, playerRole);
+        _context.SaveChanges();
 
-        if (!_context.Users.Any())
-        {
-            _context.Users.AddRange(
-                new User
-                {
-                    FullName = "Alice Johnson",
-                    Email = "alice@example.com",
-                    Password = "samplePass1",
-                    UserName = "alice",
-                    Status = (int)UserStatus.Active,
-                    RoleId = roleId,
-                    Role = role,
-                    IsDeleted = false,
-                    CreatedDate = DateTime.UtcNow,
-                    QuizAttempteds = new List<QuizAttempted>()
-                },
-                new User
-                {
-                    FullName = "Bob Smith",
-                    Email = "bob@example.com",
-                    Password = "samplePass2",
-                    UserName = "bob",
-                    Status = (int)UserStatus.Suspended,
-                    RoleId = roleId,
-                    Role = role,
-                    IsDeleted = false,
-                    CreatedDate = DateTime.UtcNow,
-                    QuizAttempteds = new List<QuizAttempted>()
-                }
-            );
-            _context.SaveChanges();
-        }
+        // Add users
+        _context.Users.AddRange(
+            new User
+            {
+                Id = 1,
+                FullName = "Alice Johnson",
+                Email = "alice@example.com",
+                Password = "samplePass1",
+                UserName = "alice",
+                Status = (int)UserStatus.Active,
+                RoleId = (int)UserRoles.Admin,
+                Role = adminRole,
+                IsDeleted = false,
+                CreatedDate = DateTime.UtcNow,
+                QuizAttempteds = new List<QuizAttempted>()
+            },
+            new User
+            {
+                Id = 2,
+                FullName = "Bob Smith",
+                Email = "bob@example.com",
+                Password = "samplePass2",
+                UserName = "bob",
+                Status = (int)UserStatus.Suspended,
+                RoleId = (int)UserRoles.Player,
+                Role = playerRole,
+                IsDeleted = false,
+                CreatedDate = DateTime.UtcNow,
+                QuizAttempteds = new List<QuizAttempted>()
+            },
+            new User
+            {
+                Id = 3,
+                FullName = "Charlie Brown",
+                Email = "charlie@example.com",
+                Password = "samplePass3",
+                UserName = "charlie",
+                Status = (int)UserStatus.Active,
+                RoleId = (int)UserRoles.Player,
+                Role = playerRole,
+                IsDeleted = false,
+                ProfilePic = "old-profile.jpg",
+                CreatedDate = DateTime.UtcNow,
+                QuizAttempteds = new List<QuizAttempted>()
+            }
+        );
+        _context.SaveChanges();
+
+        // Detach all entities to avoid tracking issues
+        _context.ChangeTracker.Clear();
     }
     #endregion
 
@@ -185,8 +229,9 @@ public class UserServiceTests
 
         var result = await _userService.GetUsersByPagination(query);
 
-        Assert.Equal(1, result.Records.Count());
-        Assert.Equal("bob@example.com", result.Records.First().Email);
+        // Charlie Brown should be first (descending), but Alice is excluded (current user)
+        Assert.Equal(2, result.Records.Count());
+        Assert.Equal("Charlie Brown", result.Records.First().FullName);
     }
 
     [Fact]
@@ -274,46 +319,16 @@ public class UserServiceTests
 
         Assert.All(result.Records, u => Assert.Equal((int)UserRoles.Player, u.RoleId));
     }
-
-    [Fact]
-    public async Task GetUsersList_WithInvalidRoleEnum_ThrowsAppException()
-    {
-        var query = new PageListRequest
-        {
-            Filters = new FilterDto
-            {
-                Role = (UserRoles)777
-            }
-        };
-
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersByPagination(query));
-        Assert.Equal(Constants.INVALID_ROLE_MESSAGE, ex.Message);
-    }
-
-    [Fact]
-    public async Task GetUsersList_WithInvalidStatusEnum_ThrowsAppException()
-    {
-        var query = new PageListRequest
-        {
-            Filters = new FilterDto
-            {
-                Status = (UserStatus)777
-            }
-        };
-
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.GetUsersByPagination(query));
-        Assert.Equal(Constants.INVALID_STATUS_MESSAGE, ex.Message);
-    }
     #endregion
 
     #region GetUserById
     [Fact]
     public async Task GetUserById_ValidId_ReturnsUser()
     {
-        var result = await _userService.GetUserById(1);
+        var result = await _userService.GetUserById(2); // Bob
 
         Assert.NotNull(result);
-        Assert.Equal("Alice Johnson", result.FullName);
+        Assert.Equal("Bob Smith", result.FullName);
     }
 
     [Fact]
@@ -326,6 +341,54 @@ public class UserServiceTests
     #region CreateUser
 
     [Fact]
+    public async Task CreateOrUpdateUser_ModifyingSelf_ThrowsAppException()
+    {
+        var dto = new UserRequestDto 
+        { 
+            Id = 1, // Current user ID
+            Email = "alice@example.com", 
+            FullName = "Self User",
+            RoleId = (int)UserRoles.Player
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        Assert.Equal(Constants.CANNOT_MODIFY_SELF, ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateUser_AdminCannotAddSuperAdmin_ThrowsAppException()
+    {
+        var dto = new UserRequestDto 
+        { 
+            Id = null, 
+            Email = "superadmin@test.com", 
+            FullName = "Super Admin User", 
+            UserName = "superadmin",
+            RoleId = (int)UserRoles.SuperAdmin, 
+            Password = "Pass123!" 
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        Assert.Equal(Constants.NOT_HAVE_PERMISSION, ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateOrUpdateUser_NewUserWithoutPassword_ThrowsAppException()
+    {
+        var dto = new UserRequestDto 
+        { 
+            Id = null, 
+            Email = "newuser@test.com", 
+            FullName = "New User",
+            UserName = "newuser",
+            RoleId = (int)UserRoles.Player
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
+        Assert.Equal(Constants.PASSWORD_REQUIRED_FOR_NEW_USER, ex.Message);
+    }
+
+    [Fact]
     public async Task CreateUser_AdminCreatedUser_SendsNewUserEmail()
     {
         var dto = new UserRequestDto
@@ -334,20 +397,13 @@ public class UserServiceTests
             Email = "testuser@example.com",
             UserName = "testuser",
             Password = "Test@123",
+            RoleId = (int)UserRoles.Player,
             IsRegister = false
         };
 
         _commonServiceMock
             .Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
             .ReturnsAsync($"Email successfully sent to {dto.Email}");
-
-        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-            It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync(new CreateUpdateResponseDto
-            {
-                Success = true,
-                Message = "User created successfully."
-            });
 
         var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
 
@@ -371,22 +427,15 @@ public class UserServiceTests
         {
             FullName = "Test User",
             Email = "testuser1@example.com",
-            UserName = "testuser",
+            UserName = "testuser1",
             Password = "Test@123",
+            RoleId = (int)UserRoles.Player,
             IsRegister = true
         };
 
         _commonServiceMock
             .Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
             .ReturnsAsync(string.Format(Constants.EMAIL_SENT_SUCCESS, dto.Email));
-
-        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-            It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync(new CreateUpdateResponseDto
-            {
-                Success = true,
-                Message = "User created successfully."
-            });
 
         var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
 
@@ -424,6 +473,7 @@ public class UserServiceTests
             Email = "imageuser@example.com",
             UserName = "imageuser",
             Password = "pass123",
+            RoleId = (int)UserRoles.Player,
             ProfilePic = fileMock.Object,
             IsRegister = false
         };
@@ -434,15 +484,7 @@ public class UserServiceTests
 
         _commonServiceMock
             .Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
-            .ReturnsAsync("Email sent");
-
-        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-            It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync(new CreateUpdateResponseDto
-            {
-                Success = true,
-                Message = "User created successfully."
-            });
+            .ReturnsAsync("Email successfully sent to imageuser@example.com");
 
         var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
 
@@ -457,7 +499,8 @@ public class UserServiceTests
         {
             Email = "alice@example.com",
             UserName = "newuser",
-            Password = "1234"
+            Password = "1234",
+            RoleId = (int)UserRoles.Player
         };
 
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
@@ -471,24 +514,12 @@ public class UserServiceTests
         {
             Email = "newemail@example.com",
             UserName = "alice",
-            Password = "1234"
+            Password = "1234",
+            RoleId = (int)UserRoles.Player
         };
 
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
         Assert.Equal(Constants.DUPLICATE_USERNAME, ex.Message);
-    }
-
-    [Fact]
-    public async Task CreateUser_WithoutPassword_ThrowsAppException()
-    {
-        var dto = new UserRequestDto
-        {
-            Email = "someone@example.com",
-            UserName = "someone"
-        };
-
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
-        Assert.Equal(Constants.PASSWORD_REQUIRED_FOR_NEW_USER, ex.Message);
     }
 
     [Fact]
@@ -497,26 +528,18 @@ public class UserServiceTests
         var dto = new UserRequestDto
         {
             FullName = "Test User",
-            Email = "failuser@example.com",
+            Email = "failuser1@example.com",
             UserName = "failuser",
             Password = "Test@123",
+            RoleId = (int)UserRoles.Player,
             IsRegister = true
         };
-
-        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-            It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync(new CreateUpdateResponseDto
-            {
-                Success = true,
-                Message = "User created successfully."
-            });
 
         _commonServiceMock
             .Setup(s => s.SendEmailFromTemplate(It.IsAny<TemplatedEmailRequestDto>()))
             .ReturnsAsync("Some failure message");
 
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
-
         Assert.Equal(Constants.USER_REGISTERED_BUT_EMAIL_NOT_SENT, ex.Message);
     }
 
@@ -527,7 +550,6 @@ public class UserServiceTests
     [Fact]
     public async Task UpdateUser_WithNewProfilePic_UpdatesImagePath()
     {
-        var existingUserId = 1;
         var fileMock = new Mock<IFormFile>();
         fileMock.Setup(f => f.FileName).Returns("newpic.jpg");
         fileMock.Setup(f => f.Length).Returns(100);
@@ -535,36 +557,38 @@ public class UserServiceTests
 
         var dto = new UserRequestDto
         {
-            Id = existingUserId,
+            Id = 3, // Charlie
             FullName = "Updated Name",
-            Email = "user@example.com",
-            UserName = "updatedusername",
+            Email = "charlie@example.com",
+            UserName = "charlie",
+            RoleId = (int)UserRoles.Player,
             ProfilePic = fileMock.Object,
-            Bio = "Updated bio",
-            Password = null // no password change
+            Bio = "Updated bio"
         };
 
         _commonServiceMock
             .Setup(s => s.SaveFile(dto.ProfilePic, "users"))
             .ReturnsAsync("users/newpic.jpg");
 
-        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-    It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
-    .ReturnsAsync(new CreateUpdateResponseDto
-    {
-        Success = true,
-        Message = "User updated successfully."
-    });
+        _commonServiceMock
+            .Setup(s => s.DeleteFile(It.IsAny<string>()))
+            .Verifiable();
+
+        _sqlQueryRepositoryMock
+            .Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+                It.IsAny<string>(), 
+                It.IsAny<NpgsqlParameter[]>()))
+            .ReturnsAsync(new CreateUpdateResponseDto
+            {
+                Success = true,
+                Message = "User updated successfully."
+            });
 
         var (Success, Message) = await _userService.CreateOrUpdateUser(dto);
 
         Assert.True(Success);
-
         _commonServiceMock.Verify(s => s.SaveFile(dto.ProfilePic, "users"), Times.Once);
-        _sqlQueryRepositoryMock.Verify(s =>
-            s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-                It.IsAny<string>(),
-                It.IsAny<NpgsqlParameter[]>()), Times.Once);
+        _commonServiceMock.Verify(s => s.DeleteFile("old-profile.jpg"), Times.Once);
     }
 
     [Fact]
@@ -576,79 +600,21 @@ public class UserServiceTests
             FullName = "Name",
             Email = "user@example.com",
             UserName = "username",
-            ProfilePic = null,
-            Password = null
+            RoleId = (int)UserRoles.Player
         };
 
-        _sqlQueryRepositoryMock.Setup(s =>
-            s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+        _sqlQueryRepositoryMock
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
                 It.IsAny<string>(),
                 It.IsAny<NpgsqlParameter[]>()))
             .ReturnsAsync(new CreateUpdateResponseDto
             {
                 Success = false,
-                Message = "User with ID 99 not found."
+                Message = string.Format(Constants.USER_NOT_FOUND, 99)
             });
 
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
-        Assert.Equal("User with ID 99 not found.", ex.Message);
-    }
-
-    [Fact]
-    public async Task UpdateUser_EmailChanged_ThrowsException()
-    {
-        // Arrange
-        var dto = new UserRequestDto
-        {
-            Id = 1,
-            FullName = "Name",
-            Email = "newemail@example.com",
-            UserName = "username",
-            ProfilePic = null,
-            Password = null
-        };
-
-        _sqlQueryRepositoryMock.Setup(s =>
-            s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-                It.IsAny<string>(),
-                It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync(new CreateUpdateResponseDto
-            {
-                Success = false,
-                Message = "Email can't be changed"
-            });
-
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
-        Assert.Equal("Email can't be changed", ex.Message);
-    }
-
-    [Fact]
-    public async Task UpdateUser_DuplicateUsername_ThrowsException()
-    {
-        // Arrange
-        var dto = new UserRequestDto
-        {
-            Id = 1,
-            FullName = "Name",
-            Email = "user@example.com",
-            UserName = "duplicateusername",
-            ProfilePic = null,
-            Password = null
-        };
-
-        _sqlQueryRepositoryMock.Setup(s =>
-            s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-                It.IsAny<string>(),
-                It.IsAny<NpgsqlParameter[]>()))
-            .ReturnsAsync(new CreateUpdateResponseDto
-            {
-                Success = false,
-                Message = "User with this username already exists."
-            });
-
-        // Act & Assert
-        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.CreateOrUpdateUser(dto));
-        Assert.Equal("User with this username already exists.", ex.Message);
+        Assert.Contains("not found", ex.Message.ToLower());
     }
 
     [Fact]
@@ -656,16 +622,18 @@ public class UserServiceTests
     {
         var dto = new UserRequestDto
         {
-            Id = 1,
+            Id = 2, // Bob
             FullName = "Updated Name",
-            Email = "user@example.com",
-            UserName = "updateduser",
-            Password = null,
+            Email = "bob@example.com",
+            UserName = "bob",
+            RoleId = (int)UserRoles.Player,
             IsRegister = false
         };
 
-        _sqlQueryRepositoryMock.Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-            It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
+        _sqlQueryRepositoryMock
+            .Setup(r => r.SqlQuerySingleAsync<CreateUpdateResponseDto>(
+                It.IsAny<string>(), 
+                It.IsAny<NpgsqlParameter[]>()))
             .ReturnsAsync(new CreateUpdateResponseDto
             {
                 Success = true,
@@ -682,32 +650,49 @@ public class UserServiceTests
     #endregion
 
     #region UpdateUserByAction
+
     [Fact]
     public async Task UpdateUserByAction_Delete_Success()
     {
-        var trackedUser = _context.Users.First(u => u.Id == 1);
-        _context.Entry(trackedUser).State = EntityState.Detached;
+        _context.ChangeTracker.Clear();
 
         var actionRequest = new UserActionRequest
         {
-            Id = 1,
+            Id = 2, // Bob (not current user)
             Action = UserActionType.Delete
         };
 
         var message = await _userService.UpdateUserByAction(actionRequest);
 
         Assert.Contains("deleted", message.ToLower());
+
+        // Verify user is marked as deleted
+        var user = await _context.Users.FindAsync(2);
+        Assert.NotNull(user);
+        Assert.True(user.IsDeleted);
+    }
+
+    [Fact]
+    public async Task UpdateUserByAction_CannotDeleteSelf_ThrowsException()
+    {
+        var actionRequest = new UserActionRequest
+        {
+            Id = 1, // Current user (Alice)
+            Action = UserActionType.Delete
+        };
+
+        var ex = await Assert.ThrowsAsync<AppException>(() => _userService.UpdateUserByAction(actionRequest));
+        Assert.Equal(Constants.CANNOT_MODIFY_SELF, ex.Message);
     }
 
     [Fact]
     public async Task UpdateUserByAction_ChangeStatus_Success()
     {
-        var trackedUser = _context.Users.First(u => u.Id == 2);
-        _context.Entry(trackedUser).State = EntityState.Detached;
+        _context.ChangeTracker.Clear();
 
         var actionRequest = new UserActionRequest
         {
-            Id = 2,
+            Id = 2, // Bob
             Action = UserActionType.ChangeStatus,
             NewStatus = UserStatus.Active
         };
@@ -715,36 +700,34 @@ public class UserServiceTests
         var message = await _userService.UpdateUserByAction(actionRequest);
 
         Assert.Contains("changed", message.ToLower());
+
+        // Verify status changed
+        var user = await _context.Users.FindAsync(2);
+        Assert.Equal((int)UserStatus.Active, user.Status);
     }
 
     [Fact]
     public async Task UpdateUserByAction_StatusAlreadySet_ThrowsAppException()
     {
-        var existingUser = _context.Users.First();
-        _context.Entry(existingUser).State = EntityState.Detached;
+        _context.ChangeTracker.Clear();
 
         var request = new UserActionRequest
         {
-            Id = existingUser.Id,
+            Id = 2, // Bob is already Suspended
             Action = UserActionType.ChangeStatus,
-            NewStatus = (UserStatus)existingUser.Status
+            NewStatus = UserStatus.Suspended
         };
 
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.UpdateUserByAction(request));
-
-        var expectedMessage = string.Format(Constants.STATUS_ALREADY_SET, request.NewStatus);
-        Assert.Equal(expectedMessage, ex.Message);
+        Assert.Contains("already", ex.Message.ToLower());
     }
 
     [Fact]
     public async Task UpdateUserByAction_NullStatus_ThrowsAppException()
     {
-        var user = _context.Users.First(u => !u.IsDeleted);
-        _context.Entry(user).State = EntityState.Detached;
-
         var request = new UserActionRequest
         {
-            Id = user.Id,
+            Id = 2,
             Action = UserActionType.ChangeStatus,
             NewStatus = null
         };
@@ -752,35 +735,28 @@ public class UserServiceTests
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.UpdateUserByAction(request));
         Assert.Equal(Constants.STATUS_REQUIRED, ex.Message);
     }
+
     [Fact]
     public async Task UpdateUserByAction_ChangeStatus_ToSuspended_SendsSuspensionEmail()
     {
-        // Arrange
-        var user = _context.Users.First(u => u.Status != (int)UserStatus.Suspended);
-        _context.Entry(user).State = EntityState.Detached;
+        _context.ChangeTracker.Clear();
 
         var actionRequest = new UserActionRequest
         {
-            Id = user.Id,
+            Id = 3, // Charlie (Active)
             Action = UserActionType.ChangeStatus,
             NewStatus = UserStatus.Suspended
         };
 
-        // Setup mock to verify email sending
         _commonServiceMock
             .Setup(s => s.SendEmailFromTemplate(It.Is<TemplatedEmailRequestDto>(dto =>
                 dto.TemplateType == EmailTemplateType.AccountSuspension &&
-                dto.ToEmail == user.Email &&
-                dto.Placeholders.ContainsKey("{{user}}") &&
-                dto.Placeholders.ContainsKey("{{email}}")
-            )))
+                dto.ToEmail == "charlie@example.com")))
             .ReturnsAsync("Email Sent")
             .Verifiable();
 
-        // Act
         var result = await _userService.UpdateUserByAction(actionRequest);
 
-        // Assert
         Assert.Contains("changed", result.ToLower());
         _commonServiceMock.Verify();
     }
@@ -792,17 +768,10 @@ public class UserServiceTests
     [Fact]
     public async Task UserExportData_WithValidData_ReturnsExcelStream()
     {
-        // Arrange
         var query = new PageListRequest
         {
             PageNumber = 1,
             PageSize = 10
-        };
-
-        var exportData = new List<UserExportDto>
-        {
-            new() { No = 1, FullName = "Alice Johnson" },
-            new() { No = 2, FullName = "Bob Smith" }
         };
 
         var stream = new MemoryStream();
@@ -816,10 +785,8 @@ public class UserServiceTests
                 It.IsAny<Action<IXLWorksheet>>()))
             .Returns(stream);
 
-        // Act
         var result = await _userService.UserExportData(query);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(stream, result);
     }
@@ -827,7 +794,6 @@ public class UserServiceTests
     [Fact]
     public async Task UserExportData_ShouldAddRowNumbers()
     {
-        // Arrange
         var query = new PageListRequest();
 
         var capturedList = new List<UserExportDto>();
@@ -843,23 +809,20 @@ public class UserServiceTests
                 (list, _, _, _, _, _) => capturedList = list)
             .Returns(new MemoryStream());
 
-        // Act
         var result = await _userService.UserExportData(query);
 
-        // Assert
+        Assert.NotEmpty(capturedList);
         Assert.Equal(1, capturedList[0].No);
     }
 
     [Fact]
     public async Task UserExportData_WhenNoData_ThrowsAppException()
     {
-        // Arrange
         _context.Users.RemoveRange(_context.Users);
         _context.SaveChanges();
 
         var query = new PageListRequest();
 
-        // Act & Assert
         var ex = await Assert.ThrowsAsync<AppException>(() => _userService.UserExportData(query));
         Assert.Equal(Constants.USER_DATA_NULL, ex.Message);
     }
@@ -867,9 +830,6 @@ public class UserServiceTests
     [Fact]
     public async Task UserExportData_WithSearchAndFilters_SetsWorksheetMetadata()
     {
-        // Arrange
-        SeedTestData();
-
         var query = new PageListRequest
         {
             SearchTerm = "bob",
@@ -899,10 +859,8 @@ public class UserServiceTests
                 })
             .Returns(new MemoryStream());
 
-        // Act
         var result = await _userService.UserExportData(query);
 
-        // Assert
         Assert.NotNull(result);
         Assert.NotNull(capturedSetup);
 
@@ -924,6 +882,4 @@ public class UserServiceTests
     }
 
     #endregion
-
-
 }

@@ -46,31 +46,55 @@ namespace QuizVerse.UnitTests.Services
         [Fact]
         public async Task GetBattleList_ShouldReturnMappedData()
         {
-            var repoData = new List<BattleManagementData> { new() { Id = 1, BattleName = "B1" } };
-            var mapped = new List<BattleManagementData> { new() { Id = 1, BattleName = "B1" } };
+            // Arrange
+            // Raw result returned from SQL — JSON string for battles
+            var rawRepoResult = new BattleManagementRawResult
+            {
+                Battles = "[{\"Id\":1,\"BattleName\":\"B1\"}]", // ✅ JSON string
+                HasMore = false
+            };
+
+            var mappedResponse = new BattleManagementDataResponseDto
+            {
+                Battles = new List<BattleManagementData>
+                {
+                    new() { Id = 1, BattleName = "B1" }
+                },
+                HasMore = false
+            };
 
             _mockSqlRepo
-                .Setup(r => r.SqlQueryListAsync<BattleManagementData>(It.IsAny<string>(), It.IsAny<object[]>()))
-                .ReturnsAsync(repoData);
+                .Setup(r => r.SqlQuerySingleAsync<BattleManagementRawResult>(
+                    It.IsAny<string>(), It.IsAny<object[]>()))
+                .ReturnsAsync(rawRepoResult);
 
             _mockMapper
-                .Setup(m => m.Map<List<BattleManagementData>>(repoData))
-                .Returns(mapped);
+                .Setup(m => m.Map<BattleManagementDataResponseDto>(rawRepoResult))
+                .Returns(mappedResponse);
 
-            var result = await _service.GetBattleList();
+            _mockMapper
+                .Setup(m => m.Map<BattleManagementData>(It.IsAny<BattleManagementData>()))
+                .Returns<BattleManagementData>(b => b);
 
-            Assert.Single(result);
-            Assert.Equal("B1", result[0].BattleName);
+            // Act
+            var result = await _service.GetBattleList(1);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Single(result.Battles);
+            Assert.Equal("B1", result.Battles[0].BattleName);
+            Assert.False(result.HasMore);
         }
 
         [Fact]
         public async Task GetBattleList_ShouldPropagateException()
         {
             _mockSqlRepo
-                .Setup(r => r.SqlQueryListAsync<BattleManagementData>(It.IsAny<string>(), It.IsAny<object[]>()))
+                .Setup(r => r.SqlQuerySingleAsync<BattleManagementRawResult>(
+                    It.IsAny<string>(), It.IsAny<object[]>()))
                 .ThrowsAsync(new Exception("DB fail"));
 
-            await Assert.ThrowsAsync<Exception>(() => _service.GetBattleList());
+            await Assert.ThrowsAsync<Exception>(() => _service.GetBattleList(1));
         }
 
         #endregion

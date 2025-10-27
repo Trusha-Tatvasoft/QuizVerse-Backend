@@ -88,7 +88,9 @@ public class BattleHub(
 
             if (currentBattle.BattleTimeLimited)
             {
-                if (currentBattle.StartDate > DateTime.UtcNow || currentBattle.EndDate < DateTime.UtcNow)
+                if (currentBattle.StartDate == null || currentBattle.EndDate == null ||
+                currentBattle.StartDate.Value.Date > DateTime.UtcNow.Date ||
+                currentBattle.EndDate.Value.Date < DateTime.UtcNow.Date)
                 {
                     await Clients.Client(Context.ConnectionId).SendAsync(SignalRMethods.ERROR, BATTLE_NOT_FOUND);
                     return;

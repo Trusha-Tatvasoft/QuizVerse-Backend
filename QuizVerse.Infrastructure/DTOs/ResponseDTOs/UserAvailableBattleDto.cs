@@ -13,3 +13,15 @@ public class UserAvailableBattleDto
     public int Participants { get; set; }
     public bool IsBattleRunning { get; set; }
 }
+
+public class UserAvailableBattleDtoResponseDto
+{
+    public List<UserAvailableBattleDto> Battles { get; set; } = new();
+    public bool HasMore { get; set; }
+}
+
+public class UserAvailableBattleRawResult
+{
+    public string Battles { get; set; } = string.Empty;
+    public bool HasMore { get; set; }
+}

@@ -5,7 +5,7 @@ namespace QuizVerse.Application.Core.Interface;
 
 public interface IBattleManagementService
 {
-    Task<List<BattleManagementData>> GetBattleList();
+    Task<BattleManagementDataResponseDto> GetBattleList(int battachNumber);
 
     Task<CreateUpdateResponseDto> CreateUpdateBattle(SaveBattleRequestDTO battleCreateUpdateRequestDto);
 

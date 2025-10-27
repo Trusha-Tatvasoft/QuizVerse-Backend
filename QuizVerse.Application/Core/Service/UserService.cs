@@ -22,6 +22,7 @@ namespace QuizVerse.Application.Core.Service;
 public class UserService(IGenericRepository<User> userRepository, ICommonService commonService, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISqlQueryRepository sqlQueryRepository, IConfiguration configuration) : IUserService
 {
     public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
+    public string UserRole => httpContextAccessor.HttpContext?.User?.GetUserRole() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
 
     #region User Queries
     private IQueryable<User> GetUserData(PageListRequest query)
@@ -106,6 +107,13 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
     {
         string? imagePath = null;
         string? password = null;
+
+        if (dto.Id == UserId)
+            throw new AppException(Constants.CANNOT_MODIFY_SELF);
+
+        if ((dto.RoleId == (int)UserRoles.Admin || dto.RoleId == (int)UserRoles.SuperAdmin) && UserRole == UserRoles.Admin.ToString())
+            throw new AppException(Constants.NOT_HAVE_PERMISSION);
+
 
         if (dto.ProfilePic != null && dto.ProfilePic.Length > 0)
         {
@@ -202,11 +210,19 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         var user = await userRepository.GetAsync(u => u.Id == userActionRequest.Id && !u.IsDeleted)
             ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, userActionRequest.Id));
 
+        if (user.Id == UserId)
+            throw new AppException(Constants.CANNOT_MODIFY_SELF);
+
+        if ((user.RoleId == (int)UserRoles.Admin || user.RoleId == (int)UserRoles.SuperAdmin) && UserRole == UserRoles.Admin.ToString())
+            throw new AppException(Constants.NOT_HAVE_PERMISSION);
+
         string resultMessage;
 
         switch (userActionRequest.Action)
         {
             case UserActionType.Delete:
+                if (user.RoleId == (int)UserRoles.Admin && UserRole == UserRoles.SuperAdmin.ToString())
+                    throw new AppException(Constants.NOT_HAVE_PERMISSION);
                 if (user.IsDeleted)
                     throw new AppException(string.Format(Constants.USER_ALREADY_DELETED, userActionRequest.Id));
 
@@ -305,6 +321,4 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         return commonService.ExportToExcel(tableData, "Users", XLTableTheme.TableStyleMedium9, 10, 1, worksheetSetup);
     }
     #endregion
-
-
 }

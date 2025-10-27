@@ -5,7 +5,7 @@ namespace QuizVerse.Application.Core.Interface;
 
 public interface IUserBattlesService
 {
-    Task<List<UserAvailableBattleDto>> GetUserAvailableBattles();
+    Task<UserAvailableBattleDtoResponseDto> GetUserAvailableBattles(int batchNumber);
     Task<UserBattleHistoryResponseDto> GetUserBattleHistory(UserBattleHistoryRequestDto dto);
     Task<List<UserBattleLeaderboardData>> GetBattleLeaderboardList();
     Task<string> SendBattleRequest(SendBattleRequestDTO dto);
