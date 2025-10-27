@@ -125,4 +125,5 @@ public class BattleStartDetails
     public PlayerProfileDTO PlayerProfile { get; set; }
     public PlayerProfileDTO OpponentProfile { get; set; }
     public int TotalQuestions { get; set; }
+    public int BattleId { get; set; }
 }

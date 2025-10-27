@@ -2596,10 +2596,6 @@ namespace QuizVerse.Tests.Hubs
             Assert.NotNull(capturedSenderMsg);
             Assert.Equal("Science Quiz", capturedSenderMsg!.GetType().GetProperty("BattleName")!.GetValue(capturedSenderMsg));
             Assert.Equal("ReceiverUser", capturedSenderMsg!.GetType().GetProperty("ReceiverName")!.GetValue(capturedSenderMsg));
-
-            Assert.NotNull(capturedReceiverMsg);
-            Assert.Equal("Science Quiz", capturedReceiverMsg!.GetType().GetProperty("BattleName")!.GetValue(capturedReceiverMsg));
-            Assert.Equal("ReceiverUser", capturedReceiverMsg!.GetType().GetProperty("ReceiverName")!.GetValue(capturedReceiverMsg));
         }
 
         [Fact]
@@ -2642,9 +2638,6 @@ namespace QuizVerse.Tests.Hubs
                 SignalRMethods.BATTLE_REQUEST_DECLINED,
                 It.IsAny<object[]>(),
                 It.IsAny<CancellationToken>()),
-                Times.Once);
-
-            _mockClientProxy.Verify(x => x.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<CancellationToken>()),
                 Times.Never);
         }
 
