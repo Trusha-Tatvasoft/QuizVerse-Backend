@@ -225,8 +225,8 @@ namespace QuizVerse.Application.Core.Service
 
             // Validate the token and check if it is not used and not expired
             PasswordResetToken passwordResetToken = await _genericPasswordResetTokenRepository.GetAsync(
-                t => t.Token == token && (bool)!t.IsUsed && t.ExpireAt > DateTime.UtcNow)
-                ?? throw new ArgumentException(Constants.INVALID_RESET_PASSWORD_TOKEN);
+                t => t.Token == token && t.IsUsed != true && t.ExpireAt > DateTime.UtcNow)
+                 ?? throw new ArgumentException(Constants.INVALID_RESET_PASSWORD_TOKEN);
 
             // Check if the user associated with the token exists and is not deleted
             User? user = await _genericUserRepository.GetAsync(u => u.Id == passwordResetToken.UserId && !u.IsDeleted)
@@ -250,7 +250,7 @@ namespace QuizVerse.Application.Core.Service
 
             // Validate the reset password token and user exists
             PasswordResetToken passwordResetToken = await _genericPasswordResetTokenRepository.GetAsync(
-               t => t.Token == resetPasswordDto.ResetPasswordToken && (bool)!t.IsUsed && t.ExpireAt > DateTime.UtcNow)
+               t => t.Token == resetPasswordDto.ResetPasswordToken && t.IsUsed != true && t.ExpireAt > DateTime.UtcNow)
                ?? throw new ArgumentException(Constants.INVALID_RESET_PASSWORD_TOKEN);
             User? user = await _genericUserRepository.GetAsync(u => u.Id == passwordResetToken.UserId && !u.IsDeleted)
                 ?? throw new ArgumentException(Constants.USER_NOT_FOUND_MESSAGE);

@@ -29,7 +29,7 @@ public class PlatformConfigurationService(IGenericRepository<PlatformConfigurati
             .FirstOrDefault(p => p.ConfigurationName == SystemConstants.PLATFORM_LOGO_CONFIGURATION_NAME)
             ?.Values;
         string logoPath;
-        if (platformLogoJson == null) logoPath = null;
+        if (platformLogoJson == null) logoPath = null!;
         else
         {
             var platformLogoDoc = JsonDocument.Parse(platformLogoJson);

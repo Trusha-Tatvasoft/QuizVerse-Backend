@@ -56,7 +56,10 @@ public class BattleService(
         };
         await _battleStatusRepo.AddAsync(status);
 
-        BattleList battle = await _battleListRepo.GetAsync(b => b.Id == battleId);
+        BattleList? battle = await _battleListRepo.GetAsync(b => b.Id == battleId);
+
+        if(battle == null)
+            throw new AppException(Constants.BATTLE_NOT_FOUND);
 
         int totalQuestions = await _quizToBaseQuestionMap.CountAsync(q => q.QuizId == battle.QuizId && !q.IsDeleted);
 
@@ -98,6 +101,9 @@ public class BattleService(
     CancellationToken ct = default)
     {
         if (!BattleStateManager.TryGetBattle(battleId, out var state))
+            return new SubmitAnswerResult { ErrorMessage = Constants.BATTLE_NOT_FOUND };
+
+        if (state == null)
             return new SubmitAnswerResult { ErrorMessage = Constants.BATTLE_NOT_FOUND };
 
         //  Validate question index properly
@@ -199,6 +205,9 @@ public class BattleService(
         if (!BattleStateManager.TryGetBattle(battleId, out var state))
             return null;
 
+        if (state == null)
+            return null;
+
         var currentIndex = state.CurrentIndex.GetValueOrDefault(userId, 1);
         if (currentIndex != questionIndex)
             return null;
@@ -210,7 +219,7 @@ public class BattleService(
             cts.Dispose();
         }
 
-        string ans = null;
+        string ans = null!;
         var questionDetailIndex = questionIndex - 1;
         if (questionDetailIndex < state.AttemptedQuestionsDetails.Count)
         {
@@ -346,13 +355,16 @@ public class BattleService(
             }
         }
 
-        BattleStatus battleStatus = await _battleStatusRepo.GetAsync(b => b.Id == state.BattleAttemptId);
+        BattleStatus? battleStatus = await _battleStatusRepo.GetAsync(b => b.Id == state.BattleAttemptId);
+
+        if(battleStatus == null)
+            throw new AppException(Constants.BATTLE_NOT_FOUND);
 
         //  Set proper battle status
-        if (winnerId.HasValue)
-            battleStatus.BattleStatus1 = (int)Infrastructure.Enums.BattleStatus.Completed;
-        else
-            battleStatus.BattleStatus1 = (int)Infrastructure.Enums.BattleStatus.Draw;
+            if (winnerId.HasValue)
+                battleStatus.BattleStatus1 = (int)Infrastructure.Enums.BattleStatus.Completed;
+            else
+                battleStatus.BattleStatus1 = (int)Infrastructure.Enums.BattleStatus.Draw;
 
         if (p1Score == 0 && p2Score == 0)
         {
@@ -397,6 +409,9 @@ public class BattleService(
     public async Task<BattleFinishedDto?> IntruptByPlayer(int attemptId, int userId, CancellationToken ct = default)
     {
         if (!BattleStateManager.TryGetBattle(attemptId, out var state))
+            return null;
+
+        if(state == null)
             return null;
 
         // Cancel and dispose the active timer for this user
@@ -459,7 +474,7 @@ public class BattleService(
             .GetAsync(b => b.Id == state.BattleAttemptId);
 
         var raw = await _sqlQueryRepository.SqlQuerySingleAsync<RawBattleQuestionDto>(
-            string.Format(SqlConstants.GET_Battle_QUESTIONS_QUERY_TEMPLATE, battleStatus.Id, questionIndex));
+            string.Format(SqlConstants.GET_Battle_QUESTIONS_QUERY_TEMPLATE, battleStatus?.Id, questionIndex));
 
         var options = JsonSerializer.Deserialize<List<OptionResponseDto>>(raw.Options ?? "[]") ?? [];
 
@@ -496,15 +511,14 @@ public class BattleService(
 
     private async Task<(bool, string)> ValidateAnswer(int questionId, string? givenAnswer)
     {
-        BaseQuestion question = await _baseQuestionRepo.GetAsync(q => q.Id == questionId, includes: q => q.Include(qq => qq.QuestionOptionsAnswers));
-        if (question.QueTypeId == 3 || question.QueTypeId == 4)
+        BaseQuestion? question = await _baseQuestionRepo.GetAsync(q => q.Id == questionId, includes: q => q.Include(qq => qq.QuestionOptionsAnswers));
+        if (question?.QueTypeId == 3 || question?.QueTypeId == 4)
         {
             QuizAnswerCheckDto quizAnswerCheck = new()
             {
                 QuestionName = question.QueText,
-                GivenAnswer = givenAnswer,
+                GivenAnswer = givenAnswer ?? "",
                 CorrectAnswer = string.Join(", ", question.QuestionOptionsAnswers
-                                            .Where(o => !o.IsDeleted)
                                             .Select(o => o.Value))
             };
 
@@ -512,9 +526,8 @@ public class BattleService(
         }
 
         // Objective/MCQ
-        string correctAnswer = question.QuestionOptionsAnswers
-                                .Where(o => !o.IsDeleted &&
-                                            o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase))
+        string correctAnswer = question?.QuestionOptionsAnswers
+                                .Where(o => o.Key.Equals(Constants.QUESTION_KEY_ANSWER, StringComparison.OrdinalIgnoreCase))
                                 .Select(o => o.Value)
                                 .FirstOrDefault() ?? "";
 

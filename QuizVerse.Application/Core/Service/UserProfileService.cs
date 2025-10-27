@@ -19,15 +19,11 @@ namespace QuizVerse.Application.Core.Service;
 public class UserProfileService(
     ISqlQueryRepository sqlQueryRepository,
     IGenericRepository<User> userRepository,
-    IGenericRepository<UserPerformanceDetail> userPerformanceDetailRepository,
-    IGenericRepository<UserNotification> userNotificationRepository,
-    IGenericRepository<LevelByExp> levelByExpRepository,
     ICommonService commonService,
     IGenericRepository<Badge> badgeRepository,
     IGenericRepository<UserBadgesEarned> userBadgeRepository,
     IMapper mapper,
-    IHttpContextAccessor httpContextAccessor,
-    IEmailService emailService) : IUserProfileService
+    IHttpContextAccessor httpContextAccessor) : IUserProfileService
 {
     public int UserId => httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
     public string UserRole => httpContextAccessor.HttpContext?.User?.GetUserRole() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);

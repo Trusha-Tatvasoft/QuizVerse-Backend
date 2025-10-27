@@ -11,12 +11,11 @@ namespace QuizVerse.WebAPI.Controllers
     [Route("api/[controller]")]
     public class AuthenticationController(IAuthService authService) : ControllerBase
     {
-        public readonly IAuthService _authService = authService;
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(UserLoginDTO userLoginDTO)
         {
-            (string accessToken, string refreshToken) = await _authService.AuthenticateUser(userLoginDTO);
+            (string accessToken, string refreshToken) = await authService.AuthenticateUser(userLoginDTO);
             ApiResponse<LoginResponseDTO> response = new()
             {
                 Result = true,
@@ -35,7 +34,7 @@ namespace QuizVerse.WebAPI.Controllers
         [HttpPost("refersh-token")]
         public async Task<IActionResult> ValidateAndRegenerateRefreshToken([FromBody] string refereshToken)
         {
-            (string accessToken, string refreshToken) = await _authService.ValidateRefreshTokens(refereshToken);
+            (string accessToken, string refreshToken) = await authService.ValidateRefreshTokens(refereshToken);
             ApiResponse<LoginResponseDTO> response = new()
             {
                 Result = true,
@@ -55,7 +54,7 @@ namespace QuizVerse.WebAPI.Controllers
         public async Task<IActionResult> RegisterUser([FromBody] UserRegisterDto userRegisterDto)
         {
 
-            (bool success, string message) = await _authService.RegisterUser(userRegisterDto);
+            (bool success, string message) = await authService.RegisterUser(userRegisterDto);
 
             ApiResponse<object> response = new()
             {

@@ -153,9 +153,8 @@ public class QuizService(
             QuizAnswerCheckDto quizAnswerCheck = new()
             {
                 QuestionName = question.QueText,
-                GivenAnswer = givenAnswer,
+                GivenAnswer = givenAnswer ?? "",
                 CorrectAnswer = string.Join(", ", question.QuestionOptionsAnswers
-                                            .Where(o => !o.IsDeleted)
                                             .Select(o => o.Value))
             };
 
@@ -164,8 +163,7 @@ public class QuizService(
 
         // Objective/MCQ
         string correctAnswer = question.QuestionOptionsAnswers
-                                .Where(o => !o.IsDeleted &&
-                                            o.Key.Equals("answer", StringComparison.OrdinalIgnoreCase))
+                                .Where(o => o.Key.Equals("answer", StringComparison.OrdinalIgnoreCase))
                                 .Select(o => o.Value)
                                 .FirstOrDefault() ?? "";
 
@@ -202,7 +200,7 @@ public class QuizService(
                 IsCorrect = isCorrect,
                 QuestionText = question.QueText,
                 QuestionAnswer = question.QuestionOptionsAnswers
-                                    .Where(o => !o.IsDeleted && o.Key.Equals("answer"))
+                                    .Where(o => o.Key.Equals("answer"))
                                     .Select(o => o.Value)
                                     .FirstOrDefault() ?? "",
                 CreatedDate = DateTime.UtcNow
