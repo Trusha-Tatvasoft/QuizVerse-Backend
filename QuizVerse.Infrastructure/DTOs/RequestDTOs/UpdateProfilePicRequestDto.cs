@@ -6,7 +6,6 @@ namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 
 public class UpdateProfilePicRequestDto
 {
-    [Required]
     [AllowedImage(ErrorMessage = "Invalid profile picture. Only .jpg, .jpeg, .png, and .gif files are allowed, with a maximum size of 5MB.")]
-    public IFormFile ProfilePic { get; set; } = null!;
+    public IFormFile? ProfilePic { get; set; }
 }

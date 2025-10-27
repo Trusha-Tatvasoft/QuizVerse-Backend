@@ -72,10 +72,10 @@ public class QuizManagementController(IQuizManagementService quizManagementServi
     #endregion
 
     #region Delete Quiz
-    [HttpDelete("delete-quiz/{quizId}")]
-    public async Task<IActionResult> DeleteQuiz(int quizId)
+    [HttpPut("update-quiz-action")]
+    public async Task<IActionResult> UpdateQuizAction([FromBody]QuizActionDataDto actionDto)
     {
-        CreateUpdateResponseDto response = await quizManagementService.DeleteQuiz(quizId);
+        CreateUpdateResponseDto response = await quizManagementService.UpdateQuizAction(actionDto);
         return Ok(new ApiResponse<CreateUpdateResponseDto>
         {
             Result = response.Success,

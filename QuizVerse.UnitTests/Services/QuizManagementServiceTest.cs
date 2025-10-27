@@ -47,7 +47,7 @@ public class QuizManagementServiceTests
             new[] { new Claim(ClaimTypes.UserData, "1") }, "mock"));
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
         _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
-        
+
         _sqlRepoMock = new Mock<ISqlQueryRepository>();
         _dropDownDataServiceMock = new Mock<IDropDownDataService>();
         _commonServiceMock = new Mock<ICommonService>();
@@ -585,61 +585,89 @@ public class QuizManagementServiceTests
     }
     #endregion
 
-    #region DeleteQuiz Tests
+    #region UpdateQuizAction Tests
+
     [Fact]
-    public async Task DeleteQuiz_ValidId_CallsSqlRepoAndReturnsResponse()
+    public async Task UpdateQuizAction_ValidDeleteAction_CallsSqlRepoAndReturnsResponse()
     {
-        var expectedResponse = new CreateUpdateResponseDto { Success = true, Message = "Deleted" };
+        // Arrange
+        var expectedResponse = new CreateUpdateResponseDto { Success = true, Message = "Deleted successfully" };
+        var actionDto = new QuizActionDataDto
+        {
+            Id = 1,
+            Action = UserActionType.Delete,
+            NewStatus = null
+        };
+
         _sqlRepoMock
-            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
             .ReturnsAsync(expectedResponse);
 
-        var result = await _quizService.DeleteQuiz(1);
+        // Act
+        var result = await _quizService.UpdateQuizAction(actionDto);
 
+        // Assert
+        Assert.NotNull(result);
         Assert.True(result.Success);
-        Assert.Equal("Deleted", result.Message);
+        Assert.Equal("Deleted successfully", result.Message);
+
         _sqlRepoMock.Verify(s =>
             s.SqlQuerySingleAsync<CreateUpdateResponseDto>(
-                It.Is<string>(q => q.Contains(SqlConstants.DELETE_QUIZ_FUNCTION)),
-                It.IsAny<object[]>()),
+                It.Is<string>(q => q.Contains(SqlConstants.UPDATE_QUIZ_ACTION_QUERY_FUNCTION)),
+                It.Is<NpgsqlParameter[]>(p =>
+                    p.Any(x => x.ParameterName == "p_quiz_id" && (int)x.Value == 1) &&
+                    p.Any(x => x.ParameterName == "p_is_deleted_action" && (bool)x.Value == true)
+                )
+            ),
             Times.Once);
     }
 
     [Fact]
-    public async Task DeleteQuiz_InvalidId_ThrowsAppException()
+    public async Task UpdateQuizAction_SqlReturnsNull_ThrowsAppException()
     {
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.DeleteQuiz(0));
-        Assert.Equal(Constants.INVALID_DATA_MESSAGE, ex.Message);
-    }
+        // Arrange
+        var actionDto = new QuizActionDataDto
+        {
+            Id = 1,
+            Action = UserActionType.Delete
+        };
 
-    [Fact]
-    public async Task DeleteQuiz_SqlReturnsNull_ThrowsAppException()
-    {
         _sqlRepoMock
-            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
             .ReturnsAsync((CreateUpdateResponseDto)null!);
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.DeleteQuiz(1));
+        // Act
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.UpdateQuizAction(actionDto));
 
+        // Assert
         Assert.Equal(Constants.DELETE_QUIZ_FAILED, ex.Message);
         Assert.Equal(500, ex.StatusCode);
     }
 
     [Fact]
-    public async Task DeleteQuiz_SqlReturnsFailureResponse_ThrowsAppException()
+    public async Task UpdateQuizAction_SqlReturnsFailureResponse_ThrowsAppException()
     {
+        // Arrange
         var failureResponse = new CreateUpdateResponseDto { Success = false, Message = "Quiz cannot be deleted" };
+        var actionDto = new QuizActionDataDto
+        {
+            Id = 1,
+            Action = UserActionType.Delete
+        };
+
         _sqlRepoMock
-            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<object[]>()))
+            .Setup(s => s.SqlQuerySingleAsync<CreateUpdateResponseDto>(It.IsAny<string>(), It.IsAny<NpgsqlParameter[]>()))
             .ReturnsAsync(failureResponse);
 
-        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.DeleteQuiz(1));
+        // Act
+        var ex = await Assert.ThrowsAsync<AppException>(() => _quizService.UpdateQuizAction(actionDto));
 
+        // Assert
         Assert.Equal("Quiz cannot be deleted", ex.Message);
         Assert.Equal(400, ex.StatusCode);
     }
-    #endregion
 
+    #endregion
 
     #region ExportQuestionsToCsv Tests
     [Fact]

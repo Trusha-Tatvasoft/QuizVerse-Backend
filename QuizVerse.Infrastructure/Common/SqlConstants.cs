@@ -36,7 +36,7 @@ public class SqlConstants
     public const string GET_QUIZ_LIST_COUNT_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})";
     public const string CREATE_UPDATE_QUIZ_FUNCTION = "create_update_quiz";
     public const string GET_QUIZ_DATA_BY_ID_FUNCTION = "get_quiz_data_by_id";
-    public const string DELETE_QUIZ_FUNCTION = "delete_quiz";
+    public const string UPDATE_QUIZ_ACTION_QUERY_FUNCTION = "update_quiz_action";
 
     public const string CREATE_UPDATE_QUIZ_QUERY_TEMPLATE =
         "SELECT * FROM {0}(" +
@@ -45,8 +45,8 @@ public class SqlConstants
         "@p_status, @p_tags, @p_questions, @p_no_of_questions_per_difficulty, @p_created_by)";
     public const string GET_QUIZ_DATA_BY_ID_QUERY_TEMPLATE =
         "SELECT * FROM {0}(@p_quiz_id)";
-    public const string DELETE_QUIZ_QUERY_TEMPLATE =
-        "SELECT * FROM {0}(@p_quiz_id, @p_modified_by)";
+    public const string UPDATE_QUIZ_ACTION_QUERY_TEMPLATE =
+        "SELECT * FROM {0}({{0}}, {{1}}, {{2}},{{3}})";
     #endregion
 
     #region BattleManagement

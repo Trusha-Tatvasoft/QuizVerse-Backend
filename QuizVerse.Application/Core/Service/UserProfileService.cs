@@ -148,14 +148,24 @@ public class UserProfileService(
     public async Task<bool> UpdateProfilePicture(UpdateProfilePicRequestDto updateProfilePicRequestDto)
     {
         var user = await userRepository.GetAsync(u => u.Id == UserId) ?? throw new AppException(string.Format(Constants.USER_NOT_FOUND, UserId));
-        if(user.ProfilePic != null)
+
+        if (updateProfilePicRequestDto.ProfilePic == null)
         {
-            commonService.DeleteFile(user.ProfilePic);
+            if (user.ProfilePic != null)
+            {
+                commonService.DeleteFile(user.ProfilePic);
+                user.ProfilePic = null;
+            }
+        }
+        else
+        {
+            if (user.ProfilePic != null)
+            {
+                commonService.DeleteFile(user.ProfilePic);
+            }
+            user.ProfilePic = await commonService.SaveFile(updateProfilePicRequestDto.ProfilePic, "users");
         }
 
-        var profilePicPath = await commonService.SaveFile(updateProfilePicRequestDto.ProfilePic, "users");
-
-        user.ProfilePic = profilePicPath;
         user.ModifiedDate = DateTime.UtcNow;
         user.ModifiedBy = UserId;
 
@@ -163,7 +173,7 @@ public class UserProfileService(
 
         return true;
     }
-    #endregion
+    #endregion    
 
     #region CheckEmailAvailable
     public async Task<bool> IsEmailAvailable(string email)
