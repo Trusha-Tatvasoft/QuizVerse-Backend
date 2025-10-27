@@ -10,9 +10,11 @@ public class SaveBattleRequestDTO : IValidatableObject
     [Required(ErrorMessage = "Battle title is required.")]
     [MinLength(1, ErrorMessage = "Battle title must be at least 1 character long.")]
     [MaxLength(255, ErrorMessage = "Battle title cannot exceed 255 characters.")]
+    [RegularExpression(@"^(?=.*[A-Za-z])[A-Za-z0-9][A-Za-z0-9 .,!?\-_@#]*$", ErrorMessage = "Battle Title must start with letter/number; not all digits.")]
     public string Name { get; set; } = null!;
 
     [Required(ErrorMessage = "Battle description is required.")]
+    [RegularExpression(@"^[A-Za-z0-9][A-Za-z0-9 .,!?\-_@#]*$", ErrorMessage = "Battle Description must start with letter/number.")]
     [MinLength(1, ErrorMessage = "Battle description must be at least 1 character long.")]
     public string Description { get; set; } = null!;
 
