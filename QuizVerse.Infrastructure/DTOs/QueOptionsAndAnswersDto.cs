@@ -17,5 +17,6 @@ public class QueOptionsAndAnswersDto
  
     [JsonPropertyName("value")]
     [Required(ErrorMessage = "Option Value is required.")]
+    [RegularExpression(@"^$|^\S[\s\S]*$", ErrorMessage = "Question Option/Answer must not start with space.")]
     public string Value { get; set; } = null!;
 }

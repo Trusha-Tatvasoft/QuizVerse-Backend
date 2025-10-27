@@ -13,7 +13,7 @@ public class QuestionsListRequestDto
     public int QueDifficultyId { get; set; }
 
     [Required(ErrorMessage = "Question text is required.")]
-    [MinLength(1, ErrorMessage = "Question text must be at least 1 character long.")]
+    [RegularExpression(@"^$|^\S[\s\S]*$", ErrorMessage = "One of the questions start with a space.")]
     public string QueText { get; set; } = null!;
 
     [Required(ErrorMessage = "Question type is required.")]

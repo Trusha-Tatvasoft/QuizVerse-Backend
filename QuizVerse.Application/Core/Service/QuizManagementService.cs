@@ -202,19 +202,18 @@ public class QuizManagementService(
     #endregion
 
     #region Delete Quiz
-    public async Task<CreateUpdateResponseDto> DeleteQuiz(int quizId)
+    public async Task<CreateUpdateResponseDto> UpdateQuizAction(QuizActionDataDto actionDto)
     {
-        if (quizId <= 0)
-            throw new AppException(Constants.INVALID_DATA_MESSAGE);
-
         string query = string.Format(
-            SqlConstants.DELETE_QUIZ_QUERY_TEMPLATE,
-            SqlConstants.DELETE_QUIZ_FUNCTION
+            SqlConstants.UPDATE_QUIZ_ACTION_QUERY_TEMPLATE,
+            SqlConstants.UPDATE_QUIZ_ACTION_QUERY_FUNCTION
         );
 
         var parameters = new NpgsqlParameter[]
         {
-            new("p_quiz_id", NpgsqlDbType.Integer) { Value = quizId },
+            new("p_quiz_id", NpgsqlDbType.Integer) { Value = actionDto.Id },
+            new("p_is_deleted_action", NpgsqlDbType.Boolean ) {Value = actionDto.Action == UserActionType.Delete},
+            new("p_is_active_status", NpgsqlDbType.Boolean ) { Value = actionDto.NewStatus.HasValue ? ((int)actionDto.NewStatus.Value == (int)QuizStatus.Active) : DBNull.Value },
             new("p_modified_by", NpgsqlDbType.Integer) { Value = UserId },
         };
 

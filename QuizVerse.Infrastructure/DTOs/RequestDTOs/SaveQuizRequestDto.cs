@@ -10,6 +10,7 @@ public class SaveQuizRequestDto
     [Required(ErrorMessage = "Quiz title is required.")]
     [MinLength(1, ErrorMessage = "Quiz name must be at least 1 character long.")]
     [MaxLength(255, ErrorMessage = "Quiz name cannot exceed 255 characters.")]
+    [RegularExpression(@"^(?=.*[A-Za-z])[A-Za-z0-9][A-Za-z0-9 .,!?\-_@#]*$", ErrorMessage = "Quiz Title must start with letter/number; not all digits.")]
     public string Name { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Category is required.")]
@@ -17,6 +18,7 @@ public class SaveQuizRequestDto
 
     [Required(ErrorMessage = "Quiz description is required.")]
     [MinLength(1, ErrorMessage = "Quiz description must be at least 1 character long.")]
+    [RegularExpression(@"^[A-Za-z0-9][A-Za-z0-9 .,!?\-_@#]*$", ErrorMessage = "Quiz Description must start with letter/number.")]
     public string Description { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Quiz total time is required.")]

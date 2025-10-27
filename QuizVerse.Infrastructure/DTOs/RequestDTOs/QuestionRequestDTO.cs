@@ -17,10 +17,12 @@ public class QuestionRequestDTO
     public int DifficultyId { get; set; }
 
     [Required(ErrorMessage = "QuestionText is required.")]
+    [RegularExpression(@"^$|^\S[\s\S]*$", ErrorMessage = "Question text must not start with space.")]
     public string QuestionText { get; set; } = null!;
 
     public List<string>? Options { get; set; }
 
     [Required(ErrorMessage = "CorrectAnswer is required.")]
+    [RegularExpression(@"^$|^\S[\s\S]*$", ErrorMessage = "Correct answer must not start with space.")]
     public string CorrectAnswer { get; set; } = null!;
 }
