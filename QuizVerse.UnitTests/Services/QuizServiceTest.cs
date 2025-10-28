@@ -669,7 +669,6 @@ public class QuizServiceTests
             QuizId = 1,
             QuestionId = 1,
             UserId = 1,
-            CreatedBy = 1,
             Description = "Already reported"
         };
         _context.QuestionIssueReports.Add(existingReport);

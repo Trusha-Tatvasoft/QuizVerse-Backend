@@ -12,6 +12,8 @@ public partial class QuizVerseDbContext : DbContext
     {
     }
 
+    public virtual DbSet<AiProcessLog> AiProcessLogs { get; set; }
+
     public virtual DbSet<AttemptedQuizQuestionsAnswer> AttemptedQuizQuestionsAnswers { get; set; }
 
     public virtual DbSet<Badge> Badges { get; set; }
@@ -64,6 +66,8 @@ public partial class QuizVerseDbContext : DbContext
 
     public virtual DbSet<QuizDifficulty> QuizDifficulties { get; set; }
 
+    public virtual DbSet<QuizIssueReport> QuizIssueReports { get; set; }
+
     public virtual DbSet<QuizPlayStatus> QuizPlayStatuses { get; set; }
 
     public virtual DbSet<QuizPurchased> QuizPurchaseds { get; set; }
@@ -94,6 +98,29 @@ public partial class QuizVerseDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<AiProcessLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("AiProcessLog_pkey");
+
+            entity.ToTable("AiProcessLog");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.EndTime)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("end_time");
+            entity.Property(e => e.ExtraInfo)
+                .HasColumnType("jsonb")
+                .HasColumnName("extra_info");
+            entity.Property(e => e.IsSuccess)
+                .HasDefaultValue(false)
+                .HasColumnName("is_success");
+            entity.Property(e => e.ModelName).HasColumnName("model_name");
+            entity.Property(e => e.Purpose).HasColumnName("purpose");
+            entity.Property(e => e.StartTime)
+                .HasDefaultValueSql("now()")
+                .HasColumnName("start_time");
+        });
+
         modelBuilder.Entity<AttemptedQuizQuestionsAnswer>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("AttemptedQuizQuestionsAnswer_pkey");
@@ -806,7 +833,6 @@ public partial class QuizVerseDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("QuestionIssueReports_pkey");
 
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.CreatedBy).HasColumnName("created_by");
             entity.Property(e => e.CreatedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("created_date");
@@ -816,21 +842,19 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValue(false)
                 .HasColumnName("is_deleted");
-            entity.Property(e => e.IsResolved)
-                .HasDefaultValue(false)
-                .HasColumnName("is_resolved");
             entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
             entity.Property(e => e.ModifiedDate)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .HasColumnName("modified_date");
             entity.Property(e => e.QuestionId).HasColumnName("question_id");
             entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.Severity)
+                .HasDefaultValue(4)
+                .HasColumnName("severity");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
-
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.QuestionIssueReportCreatedByNavigations)
-                .HasForeignKey(d => d.CreatedBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("QuestionIssueReports_created_by_fkey");
 
             entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuestionIssueReportModifiedByNavigations)
                 .HasForeignKey(d => d.ModifiedBy)
@@ -1086,6 +1110,43 @@ public partial class QuizVerseDbContext : DbContext
                 .HasConstraintName("QuizDifficulty_modified_by_fkey");
         });
 
+        modelBuilder.Entity<QuizIssueReport>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("QuizIssueReports_pkey");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.CreatedDate)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                .HasColumnName("created_date");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate).HasColumnName("modified_date");
+            entity.Property(e => e.QuizId).HasColumnName("quiz_id");
+            entity.Property(e => e.Reason)
+                .HasMaxLength(255)
+                .HasColumnName("reason");
+            entity.Property(e => e.Severity)
+                .HasDefaultValue(4)
+                .HasColumnName("severity");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(1)
+                .HasColumnName("status");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuizIssueReportModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
+                .HasConstraintName("QuizIssueReports_modified_by_fkey");
+
+            entity.HasOne(d => d.Quiz).WithMany(p => p.QuizIssueReports)
+                .HasForeignKey(d => d.QuizId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("QuizIssueReports_quiz_id_fkey");
+
+            entity.HasOne(d => d.User).WithMany(p => p.QuizIssueReportUsers)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("QuizIssueReports_user_id_fkey");
+        });
+
         modelBuilder.Entity<QuizPlayStatus>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("QuizPlayStatus_pkey");
@@ -1151,16 +1212,31 @@ public partial class QuizVerseDbContext : DbContext
             entity.Property(e => e.Feedback)
                 .HasColumnType("character varying")
                 .HasColumnName("feedback");
+            entity.Property(e => e.IsFlagged)
+                .HasDefaultValue(false)
+                .HasColumnName("is_flagged");
+            entity.Property(e => e.ModifiedBy).HasColumnName("modified_by");
+            entity.Property(e => e.ModifiedDate).HasColumnName("modified_date");
             entity.Property(e => e.QuizId).HasColumnName("quiz_id");
             entity.Property(e => e.QuizRating1).HasColumnName("quiz_rating");
+            entity.Property(e => e.Reason)
+                .HasColumnType("character varying")
+                .HasColumnName("reason");
+            entity.Property(e => e.Status)
+                .HasDefaultValue(4)
+                .HasColumnName("status");
             entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.ModifiedByNavigation).WithMany(p => p.QuizRatingModifiedByNavigations)
+                .HasForeignKey(d => d.ModifiedBy)
+                .HasConstraintName("QuizRating_modified_by_fkey");
 
             entity.HasOne(d => d.Quiz).WithMany(p => p.QuizRatings)
                 .HasForeignKey(d => d.QuizId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizRating_quiz_id_fkey");
 
-            entity.HasOne(d => d.User).WithMany(p => p.QuizRatings)
+            entity.HasOne(d => d.User).WithMany(p => p.QuizRatingUsers)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("QuizRating_user_id_fkey");

@@ -57,6 +57,8 @@ public partial class Quiz
 
     public virtual ICollection<QuizAttempted> QuizAttempteds { get; set; } = new List<QuizAttempted>();
 
+    public virtual ICollection<QuizIssueReport> QuizIssueReports { get; set; } = new List<QuizIssueReport>();
+
     public virtual ICollection<QuizPlayStatus> QuizPlayStatuses { get; set; } = new List<QuizPlayStatus>();
 
     public virtual ICollection<QuizPurchased> QuizPurchaseds { get; set; } = new List<QuizPurchased>();

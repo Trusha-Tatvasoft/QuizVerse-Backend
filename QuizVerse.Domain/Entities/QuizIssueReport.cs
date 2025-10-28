@@ -3,29 +3,25 @@ using System.Collections.Generic;
 
 namespace QuizVerse.Domain.Entities;
 
-public partial class QuizRating
+public partial class QuizIssueReport
 {
     public int Id { get; set; }
 
-    public int QuizId { get; set; }
-
     public int UserId { get; set; }
 
-    public int QuizRating1 { get; set; }
+    public int QuizId { get; set; }
 
-    public string? Feedback { get; set; }
+    public string Reason { get; set; } = null!;
 
-    public DateTime CreatedDate { get; set; }
-
-    public string? Reason { get; set; }
-
-    public bool IsFlagged { get; set; }
+    public int Severity { get; set; }
 
     public int Status { get; set; }
 
-    public int? ModifiedBy { get; set; }
+    public DateTime CreatedDate { get; set; }
 
     public DateTime? ModifiedDate { get; set; }
+
+    public int? ModifiedBy { get; set; }
 
     public virtual User? ModifiedByNavigation { get; set; }
 

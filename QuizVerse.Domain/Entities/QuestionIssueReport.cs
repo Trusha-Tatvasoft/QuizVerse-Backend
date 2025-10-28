@@ -15,11 +15,7 @@ public partial class QuestionIssueReport
 
     public int QuestionId { get; set; }
 
-    public bool IsResolved { get; set; }
-
     public DateTime CreatedDate { get; set; }
-
-    public int CreatedBy { get; set; }
 
     public DateTime? ModifiedDate { get; set; }
 
@@ -27,7 +23,9 @@ public partial class QuestionIssueReport
 
     public bool IsDeleted { get; set; }
 
-    public virtual User CreatedByNavigation { get; set; } = null!;
+    public int Severity { get; set; }
+
+    public int Status { get; set; }
 
     public virtual User? ModifiedByNavigation { get; set; }
 
