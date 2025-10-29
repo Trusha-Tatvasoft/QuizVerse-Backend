@@ -251,7 +251,6 @@ public class QuizService(
 
         QuestionIssueReport entity = _mapper.Map<QuestionIssueReport>(request);
         entity.UserId = UserId;
-        entity.CreatedBy = UserId;
 
         await _questionIssueReportRepository.AddAsync(entity);
 

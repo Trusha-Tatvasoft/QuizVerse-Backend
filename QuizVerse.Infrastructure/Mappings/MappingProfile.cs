@@ -402,8 +402,6 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => src.XpEarned));
 
         CreateMap<QuestionIssueReportRequestDTO, QuestionIssueReport>()
-            .ForMember(dest => dest.IsResolved,
-                opt => opt.MapFrom(_ => false))
             .ForMember(dest => dest.IsDeleted,
                 opt => opt.MapFrom(_ => false))
             .ForMember(dest => dest.CreatedDate,

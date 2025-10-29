@@ -117,8 +117,6 @@ public partial class User
 
     public virtual ICollection<QuestionDifficulty> QuestionDifficultyModifiedByNavigations { get; set; } = new List<QuestionDifficulty>();
 
-    public virtual ICollection<QuestionIssueReport> QuestionIssueReportCreatedByNavigations { get; set; } = new List<QuestionIssueReport>();
-
     public virtual ICollection<QuestionIssueReport> QuestionIssueReportModifiedByNavigations { get; set; } = new List<QuestionIssueReport>();
 
     public virtual ICollection<QuestionIssueReport> QuestionIssueReportUsers { get; set; } = new List<QuestionIssueReport>();
@@ -139,13 +137,19 @@ public partial class User
 
     public virtual ICollection<QuizDifficulty> QuizDifficultyModifiedByNavigations { get; set; } = new List<QuizDifficulty>();
 
+    public virtual ICollection<QuizIssueReport> QuizIssueReportModifiedByNavigations { get; set; } = new List<QuizIssueReport>();
+
+    public virtual ICollection<QuizIssueReport> QuizIssueReportUsers { get; set; } = new List<QuizIssueReport>();
+
     public virtual ICollection<Quiz> QuizModifiedByNavigations { get; set; } = new List<Quiz>();
 
     public virtual ICollection<QuizPlayStatus> QuizPlayStatuses { get; set; } = new List<QuizPlayStatus>();
 
     public virtual ICollection<QuizPurchased> QuizPurchaseds { get; set; } = new List<QuizPurchased>();
 
-    public virtual ICollection<QuizRating> QuizRatings { get; set; } = new List<QuizRating>();
+    public virtual ICollection<QuizRating> QuizRatingModifiedByNavigations { get; set; } = new List<QuizRating>();
+
+    public virtual ICollection<QuizRating> QuizRatingUsers { get; set; } = new List<QuizRating>();
 
     public virtual ICollection<QuizTag> QuizTagCreatedByNavigations { get; set; } = new List<QuizTag>();
 
