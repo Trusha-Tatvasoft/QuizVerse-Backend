@@ -40,8 +40,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBattleService, BattleService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
         services.AddScoped<IUserActivityCheckerService, UserActivityCheckerService>();
+        services.AddHttpClient<IPerspectiveApiService, PerspectiveApiService>();
+        services.AddSingleton<IGcpApiQueueService, GcpApiQueueService>();
+        services.AddHostedService<PerspectiveQueueHostedService>();
         
-
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
 
