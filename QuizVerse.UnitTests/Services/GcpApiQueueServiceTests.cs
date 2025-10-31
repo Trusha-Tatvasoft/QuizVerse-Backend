@@ -173,7 +173,7 @@ public class GcpApiQueueServiceTests
         // Assert
         _quizRatingRepoMock.Verify(r => r.UpdateAsync(It.Is<QuizRating>(
             qr => qr.IsFlagged == true &&
-                  qr.Status == (int)QuizRatingStatus.UnderReview &&
+                  qr.Status == (int)QuizRatingStatus.Pending &&
                   qr.Reason == "Profanity detected")), Times.Once);
     }
 

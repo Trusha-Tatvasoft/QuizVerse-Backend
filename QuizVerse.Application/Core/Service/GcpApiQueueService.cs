@@ -312,7 +312,7 @@ public class GcpApiQueueService : IGcpApiQueueService
                 {
                     rating.IsFlagged = result.IsFlagged;
                     rating.Status = rating.IsFlagged
-                        ? (int)QuizRatingStatus.UnderReview
+                        ? (int)QuizRatingStatus.Pending
                         : (int)QuizRatingStatus.Ignore;
 
                     if (rating.IsFlagged && !string.IsNullOrEmpty(result.FlagReason))
