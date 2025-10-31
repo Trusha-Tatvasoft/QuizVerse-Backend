@@ -139,4 +139,34 @@ namespace QuizVerse.Infrastructure.Enums
         Won = 3
     }
 
+    public enum QuestionOrQuizIssueReportSeverity
+    {
+        High = 1,
+        Low = 2,
+        Medium = 3,
+        UnderProcessing = 4
+    }
+ 
+    public enum QuestionOrQuizIssueReportStatus
+    {
+        Pending = 1,
+        UnderReview = 2,
+        Resolved = 3
+    }
+ 
+    public enum QuizRatingStatus
+    {
+        Accepted = 1,
+        Pending = 2,
+        Rejected = 3,
+        UnderProcessing = 4,
+        UnderReview = 5
+    }
+ 
+    public enum ReportType
+    {
+        QuizRatingFeedback = 1,
+        QuestionIssueReport = 2,
+        QuizIssueReport = 3,
+    }
 }
