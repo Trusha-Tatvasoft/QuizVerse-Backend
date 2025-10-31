@@ -1,4 +1,5 @@
-﻿using QuizVerse.Infrastructure.Enums;
+﻿using System.Text.RegularExpressions;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Infrastructure.Common;
 
@@ -361,6 +362,7 @@ public static class Constants
     public const string QUIZ_RATING_SUBMITTED = "Quiz rating submitted successfully.";
     public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
     public const string NO_ANSWER_PROVIDED = "No answer was provided.";
+    public const string GENERATED_QUESTIONS_COUNT_JSON_KEY = "GeneratedQuestionsCount";
     #endregion
 
     #region User Battles
@@ -417,5 +419,82 @@ public static class Constants
     public const string BATTLE_REQUEST_ACCEPT_SENDER_OFFLINE = "Sender did not come online to receive the accept notification.";
     public const string SENDER_IN_ACTIVE_BATTLE_OR_QUIZ = "Your friend is currently busy.";
     public const string BATTLE_REQUEST_NOT_FOUND_OR_ALREADY_HANDLED = "Battle request not found or already handled.";
+    #endregion
+
+    #region Gemini AI Models
+    public const string GEMINI_2_POINT_5_FLASH_LITE = "gemini-2.5-flash-lite";
+    public const string GEMINI_2_POINT_5_FLASH = "gemini-2.5-flash";
+    public const string GEMINI_2_POINT_0_FLASH_LITE = "gemini-2.0-flash-lite";
+    public const string GEMINI_2_POINT_0_FLASH = "gemini-2.0-flash";
+    public const string GEMINI_2_POINT_5_PRO = "gemini-2.5-pro";
+    public const string GEMINI_2_POINT_0_FLASH_EXP = "gemini-2.0-flash-exp";
+    public const string ROTATION_STATE_CACHE_KEY = "GeminiModelRotationState";
+    public const int CACHE_EXPIRATION_HOURS = 24;
+    #endregion
+
+    #region web scraping
+    public const string INVALID_URL_PROVIDED = "Invalid URL provided";
+    public const string ERROR_ANALYZING_URL_REPUTATION = "Error analyzing URL reputation for {0}: {1}";
+    public const string ALL_URL_SAFETY_CHECKS_FAILED = "All URL safety checks failed for {0}. Gemini services are unavailable.";
+    public const string UNSAFE_GEMINI_ANALYSIS = "Unsafe (Gemini Analysis)";
+    public const string GEMINI_CHECK_FAILED = "Gemini check failed: {0}";
+    public const string URL_BLOCKED_SAFETY_CONCERNS = "URL blocked due to safety concerns: {0}";
+    public const string HTTP_ERROR_FETCHING_URL = "HTTP error fetching URL {0}: Provided URL does not allow to fetch content";
+    public const string UNEXPECTED_ERROR_FETCHING_URL = "Unexpected error fetching URL {0}: {1}";
+    public const string ALL_MODELS_RATE_LIMITED = "All Gemini models have reached their rate limits. Please try again later.";
+    public const string GEMINI_API_EMPTY_RESPONSE = "Gemini API returned empty response for URL {0}";
+    public const string GEMINI_HTTP_ERROR = "Gemini API HTTP error for {0} using model {1}: {2}";
+    public const string WEB_SAFE_MESSAGE_GEMINI = "The website is safe.";
+    public const string UNKNOWN_MODEL = "unknown model";
+    public const string UNEXPECTED_GEMINI_CHECK_ERROR = "Unexpected error in Gemini check for {0}: {1}";
+    public const string COMMENT_FORMATE = "//comment()";
+    public const int WORD_LIMIT_TO_SEND_IN_PROMPT = 7500;
+    public static readonly string[] UnwantedTags = new[]
+    {
+        "script", "style", "form", "iframe", "nav", "header", "footer",
+        "noscript", "button", "input", "select", "option", "textarea",
+        "svg", "canvas", "aside", "link", "meta", "head", "object",
+        "embed", "applet", "frame", "frameset", "noframes"
+    };
+    public static readonly IReadOnlyList<string> UnwantedPhrases = new[]
+    {
+        @"\bfollow us\b",
+        @"\bshare this\b",
+        @"\bsubscribe\b",
+        @"\bsign up\b",
+        @"\bnewsletter\b",
+        @"\bread more\b",
+        @"\bclick here\b",
+        @"\blearn more\b",
+        @"\bposted on\b",
+        @"\bposted by\b",
+        @"\bcategories\b",
+        @"\btags\b",
+        @"\bcomments\b"
+    };
+    public static readonly Regex UrlPattern = new Regex(
+            pattern: @"https?://\S+",
+            options: RegexOptions.Compiled | RegexOptions.IgnoreCase
+        );
+    public static readonly Regex EmailPattern = new Regex(
+        pattern: @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+        options: RegexOptions.Compiled | RegexOptions.IgnoreCase
+    );
+    public static readonly Regex EmojiSymbolRanges = new(
+        pattern: @"[\u2600-\u27BF\u2300-\u23FF\u2B50\u200D\uFE0F]",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+    public static readonly Regex EmojiSurrogatePairs = new(
+        pattern: @"\p{Cs}{2}",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+    public static readonly Regex EmojiModifiers = new(
+        pattern: @"[\uFE00-\uFE0F\u200D]",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+    public static readonly Regex MultipleWhitespace = new(
+        pattern: @"\s+",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
     #endregion
 }

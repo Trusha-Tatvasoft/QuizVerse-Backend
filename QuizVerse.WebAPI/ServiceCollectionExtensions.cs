@@ -40,7 +40,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBattleService, BattleService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
         services.AddScoped<IUserActivityCheckerService, UserActivityCheckerService>();
-        
+        services.AddScoped<IAiLogService, AiLogService>();
+        services.AddScoped<IAiConfigurationService, AiConfigurationService>();
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
