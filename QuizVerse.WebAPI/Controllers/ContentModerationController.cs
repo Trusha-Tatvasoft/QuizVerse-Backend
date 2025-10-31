@@ -11,7 +11,7 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 [Authorize(Roles = Constants.RoleGroups.Admins)]
 [Route("api/[controller]")]
-public class QuizReportIssueController(IQuizReportIssueService _quizIssueReportService) : ControllerBase
+public class ContentModerationController(IContentModerationService _quizIssueReportService) : ControllerBase
 {
     [HttpPost("get-quiz-report-by-pagination")]
     public async Task<IActionResult> GetQuizReportByPagination([FromBody] PageListRequest query)

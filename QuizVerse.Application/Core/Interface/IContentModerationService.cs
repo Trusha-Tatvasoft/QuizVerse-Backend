@@ -3,7 +3,7 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.Application.Core.Interface;
 
-public interface IQuizReportIssueService
+public interface IContentModerationService
 {
     public Task<PageListResponse<QuizReportIssueResponseDTO>> GetQuizReportByPaginationAsync(PageListRequest query);
 }

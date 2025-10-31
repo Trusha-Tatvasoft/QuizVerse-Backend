@@ -12,14 +12,14 @@ using Xunit;
 
 namespace QuizVerse.UnitTests.Services
 {
-    public class QuizReportIssueServiceTests
+    public class ContentModerationServiceTests
     {
         private readonly Mock<IGenericRepository<QuizIssueReport>> _repoMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
-        private readonly QuizReportIssueService _service;
+        private readonly ContentModerationService _service;
 
-        public QuizReportIssueServiceTests()
+        public ContentModerationServiceTests()
         {
             _repoMock = new Mock<IGenericRepository<QuizIssueReport>>();
             _mapperMock = new Mock<IMapper>();
@@ -38,7 +38,7 @@ namespace QuizVerse.UnitTests.Services
             };
             _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
 
-            _service = new QuizReportIssueService(
+            _service = new ContentModerationService(
                 _repoMock.Object,
                 _httpContextAccessorMock.Object,
                 _mapperMock.Object
