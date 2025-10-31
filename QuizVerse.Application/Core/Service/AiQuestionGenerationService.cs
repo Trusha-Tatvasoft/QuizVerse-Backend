@@ -90,7 +90,6 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
         }
     }
 
-    // ✅ Converts your nested question spec to a flat format
     private List<QuestionSpecification> FlattenQuestionSpecs(List<QuestionGenerationFormatDto>? specs)
     {
         if (specs == null || specs.Count == 0)
@@ -129,7 +128,6 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
         return result;
     }
 
-    // ✅ Updated prompt builder to enforce your required JSON format
     private string BuildPromptWithSpecs(string inputText, List<QuestionSpecification> specs)
     {
         var totalQuestions = specs.Sum(s => s.Count);

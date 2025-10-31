@@ -206,6 +206,7 @@ public static class Constants
     public const string CORRECT_ANSWER_NOT_IN_OPTIONS = "Correct answer '{0}' is not listed among the options.";
     public const string CSV_PREVIEW_LOADED_SUCCESSFULLY = "CSV preview loaded successfully.";
     public const string EXCEL_PREVIEW_LOADED_SUCCESSFULLY = "Excel preview loaded successfully.";
+    public const string PROVIDE_PROPER_TEXT_PROMPT = "Provide a valid text prompt.";
     public const string NO_QUESTIONS_TO_SAVE = "No questions to save.";
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     public const string QUESTION_IN_USE_ERROR = "This question is part of an active quiz or battle and cannot be changed.";

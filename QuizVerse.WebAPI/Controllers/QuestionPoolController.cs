@@ -141,7 +141,7 @@ public class QuestionPoolController(IQuestionPoolService _questionPoolService, I
             return BadRequest(new ApiResponse<object>
             {
                 Result = false,
-                Message = "Provide a valid text prompt.",
+                Message = Constants.PROVIDE_PROPER_TEXT_PROMPT,
                 StatusCode = 400
             });
         }
