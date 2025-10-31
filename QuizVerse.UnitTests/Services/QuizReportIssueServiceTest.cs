@@ -12,14 +12,14 @@ using Xunit;
 
 namespace QuizVerse.UnitTests.Services
 {
-    public class QuizIssueReportServiceTests
+    public class QuizReportIssueServiceTests
     {
         private readonly Mock<IGenericRepository<QuizIssueReport>> _repoMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
         private readonly QuizReportIssueService _service;
 
-        public QuizIssueReportServiceTests()
+        public QuizReportIssueServiceTests()
         {
             _repoMock = new Mock<IGenericRepository<QuizIssueReport>>();
             _mapperMock = new Mock<IMapper>();
@@ -235,5 +235,132 @@ namespace QuizVerse.UnitTests.Services
         }
 
         #endregion
+
+
+        [Fact]
+        public async Task GetQuizReportByPaginationAsync_SortsByCreator_WhenRequested()
+        {
+            // Arrange
+            var dummyReports = GetDummyReports();
+            var mappedList = dummyReports
+                .OrderBy(r => r.Quiz.CreatedByNavigation.FullName)
+                .Select(x => new QuizReportIssueResponseDTO
+                {
+                    Id = x.Id,
+                    QuizTitle = x.Quiz.Name,
+                    Reporter = x.User.FullName,
+                    Severity = x.Severity
+                })
+                .ToList();
+
+            _repoMock.Setup(r => r.GetQueryableInclude(
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>(),
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>(),
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>()))
+                .Returns(dummyReports);
+
+            _mapperMock.Setup(m => m.Map<List<QuizReportIssueResponseDTO>>(It.IsAny<List<QuizIssueReport>>()))
+                .Returns(mappedList);
+
+            var query = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 3,
+                SortColumn = "creator",
+                SortDescending = false
+            };
+
+            // Act
+            var result = await _service.GetQuizReportByPaginationAsync(query);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalRecords);
+            Assert.Equal("User A", result.Records.First().Reporter); // Sorted by creator’s name (ascending)
+        }
+
+        [Fact]
+        public async Task GetQuizReportByPaginationAsync_SortsByReporter_WhenRequested()
+        {
+            // Arrange
+            var dummyReports = GetDummyReports();
+            var mappedList = dummyReports
+                .OrderBy(r => r.User.FullName)
+                .Select(x => new QuizReportIssueResponseDTO
+                {
+                    Id = x.Id,
+                    QuizTitle = x.Quiz.Name,
+                    Reporter = x.User.FullName,
+                    Severity = x.Severity
+                })
+                .ToList();
+
+            _repoMock.Setup(r => r.GetQueryableInclude(
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>(),
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>(),
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>()))
+                .Returns(dummyReports);
+
+            _mapperMock.Setup(m => m.Map<List<QuizReportIssueResponseDTO>>(It.IsAny<List<QuizIssueReport>>()))
+                .Returns(mappedList);
+
+            var query = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 3,
+                SortColumn = "reporter",
+                SortDescending = false
+            };
+
+            // Act
+            var result = await _service.GetQuizReportByPaginationAsync(query);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalRecords);
+            Assert.Equal("User A", result.Records.First().Reporter); // Lowest alphabetical name first
+        }
+
+        [Fact]
+        public async Task GetQuizReportByPaginationAsync_UsesDefaultSort_WhenInvalidColumnProvided()
+        {
+            // Arrange
+            var dummyReports = GetDummyReports();
+            var mappedList = dummyReports
+                .OrderBy(r => r.Id)
+                .Select(x => new QuizReportIssueResponseDTO
+                {
+                    Id = x.Id,
+                    QuizTitle = x.Quiz.Name,
+                    Reporter = x.User.FullName,
+                    Severity = x.Severity
+                })
+                .ToList();
+
+            _repoMock.Setup(r => r.GetQueryableInclude(
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>(),
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>(),
+                    It.IsAny<Expression<Func<QuizIssueReport, object>>>()))
+                .Returns(dummyReports);
+
+            _mapperMock.Setup(m => m.Map<List<QuizReportIssueResponseDTO>>(It.IsAny<List<QuizIssueReport>>()))
+                .Returns(mappedList);
+
+            var query = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 3,
+                SortColumn = "unknown_column", // triggers default case
+                SortDescending = false
+            };
+
+            // Act
+            var result = await _service.GetQuizReportByPaginationAsync(query);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(3, result.TotalRecords);
+            Assert.Equal(1, result.Records.First().Id); // Sorted by Id by default
+        }
     }
 }
