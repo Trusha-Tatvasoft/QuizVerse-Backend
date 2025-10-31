@@ -1,4 +1,6 @@
-﻿using QuizVerse.Infrastructure.Enums;
+﻿using System.Net.Security;
+using QuizVerse.Infrastructure.Common.Helper;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Infrastructure.Common;
 
@@ -420,4 +422,51 @@ public static class Constants
     public const string SENDER_IN_ACTIVE_BATTLE_OR_QUIZ = "Your friend is currently busy.";
     public const string BATTLE_REQUEST_NOT_FOUND_OR_ALREADY_HANDLED = "Battle request not found or already handled.";
     #endregion
+
+    #region Generate Questions Using Ai API
+    public const string MAX_RETRIES_REACH = "Max retries ({0}) reached for quiz generation";
+    public const string QUESTION_GENERATION_FAILED = "We couldn’t generate any questions from your request. Please try again.";
+    public const string GENERATION_FAILED = "Question generation failed:";
+    public const string FAILED_TO_CLEAN_JSON = "Failed to clean JSON response:";
+    public const string FAILED_TO_PASRE_JSON_RESPONSE = "Failed to parse JSON response:";
+    public const string MAX_RETRIES_REACHED_DURING_VALIDATION = "Maximum retry attempts reached during validation.";
+    public const string CONTENT_VALIDATION_FAILED = "Content validation failed: {0}";
+    public const string INVALID_QUESTION_SPECIFICATION = "Invalid or missing question specifications.";
+    public const string FAILED_TO_GENERATE_QUESTIONS = "Failed to generate questions.";
+    public const string QUESTION_GENERATION_SUCCESS = "Questions generated successfully.";
+    public const string UNEXPECTED_ERROR_GENERATING_QUESTIONS = "Unexpected error generating questions.";
+    public const string AI_RESPONSE_FORMAT_ERROR = "AI response format error.";
+    #endregion
+
+    #region Groq Models
+    public const string LLAMA_3_1_8B_INSTANT = "llama-3.1-8b-instant";
+    public const string LLAMA_3_3_70B_VERSATILE = "llama-3.3-70b-versatile";
+    public const string GROQ_COMPOUND = "groq/compound";
+    public const string MOONSHOTAI_KIMI_K2_INSTRUCT = "moonshotai/kimi-k2-instruct";
+    public const string OPENAI_GPT_OSS_20B = "openai/gpt-oss-20b";
+
+    public static readonly List<ModelConfig> GroqModels = [
+        new ModelConfig(AiModelName.Llama3Point18BInstant.ToModelString(), 30, 14400, 6000, 500000),
+        new ModelConfig(AiModelName.Llama3Point370BVersatile.ToModelString(), 30, 1000, 12000, 100000),
+        new ModelConfig(AiModelName.GroqCompound.ToModelString(), 30, 250, 70000, int.MaxValue),
+        new ModelConfig(AiModelName.MoonshotAiKimiK2Instruct.ToModelString(), 60, 1000, 10000, 300000),
+        new ModelConfig(AiModelName.OpenAiGptOss20B.ToModelString(), 30, 1000, 8000, 200000),
+    ];
+    public static AiModelName GetGroqModelEnumNumber(string modelName)
+    {
+        return modelName switch
+        {
+            LLAMA_3_1_8B_INSTANT => AiModelName.Llama3Point18BInstant,
+            LLAMA_3_3_70B_VERSATILE => AiModelName.Llama3Point370BVersatile,
+            GROQ_COMPOUND => AiModelName.GroqCompound,
+            MOONSHOTAI_KIMI_K2_INSTRUCT => AiModelName.MoonshotAiKimiK2Instruct,
+            OPENAI_GPT_OSS_20B => AiModelName.OpenAiGptOss20B,
+            _ => throw new ArgumentException($"Unknown model name: {modelName}")
+        };
+    }
+    #endregion
+
+    #region Quiz Comment Section
+    public const string QUIZ_COMMENTS_FETCHED_SUCCESSFULLY = "Quiz comments fetched successfully.";
+    #endregion 
 }

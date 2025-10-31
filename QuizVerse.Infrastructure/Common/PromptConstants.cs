@@ -35,4 +35,93 @@ public static class PromptConstants
         - Do not include the word 'user' or 'user’s answer'.
         - Respond only with plain text, nothing else.";
     #endregion
+
+    #region Validate Quiz Question Generation Prompt
+    public const string VALIDATE_AI_SYSYTEM_INSTRUCTIONS = @"You are a content validator. Analyze if content matches the requested category and is appropriate for quiz generation. Respond ONLY with valid JSON.";
+
+    public const string VALIDATE_GENERATE_QUESTION_PROMPT = @"
+        Analyze the following content and determine:
+        1. Is it appropriate for educational quiz generation? (no harmful, offensive, or inappropriate content)
+        2. Does it match the category: '{0}'?
+        3. What is the actual category/topic of this content?
+
+        Content to analyze:
+        {1}{2}
+        Respond with ONLY this JSON format:
+        {{
+        ""isValid"": true/false,
+        ""isMatch"": true/false,
+        ""detectedCategory"": ""actual category here"",
+        ""reason"": ""brief explanation""
+        }}";
+    #endregion
+
+    #region Quiz Question Generation Prompt
+    public const string GENERATE_AI_SYATEM_INSTRUCTIONS = @"You are a quiz generator. Return ONLY a JSON array of quiz questions. Do not wrap in any object. Start with [ and end with ].";
+    public const string DIFFICULTY_GUIDLINES = @"
+        DIFFICULTY GUIDELINES:
+        EASY: Straightforward questions testing basic recall and understanding. Simple, direct language.
+        MEDIUM: Questions requiring understanding and application of concepts. Moderate complexity.
+        HARD: Complex questions testing deep understanding, analysis, and critical thinking. May include edge cases.";
+    public const string QUIZ_QUESTION_GENERATION_PROMPT = @"
+        You are a professional quiz generator AI. Based on the following content, generate EXACTLY {0} quiz questions with the following specifications:
+        {1}
+        {2}
+
+        IMPORTANT RULES:
+        1. Generate exactly {0} questions in total.
+        2. Each question MUST follow this JSON format exactly.
+        3. Do not include any text outside the JSON array.
+        4. Ensure queTypeName and queDifficultyName match the specification exactly.
+        5. Use 'key': 'option' for answer choices and 'key': 'answer' for the correct answer. Only one correct answer per question.
+
+        OUTPUT FORMAT EXAMPLES:
+
+        Multiple Choice (mcq):
+        {{
+            ""queText"": ""What is the chemical symbol for water?"",
+            ""queTypeName"": ""Multiple Choice"",
+            ""queDifficultyName"": ""Easy"",
+            ""queOptionsAns"": [
+                {{ ""key"": ""option"", ""value"": ""O2"" }},
+                {{ ""key"": ""option"", ""value"": ""H2O"" }},
+                {{ ""key"": ""option"", ""value"": ""CO2"" }},
+                {{ ""key"": ""option"", ""value"": ""HO2"" }},
+                {{ ""key"": ""answer"", ""value"": ""H2O"" }}
+            ]
+        }}
+
+        Fill in the Blank (fill):
+        {{
+            ""queText"": ""The capital of France is ____."",
+            ""queTypeName"": ""Fill in the Blank"",
+            ""queDifficultyName"": ""Medium"",
+            ""queOptionsAns"": [
+                {{ ""key"": ""answer"", ""value"": ""Paris"" }}
+            ]
+        }}
+
+        True/False (truefalse):
+        {{
+            ""queText"": ""The Earth is flat."",
+            ""queTypeName"": ""True/False"",
+            ""queDifficultyName"": ""Medium"",
+            ""queOptionsAns"": [
+                {{ ""key"": ""answer"", ""value"": ""False"" }}
+            ]
+        }}
+
+        Short Answer (short):
+        {{
+            ""queText"": ""Explain the concept in 2-3 sentences."",
+            ""queTypeName"": ""Short Answer"",
+            ""queDifficultyName"": ""Medium"",
+            ""queOptionsAns"": [
+                {{ ""key"": ""answer"", ""value"": ""Expected answer here"" }}
+            ]
+        }}
+
+        Content to create questions from:{3}
+        Now generate the {0} questions as a JSON array following the specifications exactly:";
+    #endregion // 0:- totalQuestions, 1:- specificationsText, 2:- difficultyGuidelines, 3:- inputText
 }
