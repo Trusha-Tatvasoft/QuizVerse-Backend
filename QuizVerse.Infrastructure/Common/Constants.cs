@@ -462,6 +462,9 @@ public static class Constants
             _ => throw new ArgumentException($"Unknown model name: {modelName}")
         };
     }
-
     #endregion
+
+    #region Quiz Comment Section
+    public const string QUIZ_COMMENTS_FETCHED_SUCCESSFULLY = "Quiz comments fetched successfully.";
+    #endregion 
 }
