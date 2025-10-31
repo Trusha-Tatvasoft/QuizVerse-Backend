@@ -38,6 +38,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
 
 // SignalR
 builder.Services.AddSignalR();

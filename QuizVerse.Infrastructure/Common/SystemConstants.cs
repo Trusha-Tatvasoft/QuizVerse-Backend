@@ -29,5 +29,6 @@ public class SystemConstants
     public const string DEFAULT_PLATFORM_LOGO_JSON =
         "{\"Path\":\"default-logo/default-logo.png\"}";
     public const string AI_SERVICE_SETTINGS = "AiServiceSettings";
+    public const string GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     public const string GEMINI_API_BASE_URL_FORMAT = "https://generativelanguage.googleapis.com/v1beta/models/{0}?key={1}";
 }
