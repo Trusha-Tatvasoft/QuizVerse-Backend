@@ -108,12 +108,11 @@ public class UserService(IGenericRepository<User> userRepository, ICommonService
         string? imagePath = null;
         string? password = null;
 
-        if (dto.Id == UserId)
+        if (!dto.IsRegister && dto.Id == UserId)
             throw new AppException(Constants.CANNOT_MODIFY_SELF);
 
-        if ((dto.RoleId == (int)UserRoles.Admin || dto.RoleId == (int)UserRoles.SuperAdmin) && UserRole == UserRoles.Admin.ToString())
+        if (!dto.IsRegister && (dto.RoleId == (int)UserRoles.Admin || dto.RoleId == (int)UserRoles.SuperAdmin) && UserRole == UserRoles.Admin.ToString())
             throw new AppException(Constants.NOT_HAVE_PERMISSION);
-
 
         if (dto.ProfilePic != null && dto.ProfilePic.Length > 0)
         {
