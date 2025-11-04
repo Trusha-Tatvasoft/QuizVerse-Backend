@@ -438,18 +438,18 @@ public static class Constants
     #endregion
 
     #region Groq Models
-    public const string LLAMA_3_1_8B_INSTANT = "llama-3.1-8b-instant";
     public const string LLAMA_3_3_70B_VERSATILE = "llama-3.3-70b-versatile";
+    public const string LLAMA_3_1_8B_INSTANT = "llama-3.1-8b-instant";
     public const string GROQ_COMPOUND = "groq/compound";
     public const string MOONSHOTAI_KIMI_K2_INSTRUCT = "moonshotai/kimi-k2-instruct";
     public const string OPENAI_GPT_OSS_20B = "openai/gpt-oss-20b";
 
     public static readonly List<ModelConfig> GroqModels = [
-        new ModelConfig(AiModelName.Llama3Point18BInstant.ToModelString(), 30, 14400, 6000, 500000),
         new ModelConfig(AiModelName.Llama3Point370BVersatile.ToModelString(), 30, 1000, 12000, 100000),
+        new ModelConfig(AiModelName.OpenAiGptOss20B.ToModelString(), 30, 1000, 8000, 200000),
+        new ModelConfig(AiModelName.Llama3Point18BInstant.ToModelString(), 30, 14400, 6000, 500000),
         new ModelConfig(AiModelName.GroqCompound.ToModelString(), 30, 250, 70000, int.MaxValue),
         new ModelConfig(AiModelName.MoonshotAiKimiK2Instruct.ToModelString(), 60, 1000, 10000, 300000),
-        new ModelConfig(AiModelName.OpenAiGptOss20B.ToModelString(), 30, 1000, 8000, 200000),
     ];
     public static AiModelName GetGroqModelEnumNumber(string modelName)
     {

@@ -26,7 +26,7 @@ public class GroqModelRotationServiceTests
 
         // Assert
         Assert.NotNull(model);
-        Assert.Equal("llama-3.1-8b-instant", model.ModelName);
+        Assert.Equal("llama-3.3-70b-versatile", model.ModelName);
     }
 
     [Fact]

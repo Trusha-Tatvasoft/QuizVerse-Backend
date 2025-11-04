@@ -64,22 +64,26 @@ public static class PromptConstants
         MEDIUM: Questions requiring understanding and application of concepts. Moderate complexity.
         HARD: Complex questions testing deep understanding, analysis, and critical thinking. May include edge cases.";
     public const string QUIZ_QUESTION_GENERATION_PROMPT = @"
-        You are a professional quiz generator AI. Based on the following content, generate EXACTLY {0} quiz questions with the following specifications:
+        You are a professional quiz generator AI. Based on the following content, create EXACTLY ""{0}"" quiz questions with EXACT specifications:
+        This below includes question types and difficulty levels. Please Properly follow the specifications.
         {1}
         {2}
 
-        IMPORTANT RULES:
-        1. Generate exactly {0} questions in total.
-        2. Each question MUST follow this JSON format exactly.
-        3. Do not include any text outside the JSON array.
-        4. Ensure queTypeName and queDifficultyName match the specification exactly.
-        5. Use 'key': 'option' for answer choices and 'key': 'answer' for the correct answer. Only one correct answer per question.
-
-        OUTPUT FORMAT EXAMPLES:
+        Critical RULES:
+        1. Generate exactly ""{0}"" questions in total — this must be the sum of all specified question types and difficulty levels.
+        2. Each question must strictly follow the provided ""JSON format"".
+        3. Do not include any text outside the JSON array. Maintain same structure and formatting as shown in the provided examples.
+        4. Ensure that both queTypeName and queDifficultyName exactly match the names specified in the question specifications.6. There should be exactly one correct answer per question.
+        5. Use clear, concise, and unambiguous language for all questions and answers.
+        6. Only Multiple Choice questions should include options; all other question types should have a direct answer only.
+        7. Questions must be based on the content provided (or use general knowledge if content is limited).
+        
+        JSON FORMAT EXAMPLES:
 
         Multiple Choice (mcq):
         {{
             ""queText"": ""What is the chemical symbol for water?"",
+            ""categoryName"": ""Science"",
             ""queTypeName"": ""Multiple Choice"",
             ""queDifficultyName"": ""Easy"",
             ""queOptionsAns"": [
@@ -94,6 +98,7 @@ public static class PromptConstants
         Fill in the Blank (fill):
         {{
             ""queText"": ""The capital of France is ____."",
+            ""categoryName"": ""Geography"",
             ""queTypeName"": ""Fill in the Blank"",
             ""queDifficultyName"": ""Medium"",
             ""queOptionsAns"": [
@@ -104,6 +109,7 @@ public static class PromptConstants
         True/False (truefalse):
         {{
             ""queText"": ""The Earth is flat."",
+            ""categoryName"": ""Geography"",
             ""queTypeName"": ""True/False"",
             ""queDifficultyName"": ""Medium"",
             ""queOptionsAns"": [
@@ -113,15 +119,16 @@ public static class PromptConstants
 
         Short Answer (short):
         {{
-            ""queText"": ""Explain the concept in 2-3 sentences."",
+            ""queText"": ""What is Speed of light?"",
+            ""categoryName"": ""Science"",
             ""queTypeName"": ""Short Answer"",
             ""queDifficultyName"": ""Medium"",
             ""queOptionsAns"": [
-                {{ ""key"": ""answer"", ""value"": ""Expected answer here"" }}
+                {{ ""key"": ""answer"", ""value"": ""3,00,000 m/s"" }}
             ]
         }}
 
-        Content to create questions from:{3}
-        Now generate the {0} questions as a JSON array following the specifications exactly:";
+        Content to create questions from: {3}
+        Now generate the ""{0}"" questions as a JSON array following the specifications exactly:";
     #endregion // 0:- totalQuestions, 1:- specificationsText, 2:- difficultyGuidelines, 3:- inputText
 }

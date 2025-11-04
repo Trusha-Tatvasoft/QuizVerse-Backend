@@ -11,7 +11,7 @@ using QuizVerse.Infrastructure.Enums;
 namespace QuizVerse.WebAPI.Controllers;
 
 [Route("api/[controller]")]
-[Authorize(Roles = Constants.RoleGroups.Admins)]
+// [Authorize(Roles = Constants.RoleGroups.Admins)]
 [ApiController]
 public class QuestionPoolController(IQuestionPoolService _questionPoolService, IAiQuestionGenerationService _questionFromText) : ControllerBase
 {

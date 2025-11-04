@@ -39,6 +39,7 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
                 };
 
             var formattedPrompt = BuildPromptWithSpecs(request.Prompt!, specs);
+            System.Console.WriteLine($"Generated Prompt: {formattedPrompt}");
             var rawJson = await _groq.GenerateQuesions(formattedPrompt);
 
             if (string.IsNullOrWhiteSpace(rawJson) || rawJson == "[]")
@@ -67,6 +68,9 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
                 };
             }
 
+            // Map IDs to the generated questions
+            quiz = MapIdsToGeneratedQuestions(quiz, request);
+
             return new GenerateQuizResponseDto
             {
                 Success = true,
@@ -88,6 +92,47 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
                 StatusCode = 500
             };
         }
+    }
+
+    private List<QuizQuestionDto> MapIdsToGeneratedQuestions(List<QuizQuestionDto> quiz, GenerateQuizRequest request)
+    {
+        // Set category information for all questions
+        foreach (var question in quiz)
+        {
+            question.CategoryId = request.CategoryId;
+            question.CategoryName = request.Category;
+
+            // Find matching difficulty and question type
+            if (request.QuestionSpec != null)
+            {
+                foreach (var difficultyGroup in request.QuestionSpec)
+                {
+                    // Check if difficulty name matches (case insensitive)
+                    if (string.Equals(difficultyGroup.QuestionDifficultyName, question.QueDifficultyName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        question.QueDifficultyId = difficultyGroup.QuestionDifficultyId;
+                        question.QueDifficultyName = difficultyGroup.QuestionDifficultyName;
+
+                        // Find matching question type
+                        if (difficultyGroup.QuestionPerQuestionType != null)
+                        {
+                            foreach (var questionType in difficultyGroup.QuestionPerQuestionType)
+                            {
+                                if (string.Equals(questionType.QuestionPerQuestionTypeName, question.QueTypeName, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    question.QueTypeId = questionType.QuestionPerQuestionTypeId;
+                                    question.QueTypeName = questionType.QuestionPerQuestionTypeName;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        return quiz;
     }
 
     private List<QuestionSpecification> FlattenQuestionSpecs(List<QuestionGenerationFormatDto>? specs)
@@ -131,11 +176,11 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
     private string BuildPromptWithSpecs(string inputText, List<QuestionSpecification> specs)
     {
         var totalQuestions = specs.Sum(s => s.Count);
-
+        var specificationCount = 1;
         var specsList = specs.Select(s =>
-            $"- {s.Count} {s.Type} questions at {s.Difficulty.ToUpper()} difficulty level");
+            $"{specificationCount++}. {s.Count} questions of {s.Type} type with {s.Difficulty.ToUpper()} difficulty.");
 
-        string specificationsText = string.Join("\n", specsList);
+        string specificationsText = string.Join("\n\t", specsList);
 
         string difficultyGuidelines = PromptConstants.DIFFICULTY_GUIDLINES;
 

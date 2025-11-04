@@ -18,10 +18,10 @@ public class GroqService(HttpClient http, IConfiguration _config, IGroqModelRota
 
     public async Task<string> GenerateQuesions(string prompt)
     {
-        return await GenerateQuizWithRetryAsync(prompt, 0, estimatedTokens: 500);
+        return await GenerateQuizWithRetryAsync(prompt, 0, estimatedTokens: 1500);
     }
 
-    private async Task<string> GenerateQuizWithRetryAsync(string prompt, int retryCount, int estimatedTokens = 500)
+    private async Task<string> GenerateQuizWithRetryAsync(string prompt, int retryCount, int estimatedTokens = 1500)
     {
         if (retryCount >= MAX_RETRIES)
         {
@@ -49,7 +49,7 @@ public class GroqService(HttpClient http, IConfiguration _config, IGroqModelRota
                 new { role = "user", content = prompt }
             },
             temperature = 0.7,
-            max_completion_tokens = 1000
+            max_completion_tokens = 1500
         };
 
         try
