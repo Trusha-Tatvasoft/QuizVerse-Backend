@@ -16,4 +16,5 @@ public interface IQuizService
     Task<QuizRatingDTO?> GetMyQuizRating(int quizId);
     Task<string> SubmitQuizRating(QuizRatingDTO request);
     Task<string> GetAnswerExplanation(AnswerExplanationRequestDTO request);
+    Task<bool> AddQuizReport(QuizReportRequestDto quizReportRequestDto);
 }
