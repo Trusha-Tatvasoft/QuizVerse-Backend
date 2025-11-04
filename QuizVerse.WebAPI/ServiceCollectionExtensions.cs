@@ -40,7 +40,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBattleService, BattleService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
         services.AddScoped<IUserActivityCheckerService, UserActivityCheckerService>();
-        
+        services.AddScoped<IGroqModelRotationService, GroqModelRotationService>();
+        services.AddScoped<IGroqService, GroqService>();
+        services.AddScoped<IGroqContentValidatorService, GroqContentValidatorService>();
+        services.AddScoped<IAiQuestionGenerationService, AiQuestionGenerationService>();
+        services.AddScoped<IQuizCommentSectionService, QuizCommentSectionService>();
+
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
