@@ -46,6 +46,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGroqContentValidatorService, GroqContentValidatorService>();
         services.AddScoped<IAiQuestionGenerationService, AiQuestionGenerationService>();
         services.AddScoped<IQuizCommentSectionService, QuizCommentSectionService>();
+        services.AddScoped<IAiLogService, AiLogService>();
+        services.AddScoped<IAiConfigurationService, AiConfigurationService>();
 
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));

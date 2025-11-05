@@ -184,4 +184,11 @@ namespace QuizVerse.Infrastructure.Enums
         MoonshotAiKimiK2Instruct = 10,
         OpenAiGptOss20B = 11
     }
+
+    public enum AiApiPurpose
+    {
+        QuestionGeneration = 1,
+        ExplanationGeneration = 2,
+        URLSafetyCheck = 3,
+    }
 }
