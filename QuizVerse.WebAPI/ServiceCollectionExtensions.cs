@@ -49,6 +49,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAiLogService, AiLogService>();
         services.AddScoped<IAiConfigurationService, AiConfigurationService>();
 
+        services.AddHttpClient<IPerspectiveApiService, PerspectiveApiService>();
+        services.AddSingleton<IGcpApiQueueService, GcpApiQueueService>();
+        services.AddHostedService<PerspectiveQueueHostedService>();
+        
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
 

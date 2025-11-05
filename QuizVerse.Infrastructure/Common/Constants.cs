@@ -549,4 +549,48 @@ public static class Constants
         options: RegexOptions.Compiled | RegexOptions.CultureInvariant
     );
     #endregion
+
+    #region Perspective API
+    public static class GcpAttributes
+    {
+        public const string Toxicity = "TOXICITY";
+        public const string Profanity = "PROFANITY";
+        public const string Threat = "THREAT";
+        public const string Spam = "SPAM";
+        public const string AttackOnAuthor = "ATTACK_ON_AUTHOR";
+        public const string Insult = "INSULT";
+    }
+
+    // === Common Attribute Sets ===
+    public static readonly string[] QuizAndQuestionGcpAttributes =
+    [
+        GcpAttributes.Toxicity,
+        GcpAttributes.AttackOnAuthor,
+        GcpAttributes.Profanity,
+        GcpAttributes.Threat,
+        GcpAttributes.Insult
+    ];
+
+    public static readonly string[] QuizRatingGcpAttributes =
+    [
+        GcpAttributes.Toxicity,
+        GcpAttributes.AttackOnAuthor,
+        GcpAttributes.Profanity,
+        GcpAttributes.Threat,
+        GcpAttributes.Spam,
+        GcpAttributes.Insult
+    ];
+
+    // === Attribute-to-Reason Mapping ===
+    public static readonly IReadOnlyDictionary<string, string> AttributeReasons =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [GcpAttributes.Toxicity] = "Toxic or hostile language",
+            [GcpAttributes.Profanity] = "Inappropriate language",
+            [GcpAttributes.Threat] = "Threatening language",
+            [GcpAttributes.Spam] = "Promotional spam",
+            [GcpAttributes.AttackOnAuthor] = "Aggressive or targeted comment toward creator",
+            [GcpAttributes.Insult] = "Insulting or derogatory language"
+        };
+    #endregion
 }
