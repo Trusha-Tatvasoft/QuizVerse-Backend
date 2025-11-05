@@ -593,4 +593,8 @@ public static class Constants
             [GcpAttributes.Insult] = "Insulting or derogatory language"
         };
     #endregion
+    
+    #region Contest Moderation
+    public const string QUESTION_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE = "Action Updated Successfully!!";
+    #endregion
 }
