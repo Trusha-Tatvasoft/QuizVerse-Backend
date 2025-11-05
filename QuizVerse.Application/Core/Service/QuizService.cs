@@ -319,11 +319,11 @@ public class QuizService(
 
         await _quizIssueReportRepository.AddAsync(quizIssueReport);
 
-        if(quizIssueReport.Id > 0)
+        if(quizIssueReport.Id > 0 == false)
         {
-            return true;
+            throw new AppException(Constants.QUIZ_REPORT_SUBMISSION_FAILED, 400);
         }
 
-        return false;
+        return true;
     }
 }

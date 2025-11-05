@@ -167,17 +167,7 @@ namespace QuizVerse.WebAPI.Controllers
         public async Task<IActionResult> AddQuizReport([FromBody] QuizReportRequestDto quizReportRequestDto)
         {
             bool isSuccess = await _quizService.AddQuizReport(quizReportRequestDto);
-            if(!isSuccess)
-            {
-                return BadRequest(new ApiResponse<object>
-                {
-                    Result = false,
-                    StatusCode = StatusCodes.Status400BadRequest,
-                    Message = Constants.QUIZ_REPORT_SUBMISSION_FAILED,
-                    Data = null,
-                });
-            }
-
+            
             return Ok(new ApiResponse<object>
             {
                 Result = true,
