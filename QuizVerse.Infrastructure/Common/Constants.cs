@@ -1,5 +1,6 @@
 ﻿using System.Net.Security;
 using QuizVerse.Infrastructure.Common.Helper;
+using System.Text.RegularExpressions;
 using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Infrastructure.Common;
@@ -24,6 +25,8 @@ public static class Constants
     public const string INVALID_USER_ID_MESSAGE = "Invalid UserId.";
     public const string INVALID_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Inactive), 3 (Suspend)";
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
+    public const string INVALID_SEVERITY_MESSAGE = "Invalid Severity Values: 1(high), 2(low), 3(medium) 4(UnderProcessing)";
+    public const string INVALID_QUIZ = "Invalid Quiz.";
     public const string NO_DATA_FOUND = "No data found.";
     public const string UNAUTHORIZED_USER = "User is not authorized.";
     public const string SENT_SUCCESS = "OTP Sent Successfully";
@@ -206,6 +209,7 @@ public static class Constants
     public const string CORRECT_ANSWER_NOT_IN_OPTIONS = "Correct answer '{0}' is not listed among the options.";
     public const string CSV_PREVIEW_LOADED_SUCCESSFULLY = "CSV preview loaded successfully.";
     public const string EXCEL_PREVIEW_LOADED_SUCCESSFULLY = "Excel preview loaded successfully.";
+    public const string PROVIDE_PROPER_TEXT_PROMPT = "Provide a valid text prompt.";
     public const string NO_QUESTIONS_TO_SAVE = "No questions to save.";
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     public const string QUESTION_IN_USE_ERROR = "This question is part of an active quiz or battle and cannot be changed.";
@@ -363,6 +367,7 @@ public static class Constants
     public const string QUIZ_RATING_SUBMITTED = "Quiz rating submitted successfully.";
     public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
     public const string NO_ANSWER_PROVIDED = "No answer was provided.";
+    public const string GENERATED_QUESTIONS_COUNT_JSON_KEY = "GeneratedQuestionsCount";
     #endregion
 
     #region User Battles
@@ -437,18 +442,18 @@ public static class Constants
     #endregion
 
     #region Groq Models
-    public const string LLAMA_3_1_8B_INSTANT = "llama-3.1-8b-instant";
     public const string LLAMA_3_3_70B_VERSATILE = "llama-3.3-70b-versatile";
+    public const string LLAMA_3_1_8B_INSTANT = "llama-3.1-8b-instant";
     public const string GROQ_COMPOUND = "groq/compound";
     public const string MOONSHOTAI_KIMI_K2_INSTRUCT = "moonshotai/kimi-k2-instruct";
     public const string OPENAI_GPT_OSS_20B = "openai/gpt-oss-20b";
 
     public static readonly List<ModelConfig> GroqModels = [
-        new ModelConfig(AiModelName.Llama3Point18BInstant.ToModelString(), 30, 14400, 6000, 500000),
         new ModelConfig(AiModelName.Llama3Point370BVersatile.ToModelString(), 30, 1000, 12000, 100000),
+        new ModelConfig(AiModelName.OpenAiGptOss20B.ToModelString(), 30, 1000, 8000, 200000),
+        new ModelConfig(AiModelName.Llama3Point18BInstant.ToModelString(), 30, 14400, 6000, 500000),
         new ModelConfig(AiModelName.GroqCompound.ToModelString(), 30, 250, 70000, int.MaxValue),
         new ModelConfig(AiModelName.MoonshotAiKimiK2Instruct.ToModelString(), 60, 1000, 10000, 300000),
-        new ModelConfig(AiModelName.OpenAiGptOss20B.ToModelString(), 30, 1000, 8000, 200000),
     ];
     public static AiModelName GetGroqModelEnumNumber(string modelName)
     {
@@ -467,6 +472,83 @@ public static class Constants
     #region Quiz Comment Section
     public const string QUIZ_COMMENTS_FETCHED_SUCCESSFULLY = "Quiz comments fetched successfully.";
     #endregion 
+
+    #region Gemini AI Models
+    public const string GEMINI_2_POINT_5_FLASH_LITE = "gemini-2.5-flash-lite";
+    public const string GEMINI_2_POINT_5_FLASH = "gemini-2.5-flash";
+    public const string GEMINI_2_POINT_0_FLASH_LITE = "gemini-2.0-flash-lite";
+    public const string GEMINI_2_POINT_0_FLASH = "gemini-2.0-flash";
+    public const string GEMINI_2_POINT_5_PRO = "gemini-2.5-pro";
+    public const string GEMINI_2_POINT_0_FLASH_EXP = "gemini-2.0-flash-exp";
+    public const string ROTATION_STATE_CACHE_KEY = "GeminiModelRotationState";
+    public const int CACHE_EXPIRATION_HOURS = 24;
+    #endregion
+
+    #region web scraping
+    public const string INVALID_URL_PROVIDED = "Invalid URL provided";
+    public const string ERROR_ANALYZING_URL_REPUTATION = "Error analyzing URL reputation for {0}: {1}";
+    public const string ALL_URL_SAFETY_CHECKS_FAILED = "All URL safety checks failed for {0}. Gemini services are unavailable.";
+    public const string UNSAFE_GEMINI_ANALYSIS = "Unsafe (Gemini Analysis)";
+    public const string GEMINI_CHECK_FAILED = "Gemini check failed: {0}";
+    public const string URL_BLOCKED_SAFETY_CONCERNS = "URL blocked due to safety concerns: {0}";
+    public const string HTTP_ERROR_FETCHING_URL = "HTTP error fetching URL {0}: Provided URL does not allow to fetch content";
+    public const string UNEXPECTED_ERROR_FETCHING_URL = "Unexpected error fetching URL {0}: {1}";
+    public const string ALL_MODELS_RATE_LIMITED = "All Gemini models have reached their rate limits. Please try again later.";
+    public const string GEMINI_API_EMPTY_RESPONSE = "Gemini API returned empty response for URL {0}";
+    public const string GEMINI_HTTP_ERROR = "Gemini API HTTP error for {0} using model {1}: {2}";
+    public const string WEB_SAFE_MESSAGE_GEMINI = "The website is safe.";
+    public const string UNKNOWN_MODEL = "unknown model";
+    public const string UNEXPECTED_GEMINI_CHECK_ERROR = "Unexpected error in Gemini check for {0}: {1}";
+    public const string COMMENT_FORMATE = "//comment()";
+    public const int WORD_LIMIT_TO_SEND_IN_PROMPT = 7500;
+    public static readonly string[] UnwantedTags = new[]
+    {
+        "script", "style", "form", "iframe", "nav", "header", "footer",
+        "noscript", "button", "input", "select", "option", "textarea",
+        "svg", "canvas", "aside", "link", "meta", "head", "object",
+        "embed", "applet", "frame", "frameset", "noframes"
+    };
+    public static readonly IReadOnlyList<string> UnwantedPhrases = new[]
+    {
+        @"\bfollow us\b",
+        @"\bshare this\b",
+        @"\bsubscribe\b",
+        @"\bsign up\b",
+        @"\bnewsletter\b",
+        @"\bread more\b",
+        @"\bclick here\b",
+        @"\blearn more\b",
+        @"\bposted on\b",
+        @"\bposted by\b",
+        @"\bcategories\b",
+        @"\btags\b",
+        @"\bcomments\b"
+    };
+    public static readonly Regex UrlPattern = new Regex(
+            pattern: @"https?://\S+",
+            options: RegexOptions.Compiled | RegexOptions.IgnoreCase
+        );
+    public static readonly Regex EmailPattern = new Regex(
+        pattern: @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+        options: RegexOptions.Compiled | RegexOptions.IgnoreCase
+    );
+    public static readonly Regex EmojiSymbolRanges = new(
+        pattern: @"[\u2600-\u27BF\u2300-\u23FF\u2B50\u200D\uFE0F]",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+    public static readonly Regex EmojiSurrogatePairs = new(
+        pattern: @"\p{Cs}{2}",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+    public static readonly Regex EmojiModifiers = new(
+        pattern: @"[\uFE00-\uFE0F\u200D]",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+    public static readonly Regex MultipleWhitespace = new(
+        pattern: @"\s+",
+        options: RegexOptions.Compiled | RegexOptions.CultureInvariant
+    );
+    #endregion
 
     #region Perspective API
     public static class GcpAttributes
