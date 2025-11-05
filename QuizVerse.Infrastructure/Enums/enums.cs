@@ -149,11 +149,11 @@ namespace QuizVerse.Infrastructure.Enums
  
     public enum QuestionOrQuizIssueReportStatus
     {
-        Pending = 1,
-        UnderReview = 2,
-        Resolved = 3
+        Accepted = 1,
+        Ignore= 2,
+        Pending = 3,
+        UnderReview = 4
     }
- 
     public enum QuizRatingStatus
     {
         Accepted = 1,

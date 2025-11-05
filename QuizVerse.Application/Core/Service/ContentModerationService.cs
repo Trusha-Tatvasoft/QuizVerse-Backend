@@ -12,6 +12,8 @@ namespace QuizVerse.Application.Core.Service;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper.QueryableExtensions;
+using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.Enums;
 
 public class ContentModerationService(IGenericRepository<QuizIssueReport> _reportedQuizRepository, IHttpContextAccessor _httpContextAccessor, IMapper _mapper) : IContentModerationService
 {
@@ -41,6 +43,32 @@ public class ContentModerationService(IGenericRepository<QuizIssueReport> _repor
             quizIssueReportsQuery = quizIssueReportsQuery.OrderBy("Id asc");
         }
 
+        var filters = query.Filters;
+        if (filters != null)
+        {
+            if (filters.IssueReportSeverity.HasValue)
+            {
+                if (Enum.IsDefined(typeof(QuestionOrQuizIssueReportSeverity), filters.IssueReportSeverity.Value))
+                {
+                    quizIssueReportsQuery = quizIssueReportsQuery.Where(u => u.Severity == (int)filters.IssueReportSeverity.Value);
+                }
+                else
+                {
+                    throw new AppException(Constants.INVALID_SEVERITY_MESSAGE);
+                }
+            }
+            if (filters.IssueReportStatus.HasValue)
+            {
+                if (Enum.IsDefined(typeof(QuestionOrQuizIssueReportStatus), filters.IssueReportStatus.Value))
+                {
+                    quizIssueReportsQuery = quizIssueReportsQuery.Where(u => u.Status == (int)filters.IssueReportStatus.Value);
+                }
+                else
+                {
+                    throw new AppException(Constants.INVALID_ROLE_MESSAGE);
+                }
+            }
+        }
         return quizIssueReportsQuery;
     }
 

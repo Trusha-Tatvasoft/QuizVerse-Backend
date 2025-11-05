@@ -9,6 +9,8 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 using Xunit;
 using System.Security.Claims;
+using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.UnitTests.Services
 {
@@ -199,6 +201,52 @@ namespace QuizVerse.UnitTests.Services
             Assert.NotNull(result);
             Assert.Equal(3, result.TotalRecords);
             Assert.True(result.Records.First().Id > 0);
+        }
+
+        [Fact]
+        public async Task GetQuizReportByPaginationAsync_FiltersBySeverity_WhenValid()
+        {
+            // Arrange
+            var reports = GetDummyReports();
+            SetupRepositoryAndPagination(reports);
+
+            var query = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 10,
+                Filters = new FilterDto
+                {
+                    IssueReportSeverity = (QuestionOrQuizIssueReportSeverity?)2
+                }
+            };
+
+            // Act
+            var result = await _service.GetQuizReportByPaginationAsync(query);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(1, result.Records.First().Id);
+        }
+
+        [Fact]
+        public async Task GetQuizReportByPaginationAsync_ThrowsException_ForInvalidSeverity()
+        {
+            // Arrange
+            var reports = GetDummyReports();
+            SetupRepositoryAndPagination(reports);
+
+            var query = new PageListRequest
+            {
+                PageNumber = 1,
+                PageSize = 10,
+                Filters = new FilterDto
+                {
+                    IssueReportSeverity = (QuestionOrQuizIssueReportSeverity?)99 // invalid enum
+                }
+            };
+
+            // Act & Assert
+            await Assert.ThrowsAsync<AppException>(() => _service.GetQuizReportByPaginationAsync(query));
         }
     }
 }

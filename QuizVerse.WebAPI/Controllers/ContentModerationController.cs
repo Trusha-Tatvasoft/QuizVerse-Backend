@@ -24,5 +24,4 @@ public class ContentModerationController(IContentModerationService _quizIssueRep
             Data = await _quizIssueReportService.GetQuizReportByPaginationAsync(query)
         });
     }
-
 }

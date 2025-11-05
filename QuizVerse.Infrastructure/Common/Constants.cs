@@ -24,8 +24,8 @@ public static class Constants
     public const string INVALID_USER_ID_MESSAGE = "Invalid UserId.";
     public const string INVALID_STATUS_MESSAGE = "Invalid status. Valid values: 1 (Active), 2 (Inactive), 3 (Suspend)";
     public const string INVALID_ROLE_MESSAGE = "Invalid role. Valid values: 1 (Admin), 2 (Player)";
+    public const string INVALID_SEVERITY_MESSAGE = "Invalid Severity Values: 1(high), 2(low), 3(medium) 4(UnderProcessing)";
     public const string INVALID_QUIZ = "Invalid Quiz.";
-    public const string INVALID_SEVERITY_MESSAGE = "Invalid Severity Message";
     public const string NO_DATA_FOUND = "No data found.";
     public const string UNAUTHORIZED_USER = "User is not authorized.";
     public const string SENT_SUCCESS = "OTP Sent Successfully";
