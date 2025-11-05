@@ -593,4 +593,9 @@ public static class Constants
             [GcpAttributes.Insult] = "Insulting or derogatory language"
         };
     #endregion
+
+    #region Flagged Comment
+    public const string FLAGGED_COMMENT_NOT_FOUND = "Flagged comment not found.";
+    public const string CAN_NOT_UPDATE_STATUS_COMMENT = "Can't update status of already updated comments.";
+    #endregion
 }

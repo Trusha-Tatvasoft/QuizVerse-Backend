@@ -126,4 +126,12 @@ public class SqlConstants
     public const string GET_PENDING_GCP_REPORTS_FUNCTION = "get_pending_gcp_reports";
     public const string GET_PENDING_GCP_REPORTS_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
     #endregion
+
+    #region Flagged Comments
+    public const string GET_FLAGGED_COMMENTS_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})";
+    public const string GET_FLAGGED_COMMENTS_FUNCTION = "get_flagged_comments";
+    public const string GET_FLAGGED_COMMENT_By_Id_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_id)";
+    public const string GET_FLAGGED_COMMENT_By_Id_FUNCTION = "get_flagged_comment_by_id";
+
+    #endregion
 }
