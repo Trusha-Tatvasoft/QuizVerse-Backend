@@ -11,9 +11,9 @@ using QuizVerse.Infrastructure.Enums;
 namespace QuizVerse.WebAPI.Controllers;
 
 [Route("api/[controller]")]
-[Authorize(Roles = Constants.RoleGroups.Admins)]
+// [Authorize(Roles = Constants.RoleGroups.Admins)]
 [ApiController]
-public class QuestionPoolController(IQuestionPoolService _questionPoolService) : ControllerBase
+public class QuestionPoolController(IQuestionPoolService _questionPoolService, IAiQuestionGenerationService _questionFromText) : ControllerBase
 {
     [HttpPost("create-or-update-question/{id:int}")]
     public async Task<IActionResult> CreateOrUpdateQuestion(int id, [FromBody] QuestionRequestDTO dto)
@@ -130,5 +130,41 @@ public class QuestionPoolController(IQuestionPoolService _questionPoolService) :
         };
 
         return Ok(response);
+    }
+
+    [HttpPost("generate-from-text-prompt")]
+    [Consumes("application/json")]
+    public async Task<IActionResult> GenerateFromTextPrompt([FromBody] GenerateQuizRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Prompt))
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Result = false,
+                Message = Constants.PROVIDE_PROPER_TEXT_PROMPT,
+                StatusCode = 400
+            });
+        }
+
+        var result = await _questionFromText.GenerateFromPromptAsync(request);
+
+        if (!result.Success)
+        {
+            return StatusCode(result.StatusCode, new ApiResponse<object>
+            {
+                Result = false,
+                Message = result.Message,
+                StatusCode = result.StatusCode,
+                Data = null
+            });
+        }
+
+        return Ok(new ApiResponse<List<QuizQuestionDto>>
+        {
+            Result = true,
+            Message = result.Message,
+            StatusCode = 200,
+            Data = result.Data
+        });
     }
 }

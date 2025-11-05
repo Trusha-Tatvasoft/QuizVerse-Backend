@@ -33,7 +33,11 @@ public class ValidationInfoDto
 public class QuizQuestionDto
 {
     public string? QueText { get; set; }
+    public int CategoryId { get; set; }
+    public string? CategoryName { get; set; }
+    public int QueTypeId { get; set; }
     public string? QueTypeName { get; set; }
+    public int QueDifficultyId { get; set; }
     public string? QueDifficultyName { get; set; }
     public List<QueOption>? QueOptionsAns { get; set; }
 }

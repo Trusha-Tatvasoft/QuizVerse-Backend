@@ -13,7 +13,7 @@ namespace QuizVerse.WebAPI.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(Roles = nameof(UserRoles.Player))]
-    public class QuizController(IQuizService _quizService) : ControllerBase
+    public class QuizController(IQuizService _quizService,IQuizCommentSectionService _quizCommentSectionService) : ControllerBase
     {
         [HttpGet("get-quiz-overview/{quizId}")]
         public async Task<IActionResult> GetQuizOverview(int quizId)
@@ -124,6 +124,18 @@ namespace QuizVerse.WebAPI.Controllers
                 StatusCode = StatusCodes.Status200OK,
                 Message = await _quizService.SubmitQuizRating(request),
                 Data = null
+            });
+        }
+
+        [HttpGet("quiz-comments/{quizId}")]
+        public async Task<IActionResult> GetQuizComments(int quizId)
+        {
+            return Ok(new ApiResponse<List<QuizCommentsDto>>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.QUIZ_COMMENTS_FETCHED_SUCCESSFULLY,
+                Data = await _quizCommentSectionService.GetCommentsByQuizId(quizId),
             });
         }
 

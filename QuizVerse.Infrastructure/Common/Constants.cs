@@ -208,6 +208,7 @@ public static class Constants
     public const string CORRECT_ANSWER_NOT_IN_OPTIONS = "Correct answer '{0}' is not listed among the options.";
     public const string CSV_PREVIEW_LOADED_SUCCESSFULLY = "CSV preview loaded successfully.";
     public const string EXCEL_PREVIEW_LOADED_SUCCESSFULLY = "Excel preview loaded successfully.";
+    public const string PROVIDE_PROPER_TEXT_PROMPT = "Provide a valid text prompt.";
     public const string NO_QUESTIONS_TO_SAVE = "No questions to save.";
     public const string QUESTIONS_SAVED_SUCCESSFULLY = "Questions saved successfully.";
     public const string QUESTION_IN_USE_ERROR = "This question is part of an active quiz or battle and cannot be changed.";
@@ -439,18 +440,18 @@ public static class Constants
     #endregion
 
     #region Groq Models
-    public const string LLAMA_3_1_8B_INSTANT = "llama-3.1-8b-instant";
     public const string LLAMA_3_3_70B_VERSATILE = "llama-3.3-70b-versatile";
+    public const string LLAMA_3_1_8B_INSTANT = "llama-3.1-8b-instant";
     public const string GROQ_COMPOUND = "groq/compound";
     public const string MOONSHOTAI_KIMI_K2_INSTRUCT = "moonshotai/kimi-k2-instruct";
     public const string OPENAI_GPT_OSS_20B = "openai/gpt-oss-20b";
 
     public static readonly List<ModelConfig> GroqModels = [
-        new ModelConfig(AiModelName.Llama3Point18BInstant.ToModelString(), 30, 14400, 6000, 500000),
         new ModelConfig(AiModelName.Llama3Point370BVersatile.ToModelString(), 30, 1000, 12000, 100000),
+        new ModelConfig(AiModelName.OpenAiGptOss20B.ToModelString(), 30, 1000, 8000, 200000),
+        new ModelConfig(AiModelName.Llama3Point18BInstant.ToModelString(), 30, 14400, 6000, 500000),
         new ModelConfig(AiModelName.GroqCompound.ToModelString(), 30, 250, 70000, int.MaxValue),
         new ModelConfig(AiModelName.MoonshotAiKimiK2Instruct.ToModelString(), 60, 1000, 10000, 300000),
-        new ModelConfig(AiModelName.OpenAiGptOss20B.ToModelString(), 30, 1000, 8000, 200000),
     ];
     public static AiModelName GetGroqModelEnumNumber(string modelName)
     {
