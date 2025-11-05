@@ -48,6 +48,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IQuizCommentSectionService, QuizCommentSectionService>();
         services.AddScoped<IAiLogService, AiLogService>();
         services.AddScoped<IAiConfigurationService, AiConfigurationService>();
+        services.AddScoped<IGeminiModelService, GeminiModelService>();
+        services.AddScoped<IFetchContentFromUrlService, FetchContentFromUrlService>();
 
         services.AddHttpClient<IPerspectiveApiService, PerspectiveApiService>();
         services.AddSingleton<IGcpApiQueueService, GcpApiQueueService>();
@@ -61,6 +63,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped(typeof(ISqlQueryRepository), typeof(SqlQueryRepository));
 
         services.AddSingleton<IMatchmakingQueueRepository, MatchmakingQueueRepository>();
+
+        //Ai Clients
+        services.AddScoped<IGeminiWebsiteSafetyClient, GeminiWebsiteSafetyClient>();
     }
 
 }
