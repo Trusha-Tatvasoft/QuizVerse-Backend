@@ -162,12 +162,33 @@ namespace QuizVerse.Infrastructure.Enums
         UnderProcessing = 4
     }
 
-
     public enum QuestionOrQuizIssueReportStatus
     {
         Accepted = 1,
         Ignore = 2,
         Pending = 3,
         UnderReview = 4
+    }
+
+    public enum QuizRatingStatus
+    {
+        Accepted = 1,
+        Ignore = 2,
+        Pending = 3,
+        UnderProcessing = 4
+    }
+
+    public enum ReportType
+    {
+        QuizRatingFeedback = 1,
+        QuestionIssueReport = 2,
+        QuizIssueReport = 3,
+    }
+
+    public enum AiApiPurpose
+    {
+        QuestionGeneration = 1,
+        ExplanationGeneration = 2,
+        URLSafetyCheck = 3,
     }
 }

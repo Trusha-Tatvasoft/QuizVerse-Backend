@@ -121,4 +121,9 @@ public class SqlConstants
     public const string GET_USER_BATTLE_RESULT_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
     public const string GET_USER_BATTLE_RESULT_FUNCTION = "get_user_battle_result";
     #endregion
+
+    #region Reports and Feedback
+    public const string GET_PENDING_GCP_REPORTS_FUNCTION = "get_pending_gcp_reports";
+    public const string GET_PENDING_GCP_REPORTS_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
+    #endregion
 }
