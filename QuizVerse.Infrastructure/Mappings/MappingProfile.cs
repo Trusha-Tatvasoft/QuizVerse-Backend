@@ -1,4 +1,4 @@
-using System.Globalization;
+    using System.Globalization;
 using System.Text.Json;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
@@ -316,14 +316,14 @@ public class MappingProfile : Profile
 
         CreateMap<BattleResult, BattleCompletionResult>();
 
-         CreateMap<UserAvailableBattleRawResult, UserAvailableBattleDtoResponseDto>()
-           .ConvertUsing(src => new UserAvailableBattleDtoResponseDto
-           {
-               HasMore = src.HasMore,
-               Battles = string.IsNullOrWhiteSpace(src.Battles)
-                   ? new List<UserAvailableBattleDto>()
-                   : JsonSerializer.Deserialize<List<UserAvailableBattleDto>>(src.Battles, new JsonSerializerOptions())!
-           });
+        CreateMap<UserAvailableBattleRawResult, UserAvailableBattleDtoResponseDto>()
+          .ConvertUsing(src => new UserAvailableBattleDtoResponseDto
+          {
+              HasMore = src.HasMore,
+              Battles = string.IsNullOrWhiteSpace(src.Battles)
+                  ? new List<UserAvailableBattleDto>()
+                  : JsonSerializer.Deserialize<List<UserAvailableBattleDto>>(src.Battles, new JsonSerializerOptions())!
+          });
         #endregion
 
         #region Browse Quizzes
@@ -416,6 +416,16 @@ public class MappingProfile : Profile
         CreateMap<QuizRating, QuizRatingDTO>()
             .ForMember(dest => dest.QuizRating,
                 opt => opt.MapFrom(src => src.QuizRating1));
+        #endregion
+
+        #region  QuizIssueReport
+        CreateMap<QuizIssueReport, QuizReportIssueResponseDTO>()
+                .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Name))
+                .ForMember(dest => dest.Creator, opt => opt.MapFrom(src => src.Quiz.CreatedByNavigation.UserName))
+                .ForMember(dest => dest.Reporter, opt => opt.MapFrom(src => src.User.FullName))
+                .ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
         #endregion
     }
 
