@@ -1,7 +1,9 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using QuizVerse.Application.Core.Interface;
+using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
@@ -14,14 +16,17 @@ public class PerspectiveApiService : IPerspectiveApiService
     private readonly HttpClient _httpClient;
     private readonly string? _apiKey;
     private readonly ILogger<PerspectiveApiService> _logger;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     public PerspectiveApiService(
            HttpClient httpClient,
            IConfiguration configuration,
-           ILogger<PerspectiveApiService> logger)
+           ILogger<PerspectiveApiService> logger,
+           IServiceScopeFactory serviceScopeFactory)
     {
         _httpClient = httpClient;
         _apiKey = configuration["PerspectiveApi:ApiKey"];
         _logger = logger;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     public async Task<PerspectiveAnalysisResult> AnalyzeTextAsync(GcpApiReportDataDto reportDataDto)
@@ -32,31 +37,45 @@ public class PerspectiveApiService : IPerspectiveApiService
             ReportId = reportDataDto.ReportId,
             ReportType = reportDataDto.ReportType,
         };
+
+        if (string.IsNullOrEmpty(_apiKey))
+        {
+            _logger.LogError("Perspective API key is not configured.");
+
+            result.IsSuccess = false;
+            result.ErrorMessage = "Perspective API key is not configured.";
+            return result;
+        }
+
+        // Get attributes based on report type
+        var attributes = GetAttributesForReportType(reportDataDto.ReportType);
+        var requestedAttributes = attributes.ToDictionary(
+            attr => attr,
+            attr => new { });
+
+        var requestBody = new
+        {
+            comment = new { text = reportDataDto.ReportComment },
+            languages = new[] { "en" },
+            requestedAttributes
+        };
+
+        string url = $"https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key={_apiKey}";
+        
+        using var scope = _serviceScopeFactory.CreateScope();
+        var _aiLogService = scope.ServiceProvider.GetRequiredService<IAiLogService>();
+
+        AiApiCallStartDetail aiApiCallStartDetail = new AiApiCallStartDetail()
+        {
+            ModelName = (int)AiModelName.PerspectiveApi,
+            StartTime = DateTime.UtcNow,
+            Purpose = (int)AiApiPurpose.SeverityAnalysis,
+        };
+
+        AiProcessLog aiProcessLog = _aiLogService.StartApiCall(aiApiCallStartDetail);
+
         try
         {
-            if (string.IsNullOrEmpty(_apiKey))
-            {
-                _logger.LogError("Perspective API key is not configured.");
-
-                result.IsSuccess = false;
-                result.ErrorMessage = "Perspective API key is not configured.";
-                return result;
-            }
-
-            // Get attributes based on report type
-            var attributes = GetAttributesForReportType(reportDataDto.ReportType);
-            var requestedAttributes = attributes.ToDictionary(
-                attr => attr,
-                attr => new { });
-
-            var requestBody = new
-            {
-                comment = new { text = reportDataDto.ReportComment },
-                languages = new[] { "en" },
-                requestedAttributes
-            };
-
-            string url = $"https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key={_apiKey}";
             var response = await _httpClient.PostAsJsonAsync(url, requestBody);
 
             if (!response.IsSuccessStatusCode)
@@ -65,10 +84,13 @@ public class PerspectiveApiService : IPerspectiveApiService
                 _logger.LogError("Perspective API error: {StatusCode}, {Content}",
                     response.StatusCode, errorContent);
 
+                _ = _aiLogService.EndApiCall(aiProcessLog, false);
+
                 result.IsSuccess = false;
                 result.ErrorMessage = $"API returned {response.StatusCode}, {errorContent}";
                 return result;
             }
+            _ = _aiLogService.EndApiCall(aiProcessLog, true);
 
             var apiResponse = await response.Content.ReadFromJsonAsync<PerspectiveApiResponse>();
 
@@ -119,11 +141,13 @@ public class PerspectiveApiService : IPerspectiveApiService
         {
             _logger.LogError(ex, "Error calling Perspective API for {ReportType} ID: {ReportId}",
                 reportDataDto.ReportType, reportDataDto.ReportId);
+
+            _ = _aiLogService.EndApiCall(aiProcessLog, false);
             result.IsSuccess = false;
             result.ErrorMessage = ex.Message;
         }
 
-        return result; 
+        return result;
     }
 
     // Helper method: Get attributes based on report type
