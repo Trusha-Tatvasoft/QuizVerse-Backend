@@ -153,4 +153,35 @@ namespace QuizVerse.Infrastructure.Enums
         MoonshotAiKimiK2Instruct = 10,
         OpenAiGptOss20B = 11
     }
+
+    public enum QuestionOrQuizIssueReportSeverity
+    {
+        High = 1,
+        Low = 2,
+        Medium = 3,
+        UnderProcessing = 4
+    }
+
+    public enum QuestionOrQuizIssueReportStatus
+    {
+        Accepted = 1,
+        Ignore = 2,
+        Pending = 3,
+        UnderReview = 4
+    }
+
+    public enum QuizRatingStatus
+    {
+        Accepted = 1,
+        Ignore = 2,
+        Pending = 3,
+        UnderProcessing = 4
+    }
+
+    public enum ReportType
+    {
+        QuizRatingFeedback = 1,
+        QuestionIssueReport = 2,
+        QuizIssueReport = 3,
+    }
 }

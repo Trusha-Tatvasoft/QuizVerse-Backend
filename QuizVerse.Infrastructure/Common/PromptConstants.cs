@@ -131,4 +131,19 @@ public static class PromptConstants
         Content to create questions from: {3}
         Now generate the ""{0}"" questions as a JSON array following the specifications exactly:";
     #endregion // 0:- totalQuestions, 1:- specificationsText, 2:- difficultyGuidelines, 3:- inputText
+
+    #region Check Category of the website
+    public const string CHECK_WEBSITE_CATEGORY_PROMPT = @"You are a website safety classifier. Given the input website URL: {0}, 
+        determine if it falls into any of the following unsafe categories based on its domain name, content, or purpose:
+        - Adult entertainment or explicit material
+        - Online gambling, betting, or casino-related content
+        - Extremist, radical, or hate-promoting content
+        - Torrent, piracy, or illegal software download platforms
+        - Darknet marketplaces or illicit goods trading
+        - Scams, phishing, or fraudulent websites
+        - Malware or virus distribution sites
+
+        Return a single sentence stating 'The website is unsafe due to [category].' if it matches any unsafe category, 
+        otherwise return 'The website is safe.' Do not include additional text or explanation.";
+    #endregion
 }

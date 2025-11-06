@@ -40,13 +40,19 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBattleService, BattleService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
         services.AddScoped<IUserActivityCheckerService, UserActivityCheckerService>();
+        services.AddScoped<IContentModerationService,ContentModerationService>();
         services.AddScoped<IGroqModelRotationService, GroqModelRotationService>();
         services.AddScoped<IGroqService, GroqService>();
         services.AddScoped<IGroqContentValidatorService, GroqContentValidatorService>();
         services.AddScoped<IAiQuestionGenerationService, AiQuestionGenerationService>();
         services.AddScoped<IQuizCommentSectionService, QuizCommentSectionService>();
+        services.AddScoped<IAiLogService, AiLogService>();
+        services.AddScoped<IAiConfigurationService, AiConfigurationService>();
 
-
+        services.AddHttpClient<IPerspectiveApiService, PerspectiveApiService>();
+        services.AddSingleton<IGcpApiQueueService, GcpApiQueueService>();
+        services.AddHostedService<PerspectiveQueueHostedService>();
+        
         //mappers
         services.AddAutoMapper(typeof(MappingProfile));
 
