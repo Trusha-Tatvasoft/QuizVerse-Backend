@@ -39,7 +39,8 @@ BEGIN
             q.name AS "quizName",
             qr.reason,
             qr.created_date AS "date",
-            qr.status
+            qr.status,
+            qr.modified_by
         FROM public."QuizRating" qr
         INNER JOIN public."Users" u ON qr.user_id = u.id
         INNER JOIN public."Quiz" q ON qr.quiz_id = q.id
@@ -60,7 +61,7 @@ BEGIN
             CASE WHEN p_sort_column = 'quizName' AND p_sort_direction = 'DESC' THEN q.name END DESC,
             CASE WHEN p_sort_column = 'status' AND p_sort_direction = 'ASC' THEN qr.status END ASC,
             CASE WHEN p_sort_column = 'status' AND p_sort_direction = 'DESC' THEN qr.status END DESC,
-            qr.id DESC; 
+            qr.id DESC 
         LIMIT p_page_size
         OFFSET (p_page_number - 1) * p_page_size
     ) t;

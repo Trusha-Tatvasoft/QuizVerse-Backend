@@ -9,6 +9,7 @@ public class FlaggedCommentDto
     public string? Reason { get; set; }
     public DateTime Date { get; set; }
     public int Status { get; set; }
+    public int? ModifiedBy { get; set; }
 }
 
 public class FlaggedCommentsResultDTO
