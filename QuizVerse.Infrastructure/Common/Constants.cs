@@ -593,8 +593,11 @@ public static class Constants
             [GcpAttributes.Insult] = "Insulting or derogatory language"
         };
     #endregion
-    
+
     #region Contest Moderation
     public const string QUESTION_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE = "Action Updated Successfully!!";
+    public const string QUESTION_ISSUE_REPORT_FINALIZED_INFO = "This report has already been finalized and cannot be modified.";
+    public const string QUESTION_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT = "Only the assigned reviewer or SuperAdmin can update this report.";
+
     #endregion
 }

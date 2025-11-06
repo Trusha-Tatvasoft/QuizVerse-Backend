@@ -22,6 +22,7 @@ RETURNS TABLE (
     "Reason"       VARCHAR,
     "Severity"     INT,
     "Status"       INT,
+    "MarkAsReviewBy" INT,
     "CreatedDate"  TIMESTAMP WITH TIME ZONE
 )
 LANGUAGE plpgsql
@@ -46,15 +47,16 @@ BEGIN
 
     RETURN QUERY EXECUTE format($f$
         SELECT
-            r.id,
-            r.question_id,
-            q.que_text AS question,
-            creator.full_name AS creator,
-            reporter.full_name AS reporter,
-            r.description AS reason,
-            r.severity,
-            r.status,
-            r.created_date
+            r.id AS "Id",
+            r.question_id AS "QuestionId",
+            q.que_text AS "Question",
+            creator.full_name AS "Creator",
+            reporter.full_name AS "Reporter",
+            r.description AS "Reason",
+            r.severity AS "Severity",
+            r.status AS "Status",
+		    r.modified_by AS "MarkAsReviewBy",
+            r.created_date AS "CreatedDate"
         FROM "QuestionIssueReports" r
         JOIN "BaseQuestions" q ON q.id = r.question_id
         JOIN "Users" creator ON creator.id = q.created_by

@@ -482,30 +482,126 @@ namespace QuizVerse.UnitTests.Services
         #endregion
 
         #region UpdateQuestionReportAction Tests
+
         [Fact]
-        public async Task UpdateQuestionReportAction_UpdatesStatus_WhenReportExists()
+        public async Task UpdateQuestionReportAction_UpdatesStatus_WhenReportIsPending_AndUserIsAdmin()
         {
+            // Arrange
             var reportId = 500;
             var actionRequest = new QuizAndQuestionReportAction
             {
                 ReportId = reportId,
-                QuestionOrQuizIssueReportNewStatus = 2
+                QuestionOrQuizIssueReportNewStatus = (int)QuestionOrQuizIssueReportStatus.UnderReview
             };
 
             var existingReport = new QuestionIssueReport
             {
                 Id = reportId,
-                Status = 1
+                Status = (int)QuestionOrQuizIssueReportStatus.Pending,
+                ModifiedBy = 1 // same as current user from mock context
             };
 
-            _reportedQuestionRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
                 .ReturnsAsync(existingReport);
 
-            _reportedQuestionRepoMock.Setup(r => r.UpdateAsync(existingReport))
+            _reportedQuestionRepoMock
+                .Setup(r => r.UpdateAsync(existingReport))
                 .Returns(Task.CompletedTask);
 
+            // Act
             var result = await _service.UpdateQuestionReportAction(actionRequest);
 
+            // Assert
+            Assert.Equal(Constants.QUESTION_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE, result);
+            Assert.Equal(actionRequest.QuestionOrQuizIssueReportNewStatus, existingReport.Status);
+            _reportedQuestionRepoMock.Verify(r => r.UpdateAsync(existingReport), Times.Once);
+        }
+
+        [Fact]
+        public async Task UpdateQuestionReportAction_ThrowsAppException_WhenReportFinalized()
+        {
+            // Arrange
+            var reportId = 501;
+            var actionRequest = new QuizAndQuestionReportAction
+            {
+                ReportId = reportId,
+                QuestionOrQuizIssueReportNewStatus = (int)QuestionOrQuizIssueReportStatus.Pending
+            };
+
+            var existingReport = new QuestionIssueReport
+            {
+                Id = reportId,
+                Status = (int)QuestionOrQuizIssueReportStatus.Accepted,
+                ModifiedBy = 1
+            };
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync(existingReport);
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuestionReportAction(actionRequest));
+            Assert.Equal(Constants.QUESTION_ISSUE_REPORT_FINALIZED_INFO, ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateQuestionReportAction_ThrowsAppException_WhenUnderReviewByDifferentReviewer_AndUserIsNotSuperAdmin()
+        {
+            // Arrange
+            var reportId = 502;
+            var actionRequest = new QuizAndQuestionReportAction
+            {
+                ReportId = reportId,
+                QuestionOrQuizIssueReportNewStatus = (int)QuestionOrQuizIssueReportStatus.Pending
+            };
+
+            var existingReport = new QuestionIssueReport
+            {
+                Id = reportId,
+                Status = (int)QuestionOrQuizIssueReportStatus.UnderReview,
+                ModifiedBy = 999 // Different reviewer
+            };
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync(existingReport);
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuestionReportAction(actionRequest));
+            Assert.Equal(Constants.QUESTION_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT, ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateQuestionReportAction_UpdatesStatus_WhenUnderReviewBySameReviewer()
+        {
+            // Arrange
+            var reportId = 503;
+            var actionRequest = new QuizAndQuestionReportAction
+            {
+                ReportId = reportId,
+                QuestionOrQuizIssueReportNewStatus = (int)QuestionOrQuizIssueReportStatus.Accepted
+            };
+
+            var existingReport = new QuestionIssueReport
+            {
+                Id = reportId,
+                Status = (int)QuestionOrQuizIssueReportStatus.UnderReview,
+                ModifiedBy = 1 // Same as current user
+            };
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync(existingReport);
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.UpdateAsync(existingReport))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _service.UpdateQuestionReportAction(actionRequest);
+
+            // Assert
             Assert.Equal(Constants.QUESTION_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE, result);
             Assert.Equal(actionRequest.QuestionOrQuizIssueReportNewStatus, existingReport.Status);
         }
@@ -513,17 +609,21 @@ namespace QuizVerse.UnitTests.Services
         [Fact]
         public async Task UpdateQuestionReportAction_ThrowsAppException_WhenReportNotFound()
         {
+            // Arrange
             var actionRequest = new QuizAndQuestionReportAction
             {
                 ReportId = 600,
                 QuestionOrQuizIssueReportNewStatus = 3
             };
 
-            _reportedQuestionRepoMock.Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
                 .ReturnsAsync((QuestionIssueReport)null);
 
+            // Act & Assert
             await Assert.ThrowsAsync<AppException>(() => _service.UpdateQuestionReportAction(actionRequest));
         }
         #endregion
+
     }
 }

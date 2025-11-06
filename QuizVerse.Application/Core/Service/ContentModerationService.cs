@@ -54,7 +54,7 @@ public class ContentModerationService(
         {
             quizIssueReportsQuery = quizIssueReportsQuery.OrderBy("Id asc");
         }
-    
+
         var filters = query.Filters;
         if (filters != null)
         {
@@ -144,14 +144,30 @@ public class ContentModerationService(
     #region QuestionReportAction
     public async Task<string> UpdateQuestionReportAction(QuizAndQuestionReportAction actionRequest)
     {
-        QuestionIssueReport data = await _reportedQuestionRepository.GetAsync(q => q.Id == actionRequest.ReportId)
+        QuestionIssueReport report = await _reportedQuestionRepository.GetAsync(q => q.Id == actionRequest.ReportId)
             ?? throw new AppException(Constants.NO_DATA_FOUND, StatusCodes.Status404NotFound);
 
-        data.Status = actionRequest.QuestionOrQuizIssueReportNewStatus;
-        data.ModifiedBy = UserId;
-        data.ModifiedDate = DateTime.UtcNow;
+        // Final states: Accepted or Ignored cannot be modified 
+        if (report.Status == (int)QuestionOrQuizIssueReportStatus.Accepted ||
+            report.Status == (int)QuestionOrQuizIssueReportStatus.Ignore)
+        {
+            throw new AppException(Constants.QUESTION_ISSUE_REPORT_FINALIZED_INFO);
+        }
 
-        await _reportedQuestionRepository.UpdateAsync(data);
+        // If UnderReview: only reviewer or superadmin can update 
+        if (report.Status == (int)QuestionOrQuizIssueReportStatus.UnderReview 
+            && report.ModifiedBy != UserId 
+            && !string.Equals(UserRole, "superadmin", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new AppException(Constants.QUESTION_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT);
+        }
+
+        // Update allowed
+        report.Status = actionRequest.QuestionOrQuizIssueReportNewStatus;
+        report.ModifiedBy = UserId;
+        report.ModifiedDate = DateTime.UtcNow;
+
+        await _reportedQuestionRepository.UpdateAsync(report);
 
         return Constants.QUESTION_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE;
     }
@@ -173,8 +189,8 @@ public class ContentModerationService(
         QuestionReportData reportData = await _sqlQueryRepository.SqlQuerySingleAsync<QuestionReportData>(query, parameters);
 
         response.ActiveBattleContainCount = reportData.ActiveBattleContainCount;
-        response.ActiveQuizContainCount = reportData.ActiveQuizContainCount;  
-        
+        response.ActiveQuizContainCount = reportData.ActiveQuizContainCount;
+
         return response;
     }
     #endregion
@@ -190,6 +206,6 @@ public class ContentModerationService(
         };
         return _mapper.Map<List<ActiveQuizBattleAffectedDTO>>
             (await _sqlQueryRepository.SqlQueryListAsync<ActiveQuizBattleAffectedDTO>(query, parameters));
-     }
+    }
     #endregion
 }

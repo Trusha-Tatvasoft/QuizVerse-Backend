@@ -10,5 +10,6 @@ public class QuestionIssueReportDTO
     public string Reason { get; set; } = null!;
     public int Severity { get; set; }
     public int Status { get; set; }
+    public int? MarkAsReviewBy { get; set; }
     public DateTime CreatedDate { get; set; }
 }
