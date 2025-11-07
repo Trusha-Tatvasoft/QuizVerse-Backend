@@ -100,11 +100,11 @@ public class ContentModerationService(IGenericRepository<QuizIssueReport> _repor
         }
 
         // If status is 2 → Inactive quiz
-        if (actionRequest.QuestionOrQuizIssueReportNewStatus == 2)
+        if (actionRequest.QuestionOrQuizIssueReportNewStatus == (int)QuestionOrQuizIssueReportStatus.Accepted)
         {
             var quiz = await _reportedQuizRepository
                 .GetQueryableInclude(u => u.Quiz)
-                .Where(u => u.Id == report.Id)
+                .Where(u => u.Id == actionRequest.ReportId)
                 .Select(u => u.Quiz)
                 .FirstOrDefaultAsync();
 

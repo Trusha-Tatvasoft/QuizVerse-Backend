@@ -6,4 +6,5 @@ namespace QuizVerse.Application.Core.Interface;
 public interface IContentModerationService
 {
     public Task<PageListResponse<QuizReportIssueResponseDTO>> GetQuizReportByPaginationAsync(PageListRequest query);
+    public Task<string> UpdateQuizReportAction(QuizAndQuestionReportAction actionRequest);
 }

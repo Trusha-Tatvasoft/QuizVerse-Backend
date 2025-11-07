@@ -11,7 +11,7 @@ namespace QuizVerse.WebAPI.Controllers;
 [ApiController]
 [Authorize(Roles = Constants.RoleGroups.Admins)]
 [Route("api/[controller]")]
-public class ContentModerationController(IContentModerationService _quizIssueReportService) : ControllerBase
+public class ContentModerationController(IContentModerationService _contentModerationService) : ControllerBase
 {
     [HttpPost("get-quiz-report-by-pagination")]
     public async Task<IActionResult> GetQuizReportByPagination([FromBody] PageListRequest query)
@@ -21,7 +21,19 @@ public class ContentModerationController(IContentModerationService _quizIssueRep
             Result = true,
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
-            Data = await _quizIssueReportService.GetQuizReportByPaginationAsync(query)
+            Data = await _contentModerationService.GetQuizReportByPaginationAsync(query)
+        });
+    }
+
+    [HttpPut("update-question_report_action")]
+    public async Task<IActionResult> UpdateQuestionReportAction([FromBody] QuizAndQuestionReportAction actionRequest)
+    {
+        return Ok(new ApiResponse<string>
+        {
+            Result = true,
+            Message = await _contentModerationService.UpdateQuizReportAction(actionRequest),
+            StatusCode = 200,
+            Data = null
         });
     }
 }
