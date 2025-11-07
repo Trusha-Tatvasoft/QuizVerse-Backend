@@ -4,5 +4,6 @@ namespace QuizVerse.Application.Core.Interface;
 
 public interface IQuizCommentSectionService
 {
-    public Task<List<QuizCommentsDto>> GetCommentsByQuizId(int quizId);
+    public Task<int> TotalCommentsByQuizId(int quizId);
+    public Task<QuizCommentsResponseDto> GetCommentsByQuizId(int quizId, int batchNumber);
 }
