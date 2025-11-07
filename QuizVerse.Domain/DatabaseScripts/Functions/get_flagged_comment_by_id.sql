@@ -17,7 +17,8 @@ RETURNS TABLE (
     "QuizCategory" TEXT,
     "Reason" TEXT,
     "Date" TIMESTAMP WITH TIME ZONE,
-    "Status" INT
+    "Status" INT,
+    "ModifiedBy" INT
 )
 LANGUAGE plpgsql
 AS $$
@@ -32,7 +33,8 @@ BEGIN
         qc.category_name::text AS "QuizCategory",
         qr.reason::text AS "Reason",
         qr.created_date AS "Date",
-        qr.status AS "Status"
+        qr.status AS "Status",
+        qr.modified_by AS "ModifiedBy"
     FROM public."QuizRating" qr
     INNER JOIN public."Users" u ON qr.user_id = u.id
     INNER JOIN public."Quiz" q ON qr.quiz_id = q.id
