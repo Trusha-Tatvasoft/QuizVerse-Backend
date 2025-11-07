@@ -40,7 +40,6 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
                 };
 
             var formattedPrompt = BuildPromptWithSpecs(request.Prompt!, specs);
-            System.Console.WriteLine($"Generated Prompt: {formattedPrompt}");
             var rawJson = await _groq.GenerateQuesions(formattedPrompt);
 
             if (string.IsNullOrWhiteSpace(rawJson) || rawJson == "[]")

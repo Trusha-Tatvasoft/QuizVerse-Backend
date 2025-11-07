@@ -13,7 +13,7 @@ namespace QuizVerse.WebAPI.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(Roles = nameof(UserRoles.Player))]
-    public class QuizController(IQuizService _quizService,IQuizCommentSectionService _quizCommentSectionService) : ControllerBase
+    public class QuizController(IQuizService _quizService, IQuizCommentSectionService _quizCommentSectionService) : ControllerBase
     {
         [HttpGet("get-quiz-overview/{quizId}")]
         public async Task<IActionResult> GetQuizOverview(int quizId)
@@ -127,15 +127,27 @@ namespace QuizVerse.WebAPI.Controllers
             });
         }
 
-        [HttpGet("quiz-comments/{quizId}")]
-        public async Task<IActionResult> GetQuizComments(int quizId)
+        [HttpGet("quiz-comments/{quizId}/{batchNumber}")]
+        public async Task<IActionResult> QuizComments(int quizId, int batchNumber)
         {
-            return Ok(new ApiResponse<List<QuizCommentsDto>>
+            return Ok(new ApiResponse<QuizCommentsResponseDto>
             {
                 Result = true,
                 StatusCode = StatusCodes.Status200OK,
                 Message = Constants.QUIZ_COMMENTS_FETCHED_SUCCESSFULLY,
-                Data = await _quizCommentSectionService.GetCommentsByQuizId(quizId),
+                Data = await _quizCommentSectionService.GetCommentsByQuizId(quizId,batchNumber),
+            });
+        }
+
+        [HttpGet("total-quiz-comments/{quizId}")]
+        public async Task<IActionResult> TotalQuizComments(int quizId)
+        {
+            return Ok(new ApiResponse<int>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.QUIZ_COMMENTS_FETCHED_SUCCESSFULLY,
+                Data = await _quizCommentSectionService.TotalCommentsByQuizId(quizId),
             });
         }
 
@@ -148,6 +160,20 @@ namespace QuizVerse.WebAPI.Controllers
                 StatusCode = StatusCodes.Status200OK,
                 Message = Constants.QUIZ_ANSWER_EXPLANATION_GENERATED,
                 Data = await _quizService.GetAnswerExplanation(request),
+            });
+        }
+
+        [HttpPost("add-quiz-report")]
+        public async Task<IActionResult> AddQuizReport([FromBody] QuizReportRequestDto quizReportRequestDto)
+        {
+            bool isSuccess = await _quizService.AddQuizReport(quizReportRequestDto);
+            
+            return Ok(new ApiResponse<object>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.QUIZ_REPORT_SUBMITTED_SUCCESSFULLY,
+                Data = null,
             });
         }
     }

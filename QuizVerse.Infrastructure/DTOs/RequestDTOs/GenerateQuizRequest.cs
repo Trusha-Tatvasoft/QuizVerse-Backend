@@ -14,6 +14,9 @@ public class GenerateQuestionRequestCommonFields
 
 public class GenerateQuizRequest : GenerateQuestionRequestCommonFields
 {
+    [Required]
+    [MaxLength(500, ErrorMessage = "Prompt text cannot exceed 500 characters.")]
+    [MinLength(25, ErrorMessage = "Prompt text must be at least 25 characters long.")]
     public string? Prompt { get; set; }
 }
 

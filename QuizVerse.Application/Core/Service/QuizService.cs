@@ -22,6 +22,7 @@ public class QuizService(
     IGenericRepository<QuizToBaseQuestionMap> _quizToBaseQuestionMapRepository,
     IGenericRepository<QuizAttempted> _quizAttemptedRepository,
     IGenericRepository<QuestionIssueReport> _questionIssueReportRepository,
+    IGenericRepository<QuizIssueReport> _quizIssueReportRepository,
     IGenericRepository<QuizRating> _quizRatingRepo,
     IMapper _mapper,
     ISqlQueryRepository _sqlQueryRepository,
@@ -295,5 +296,34 @@ public class QuizService(
         string response = await _aiService.GetResponseAsync(prompt);
 
         return response.Trim();
+    }
+
+    public async Task<bool> AddQuizReport(QuizReportRequestDto quizReportRequestDto)
+    {
+        bool quizExists = await _quizRepostory.Exists(q => q.Id == quizReportRequestDto.QuizId && q.Status == (int)QuizStatus.Active && q.IsDeleted == false);
+
+        if (!quizExists)
+        {
+            throw new AppException(Constants.QUIZ_NOT_FOUND);
+        }
+
+        QuizIssueReport quizIssueReport = new QuizIssueReport
+        {
+            UserId = UserId,
+            QuizId = quizReportRequestDto.QuizId,
+            Reason = quizReportRequestDto.Reason,
+            Severity = (int)QuestionOrQuizIssueReportSeverity.UnderProcessing,
+            Status = (int)QuestionOrQuizIssueReportStatus.Pending,
+            CreatedDate = DateTime.UtcNow
+        };
+
+        await _quizIssueReportRepository.AddAsync(quizIssueReport);
+
+        if(quizIssueReport.Id > 0 == false)
+        {
+            throw new AppException(Constants.QUIZ_REPORT_SUBMISSION_FAILED, 400);
+        }
+
+        return true;
     }
 }
