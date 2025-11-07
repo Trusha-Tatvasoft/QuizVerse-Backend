@@ -420,7 +420,7 @@ namespace QuizVerse.UnitTests.Services
                     It.IsAny<Expression<Func<QuizIssueReport, bool>>>(),
                     It.IsAny<Func<IQueryable<QuizIssueReport>, IQueryable<QuizIssueReport>>?>()
                 ))
-                .ReturnsAsync(existingReport); // ✅ THIS WAS MISSING
+                .ReturnsAsync(existingReport);
 
             _reportedQuizMock
                 .Setup(r => r.UpdateAsync(existingReport))
