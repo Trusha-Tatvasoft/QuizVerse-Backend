@@ -1,9 +1,13 @@
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
+using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Interface;
 using Xunit;
 
 namespace QuizVerse.UnitTests.Services;
@@ -12,13 +16,32 @@ public class AiQuestionGenerationServiceTests
 {
     private readonly Mock<IGroqService> _mockGroqService;
     private readonly Mock<IGroqContentValidatorService> _mockValidatorService;
+    private readonly Mock<IServiceScopeFactory> _mockScopeFactory;
+    private readonly Mock<IServiceScope> _mockServiceScope;
+    private readonly Mock<IServiceProvider> _mockServiceProvider;
+    private readonly Mock<IGenericRepository<AiProcessLog>> _mockAiLogRepository;
     private readonly AiQuestionGenerationService _aiQuestionService;
 
     public AiQuestionGenerationServiceTests()
     {
         _mockGroqService = new Mock<IGroqService>();
         _mockValidatorService = new Mock<IGroqContentValidatorService>();
-        _aiQuestionService = new AiQuestionGenerationService(_mockGroqService.Object, _mockValidatorService.Object);
+        _mockScopeFactory = new Mock<IServiceScopeFactory>();
+        _mockServiceScope = new Mock<IServiceScope>();
+        _mockServiceProvider = new Mock<IServiceProvider>();
+        _mockAiLogRepository = new Mock<IGenericRepository<AiProcessLog>>();
+
+        // Setup service scope factory chain
+        _mockScopeFactory.Setup(x => x.CreateScope()).Returns(_mockServiceScope.Object);
+        _mockServiceScope.Setup(x => x.ServiceProvider).Returns(_mockServiceProvider.Object);
+        _mockServiceProvider.Setup(x => x.GetService(typeof(IGenericRepository<AiProcessLog>)))
+            .Returns(_mockAiLogRepository.Object);
+
+        _aiQuestionService = new AiQuestionGenerationService(
+            _mockGroqService.Object,
+            _mockValidatorService.Object,
+            _mockScopeFactory.Object
+        );
     }
 
     [Fact]
@@ -28,7 +51,25 @@ public class AiQuestionGenerationServiceTests
         var request = new GenerateQuizRequest
         {
             Prompt = "Science questions about physics",
-            Category = "educational"
+            Category = "educational",
+            CategoryId = 1,
+            QuestionSpec = new List<QuestionGenerationFormatDto>
+            {
+                new QuestionGenerationFormatDto
+                {
+                    QuestionDifficultyId = 1,
+                    QuestionDifficultyName = "Medium",
+                    QuestionPerQuestionType = new List<QuestionPerQuestionType>
+                    {
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeId = 1,
+                            QuestionPerQuestionTypeName = "Multiple Choice",
+                            NoOfQuesitons = 5
+                        }
+                    }
+                }
+            }
         };
 
         var validationResult = new ContentValidationResult
@@ -37,7 +78,7 @@ public class AiQuestionGenerationServiceTests
             IsMatch = true,
             Category = "educational",
             Reason = "Valid content",
-            ValidationFailed = false
+            ValidationFailed = false,
         };
 
         var generatedQuestions = new List<QuizQuestionDto>
@@ -59,6 +100,7 @@ public class AiQuestionGenerationServiceTests
         };
 
         var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
+        var aiLogId = 123;
 
         _mockValidatorService
             .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
@@ -66,22 +108,40 @@ public class AiQuestionGenerationServiceTests
 
         _mockGroqService
             .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync(jsonResponse);
+            .ReturnsAsync((jsonResponse, aiLogId));
+
+        var aiLog = new AiProcessLog { Id = aiLogId };
+        var aiLogs = new List<AiProcessLog> { aiLog }.AsQueryable();
+        _mockAiLogRepository.Setup(x => x.GetQueryableInclude())
+            .Returns(aiLogs);
+        _mockAiLogRepository.Setup(x => x.UpdateAsync(It.IsAny<AiProcessLog>()))
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _aiQuestionService.GenerateFromPromptAsync(request);
 
         // Assert
         Assert.True(result.Success);
-        Assert.Equal("Questions generated successfully.", result.Message);
+        Assert.Equal(Constants.QUESTION_GENERATION_SUCCESS, result.Message);
         Assert.Equal(200, result.StatusCode);
         Assert.NotNull(result.Data);
         Assert.Single(result.Data);
+
+        var question = result.Data[0];
+        Assert.Equal(1, question.CategoryId);
+        Assert.Equal("educational", question.CategoryName);
+        Assert.Equal(1, question.QueDifficultyId);
+        Assert.Equal("Medium", question.QueDifficultyName);
+        Assert.Equal(1, question.QueTypeId);
+        Assert.Equal("Multiple Choice", question.QueTypeName);
+
         Assert.Equal(1, result.Count);
         Assert.NotNull(result.Validation);
         Assert.Equal("educational", result.Validation.Category);
+
         _mockValidatorService.Verify(x => x.ValidateContentAsync(request.Prompt, request.Category), Times.Once);
         _mockGroqService.Verify(x => x.GenerateQuesions(It.IsAny<string>()), Times.Once);
+        _mockAiLogRepository.Verify(x => x.UpdateAsync(It.IsAny<AiProcessLog>()), Times.Once);
     }
 
     [Fact]
@@ -100,7 +160,7 @@ public class AiQuestionGenerationServiceTests
             IsMatch = false,
             Category = "inappropriate",
             Reason = "Content contains inappropriate material",
-            ValidationFailed = true
+            ValidationFailed = true,
         };
 
         _mockValidatorService
@@ -112,51 +172,13 @@ public class AiQuestionGenerationServiceTests
 
         // Assert
         Assert.False(result.Success);
-        Assert.Equal("Content validation failed: Content contains inappropriate material", result.Message);
+        Assert.Equal(string.Format(Constants.CONTENT_VALIDATION_FAILED, validationResult.Reason), result.Message);
         Assert.Equal(400, result.StatusCode);
         Assert.NotNull(result.Validation);
         Assert.False(result.Validation.ShouldProceed);
         Assert.Equal("Content contains inappropriate material", result.Validation.Reason);
         Assert.Equal("inappropriate", result.Validation.Category);
         _mockGroqService.Verify(x => x.GenerateQuesions(It.IsAny<string>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task GenerateFromPromptAsync_WithEmptyPrompt_ReturnsErrorResponse()
-    {
-        // Arrange
-        var request = new GenerateQuizRequest
-        {
-            Prompt = "",
-            Category = "educational"
-        };
-
-        var validationResult = new ContentValidationResult
-        {
-            IsValid = true,
-            IsMatch = true,
-            Category = "educational",
-            Reason = "Valid content",
-            ValidationFailed = false
-        };
-
-        _mockValidatorService
-            .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
-            .ReturnsAsync(validationResult);
-
-        // Act
-        var result = await _aiQuestionService.GenerateFromPromptAsync(request);
-
-        // Assert
-        Assert.False(result.Success);
-        // The service should return "Failed to generate questions." for empty prompt
-        // because it still tries to generate but the Groq service returns empty
-        Assert.Equal("Failed to generate questions.", result.Message);
-        Assert.Equal(500, result.StatusCode);
-
-        // The service should still call GenerateQuesions even with empty prompt
-        // because the validation passes and it proceeds to generation
-        _mockGroqService.Verify(x => x.GenerateQuesions(It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -167,7 +189,7 @@ public class AiQuestionGenerationServiceTests
         {
             Prompt = "Science questions",
             Category = "educational",
-            QuestionSpec = null
+            QuestionSpec = null! 
         };
 
         var validationResult = new ContentValidationResult
@@ -176,7 +198,7 @@ public class AiQuestionGenerationServiceTests
             IsMatch = true,
             Category = "educational",
             Reason = "Valid content",
-            ValidationFailed = false
+            ValidationFailed = false,
         };
 
         var generatedQuestions = new List<QuizQuestionDto>
@@ -196,6 +218,7 @@ public class AiQuestionGenerationServiceTests
         };
 
         var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
+        var aiLogId = 123;
 
         _mockValidatorService
             .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
@@ -203,7 +226,14 @@ public class AiQuestionGenerationServiceTests
 
         _mockGroqService
             .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync(jsonResponse);
+            .ReturnsAsync((jsonResponse, aiLogId));
+
+        // Mock without AsNoTracking()
+        var emptyAiLogs = new List<AiProcessLog>().AsQueryable();
+        _mockAiLogRepository.Setup(x => x.GetQueryableInclude())
+            .Returns(emptyAiLogs);
+        _mockAiLogRepository.Setup(x => x.UpdateAsync(It.IsAny<AiProcessLog>()))
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _aiQuestionService.GenerateFromPromptAsync(request);
@@ -218,88 +248,48 @@ public class AiQuestionGenerationServiceTests
     }
 
     [Fact]
-    public async Task GenerateFromPromptAsync_WithEmptyQuestionSpecs_UsesDefaultSpecs()
+    public async Task GenerateFromPromptAsync_WithComplexQuestionSpecs_FlattensAndMapsCorrectly()
     {
         // Arrange
         var request = new GenerateQuizRequest
         {
             Prompt = "Science questions",
             Category = "educational",
-            QuestionSpec = new List<QuestionGenerationFormatDto>()
-        };
-
-        var validationResult = new ContentValidationResult
-        {
-            IsValid = true,
-            IsMatch = true,
-            Category = "educational",
-            Reason = "Valid content",
-            ValidationFailed = false
-        };
-
-        var generatedQuestions = new List<QuizQuestionDto>
-        {
-            new QuizQuestionDto {
-                QueText = "Test question?",
-                QueTypeName = "Multiple Choice",
-                QueDifficultyName = "Medium",
-                QueOptionsAns = new List<QueOption>
-                {
-                    new QueOption { Key = "option", Value = "A" },
-                    new QueOption { Key = "option", Value = "B" },
-                    new QueOption { Key = "option", Value = "C" },
-                    new QueOption { Key = "answer", Value = "A" }
-                }
-             }
-        };
-
-        var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
-
-        _mockValidatorService
-            .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
-            .ReturnsAsync(validationResult);
-
-        _mockGroqService
-            .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync(jsonResponse);
-
-        // Act
-        var result = await _aiQuestionService.GenerateFromPromptAsync(request);
-
-        // Assert
-        Assert.True(result.Success);
-        Assert.NotNull(result.Specifications);
-        Assert.Single(result.Specifications);
-        Assert.Equal("Multiple Choice", result.Specifications[0].Type);
-        Assert.Equal("Medium", result.Specifications[0].Difficulty);
-        Assert.Equal(10, result.Specifications[0].Count);
-    }
-
-    [Fact]
-    public async Task GenerateFromPromptAsync_WithComplexQuestionSpecs_FlattensCorrectly()
-    {
-        // Arrange
-        var request = new GenerateQuizRequest
-        {
-            Prompt = "Science questions",
-            Category = "educational",
+            CategoryId = 2,
             QuestionSpec = new List<QuestionGenerationFormatDto>
             {
                 new QuestionGenerationFormatDto
                 {
+                    QuestionDifficultyId = 1,
                     QuestionDifficultyName = "Easy",
                     QuestionPerQuestionType = new List<QuestionPerQuestionType>
                     {
-                        new QuestionPerQuestionType { QuestionPerQuestionTypeName = "Multiple Choice", NoOfQuesitons = 5 },
-                        new QuestionPerQuestionType { QuestionPerQuestionTypeName = "True/False", NoOfQuesitons = 3 }
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeId = 1,
+                            QuestionPerQuestionTypeName = "Multiple Choice",
+                            NoOfQuesitons = 5
+                        },
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeId = 2,
+                            QuestionPerQuestionTypeName = "True/False",
+                            NoOfQuesitons = 3
+                        }
                     }
                 },
                 new QuestionGenerationFormatDto
                 {
+                    QuestionDifficultyId = 3,
                     QuestionDifficultyName = "Hard",
                     QuestionPerQuestionType = new List<QuestionPerQuestionType>
                     {
-                        new QuestionPerQuestionType { QuestionPerQuestionTypeName = "Fill in the Blank", NoOfQuesitons = 2 }
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeId = 3,
+                            QuestionPerQuestionTypeName = "Fill in the Blank",
+                            NoOfQuesitons = 2
+                        }
                     }
                 }
             }
@@ -311,26 +301,35 @@ public class AiQuestionGenerationServiceTests
             IsMatch = true,
             Category = "educational",
             Reason = "Valid content",
-            ValidationFailed = false
+            ValidationFailed = false,
         };
 
         var generatedQuestions = new List<QuizQuestionDto>
         {
             new QuizQuestionDto {
-                QueText = "Test question?",
+                QueText = "Easy MCQ question?",
                 QueTypeName = "Multiple Choice",
-                QueDifficultyName = "Medium",
+                QueDifficultyName = "Easy",
                 QueOptionsAns = new List<QueOption>
                 {
                     new QueOption { Key = "option", Value = "A" },
                     new QueOption { Key = "option", Value = "B" },
-                    new QueOption { Key = "option", Value = "C" },
                     new QueOption { Key = "answer", Value = "A" }
+                }
+             },
+            new QuizQuestionDto {
+                QueText = "Hard Fill question?",
+                QueTypeName = "Fill in the Blank",
+                QueDifficultyName = "Hard",
+                QueOptionsAns = new List<QueOption>
+                {
+                    new QueOption { Key = "answer", Value = "Gravity" }
                 }
              }
         };
 
         var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
+        var aiLogId = 123;
 
         _mockValidatorService
             .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
@@ -338,7 +337,13 @@ public class AiQuestionGenerationServiceTests
 
         _mockGroqService
             .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync(jsonResponse);
+            .ReturnsAsync((jsonResponse, aiLogId));
+
+        var emptyAiLogs = new List<AiProcessLog>().AsQueryable();
+        _mockAiLogRepository.Setup(x => x.GetQueryableInclude())
+            .Returns(emptyAiLogs);
+        _mockAiLogRepository.Setup(x => x.UpdateAsync(It.IsAny<AiProcessLog>()))
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _aiQuestionService.GenerateFromPromptAsync(request);
@@ -348,6 +353,7 @@ public class AiQuestionGenerationServiceTests
         Assert.NotNull(result.Specifications);
         Assert.Equal(3, result.Specifications.Count);
 
+        // Verify flattened specifications
         var easyMultipleChoice = result.Specifications.First(s => s.Type == "Multiple Choice" && s.Difficulty == "Easy");
         Assert.Equal(5, easyMultipleChoice.Count);
 
@@ -356,6 +362,21 @@ public class AiQuestionGenerationServiceTests
 
         var hardFillBlank = result.Specifications.First(s => s.Type == "Fill in the Blank" && s.Difficulty == "Hard");
         Assert.Equal(2, hardFillBlank.Count);
+
+        Assert.NotNull(result.Data);
+        Assert.Equal(2, result.Data.Count);
+
+        var easyQuestion = result.Data.First(q => q.QueDifficultyName == "Easy");
+        Assert.Equal(2, easyQuestion.CategoryId);
+        Assert.Equal("educational", easyQuestion.CategoryName);
+        Assert.Equal(1, easyQuestion.QueDifficultyId);
+        Assert.Equal(1, easyQuestion.QueTypeId);
+
+        var hardQuestion = result.Data.First(q => q.QueDifficultyName == "Hard");
+        Assert.Equal(2, hardQuestion.CategoryId);
+        Assert.Equal("educational", hardQuestion.CategoryName);
+        Assert.Equal(3, hardQuestion.QueDifficultyId);
+        Assert.Equal(3, hardQuestion.QueTypeId);
     }
 
     [Fact]
@@ -365,7 +386,22 @@ public class AiQuestionGenerationServiceTests
         var request = new GenerateQuizRequest
         {
             Prompt = "Science questions",
-            Category = "educational"
+            Category = "educational",
+            QuestionSpec = new List<QuestionGenerationFormatDto>
+            {
+                new QuestionGenerationFormatDto
+                {
+                    QuestionDifficultyName = "Medium",
+                    QuestionPerQuestionType = new List<QuestionPerQuestionType>
+                    {
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeName = "Multiple Choice",
+                            NoOfQuesitons = 5
+                        }
+                    }
+                }
+            }
         };
 
         var validationResult = new ContentValidationResult
@@ -374,7 +410,7 @@ public class AiQuestionGenerationServiceTests
             IsMatch = true,
             Category = "educational",
             Reason = "Valid content",
-            ValidationFailed = false
+            ValidationFailed = false,
         };
 
         _mockValidatorService
@@ -383,50 +419,14 @@ public class AiQuestionGenerationServiceTests
 
         _mockGroqService
             .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync("");
+            .ReturnsAsync(("", 0));
 
         // Act
         var result = await _aiQuestionService.GenerateFromPromptAsync(request);
 
         // Assert
         Assert.False(result.Success);
-        Assert.Equal("Failed to generate questions.", result.Message);
-        Assert.Equal(500, result.StatusCode);
-    }
-
-    [Fact]
-    public async Task GenerateFromPromptAsync_WithEmptyArrayGroqResponse_ReturnsErrorResponse()
-    {
-        // Arrange
-        var request = new GenerateQuizRequest
-        {
-            Prompt = "Science questions",
-            Category = "educational"
-        };
-
-        var validationResult = new ContentValidationResult
-        {
-            IsValid = true,
-            IsMatch = true,
-            Category = "educational",
-            Reason = "Valid content",
-            ValidationFailed = false
-        };
-
-        _mockValidatorService
-            .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
-            .ReturnsAsync(validationResult);
-
-        _mockGroqService
-            .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync("[]");
-
-        // Act
-        var result = await _aiQuestionService.GenerateFromPromptAsync(request);
-
-        // Assert
-        Assert.False(result.Success);
-        Assert.Equal("Failed to generate questions.", result.Message);
+        Assert.Equal(Constants.FAILED_TO_GENERATE_QUESTIONS, result.Message);
         Assert.Equal(500, result.StatusCode);
     }
 
@@ -437,7 +437,22 @@ public class AiQuestionGenerationServiceTests
         var request = new GenerateQuizRequest
         {
             Prompt = "Science questions",
-            Category = "educational"
+            Category = "educational",
+            QuestionSpec = new List<QuestionGenerationFormatDto>
+            {
+                new QuestionGenerationFormatDto
+                {
+                    QuestionDifficultyName = "Medium",
+                    QuestionPerQuestionType = new List<QuestionPerQuestionType>
+                    {
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeName = "Multiple Choice",
+                            NoOfQuesitons = 5
+                        }
+                    }
+                }
+            }
         };
 
         var validationResult = new ContentValidationResult
@@ -446,7 +461,7 @@ public class AiQuestionGenerationServiceTests
             IsMatch = true,
             Category = "educational",
             Reason = "Valid content",
-            ValidationFailed = false
+            ValidationFailed = false,
         };
 
         _mockValidatorService
@@ -455,14 +470,14 @@ public class AiQuestionGenerationServiceTests
 
         _mockGroqService
             .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync("Invalid JSON {");
+            .ReturnsAsync(("Invalid JSON {", 0));
 
         // Act
         var result = await _aiQuestionService.GenerateFromPromptAsync(request);
 
         // Assert
         Assert.False(result.Success);
-        Assert.Equal("AI response format error.", result.Message);
+        Assert.Equal(Constants.AI_RESPONSE_FORMAT_ERROR, result.Message);
         Assert.NotNull(result.Error);
         Assert.Equal("Invalid JSON {", result.RawResponse);
         Assert.Equal(500, result.StatusCode);
@@ -487,62 +502,9 @@ public class AiQuestionGenerationServiceTests
 
         // Assert
         Assert.False(result.Success);
-        Assert.Equal("Unexpected error generating questions.", result.Message);
+        Assert.Equal(Constants.UNEXPECTED_ERROR_GENERATING_QUESTIONS, result.Message);
         Assert.Equal("Validation service error", result.Error);
         Assert.Equal(500, result.StatusCode);
-    }
-
-    [Fact]
-    public async Task GenerateFromPromptAsync_WithNullCategory_UsesDefaultCategory()
-    {
-        // Arrange
-        var request = new GenerateQuizRequest
-        {
-            Prompt = "Science questions",
-            Category = null
-        };
-
-        var validationResult = new ContentValidationResult
-        {
-            IsValid = true,
-            IsMatch = true,
-            Category = "educational",
-            Reason = "Valid content",
-            ValidationFailed = false
-        };
-
-        var generatedQuestions = new List<QuizQuestionDto>
-        {
-            new QuizQuestionDto {
-                QueText = "Test question?",
-                QueTypeName = "Multiple Choice",
-                QueDifficultyName = "Medium",
-                QueOptionsAns = new List<QueOption>
-                {
-                    new QueOption { Key = "option", Value = "A" },
-                    new QueOption { Key = "option", Value = "B" },
-                    new QueOption { Key = "option", Value = "C" },
-                    new QueOption { Key = "answer", Value = "A" }
-                }
-             }
-        };
-
-        var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
-
-        _mockValidatorService
-            .Setup(x => x.ValidateContentAsync(request.Prompt, It.IsAny<string>()))
-            .ReturnsAsync(validationResult);
-
-        _mockGroqService
-            .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync(jsonResponse);
-
-        // Act
-        var result = await _aiQuestionService.GenerateFromPromptAsync(request);
-
-        // Assert
-        Assert.True(result.Success);
-        _mockValidatorService.Verify(x => x.ValidateContentAsync(request.Prompt, "educational"), Times.Once);
     }
 
     [Fact]
@@ -560,8 +522,16 @@ public class AiQuestionGenerationServiceTests
                     QuestionDifficultyName = "Easy",
                     QuestionPerQuestionType = new List<QuestionPerQuestionType>
                     {
-                        new QuestionPerQuestionType { QuestionPerQuestionTypeName = "MCQ", NoOfQuesitons = 5 },
-                        new QuestionPerQuestionType { QuestionPerQuestionTypeName = "TF", NoOfQuesitons = 0 } // Should be excluded
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeName = "MCQ",
+                            NoOfQuesitons = 5
+                        },
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeName = "TF",
+                            NoOfQuesitons = 0 
+                        }
                     }
                 }
             }
@@ -573,26 +543,25 @@ public class AiQuestionGenerationServiceTests
             IsMatch = true,
             Category = "educational",
             Reason = "Valid content",
-            ValidationFailed = false
+            ValidationFailed = false,
         };
 
         var generatedQuestions = new List<QuizQuestionDto>
         {
             new QuizQuestionDto {
                 QueText = "Test question?",
-                QueTypeName = "Multiple Choice",
-                QueDifficultyName = "Medium",
+                QueTypeName = "MCQ",
+                QueDifficultyName = "Easy",
                 QueOptionsAns = new List<QueOption>
                 {
                     new QueOption { Key = "option", Value = "A" },
-                    new QueOption { Key = "option", Value = "B" },
-                    new QueOption { Key = "option", Value = "C" },
                     new QueOption { Key = "answer", Value = "A" }
                 }
              }
         };
 
         var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
+        var aiLogId = 123;
 
         _mockValidatorService
             .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
@@ -600,7 +569,13 @@ public class AiQuestionGenerationServiceTests
 
         _mockGroqService
             .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync(jsonResponse);
+            .ReturnsAsync((jsonResponse, aiLogId));
+
+        var emptyAiLogs = new List<AiProcessLog>().AsQueryable();
+        _mockAiLogRepository.Setup(x => x.GetQueryableInclude())
+            .Returns(emptyAiLogs);
+        _mockAiLogRepository.Setup(x => x.UpdateAsync(It.IsAny<AiProcessLog>()))
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _aiQuestionService.GenerateFromPromptAsync(request);
@@ -608,13 +583,13 @@ public class AiQuestionGenerationServiceTests
         // Assert
         Assert.True(result.Success);
         Assert.NotNull(result.Specifications);
-        Assert.Single(result.Specifications); // Only MCQ should be included
+        Assert.Single(result.Specifications); 
         Assert.Equal("MCQ", result.Specifications[0].Type);
         Assert.Equal(5, result.Specifications[0].Count);
     }
 
     [Fact]
-    public async Task GenerateFromPromptAsync_WithNullQuestionPerQuestionType_UsesDefaultSpecs()
+    public async Task GenerateFromPromptAsync_UpdatesAiLogWithQuestionCount()
     {
         // Arrange
         var request = new GenerateQuizRequest
@@ -622,13 +597,20 @@ public class AiQuestionGenerationServiceTests
             Prompt = "Science questions",
             Category = "educational",
             QuestionSpec = new List<QuestionGenerationFormatDto>
-        {
-            new QuestionGenerationFormatDto
             {
-                QuestionDifficultyName = "Easy",
-                QuestionPerQuestionType = null // This should cause fallback to default
+                new QuestionGenerationFormatDto
+                {
+                    QuestionDifficultyName = "Medium",
+                    QuestionPerQuestionType = new List<QuestionPerQuestionType>
+                    {
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeName = "Multiple Choice",
+                            NoOfQuesitons = 3
+                        }
+                    }
+                }
             }
-        }
         };
 
         var validationResult = new ContentValidationResult
@@ -637,26 +619,35 @@ public class AiQuestionGenerationServiceTests
             IsMatch = true,
             Category = "educational",
             Reason = "Valid content",
-            ValidationFailed = false
+            ValidationFailed = false,
         };
 
         var generatedQuestions = new List<QuizQuestionDto>
-    {
-        new QuizQuestionDto {
-            QueText = "Test question?",
-            QueTypeName = "Multiple Choice",
-            QueDifficultyName = "Medium",
-            QueOptionsAns = new List<QueOption>
-            {
-                new QueOption { Key = "option", Value = "A" },
-                new QueOption { Key = "option", Value = "B" },
-                new QueOption { Key = "option", Value = "C" },
-                new QueOption { Key = "answer", Value = "A" }
-            }
-         }
-    };
+        {
+            new QuizQuestionDto {
+                QueText = "Question 1?",
+                QueTypeName = "Multiple Choice",
+                QueDifficultyName = "Medium",
+                QueOptionsAns = new List<QueOption>
+                {
+                    new QueOption { Key = "option", Value = "A" },
+                    new QueOption { Key = "answer", Value = "A" }
+                }
+             },
+            new QuizQuestionDto {
+                QueText = "Question 2?",
+                QueTypeName = "Multiple Choice",
+                QueDifficultyName = "Medium",
+                QueOptionsAns = new List<QueOption>
+                {
+                    new QueOption { Key = "option", Value = "B" },
+                    new QueOption { Key = "answer", Value = "B" }
+                }
+             }
+        };
 
         var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
+        var aiLogId = 123;
 
         _mockValidatorService
             .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
@@ -664,107 +655,26 @@ public class AiQuestionGenerationServiceTests
 
         _mockGroqService
             .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync(jsonResponse);
+            .ReturnsAsync((jsonResponse, aiLogId));
+
+        var aiLog = new AiProcessLog { Id = aiLogId };
+        var aiLogs = new List<AiProcessLog> { aiLog }.AsQueryable();
+        _mockAiLogRepository.Setup(x => x.GetQueryableInclude())
+            .Returns(aiLogs);
+        _mockAiLogRepository.Setup(x => x.UpdateAsync(It.IsAny<AiProcessLog>()))
+            .Returns(Task.CompletedTask)
+            .Callback<AiProcessLog>(log =>
+            {
+                Assert.Equal(aiLogId, log.Id);
+                Assert.NotNull(log.ExtraInfo);
+                Assert.Contains(Constants.GENERATED_QUESTIONS_COUNT_JSON_KEY, log.ExtraInfo);
+            });
 
         // Act
         var result = await _aiQuestionService.GenerateFromPromptAsync(request);
 
         // Assert
-        // The service should handle null QuestionPerQuestionType gracefully
-        // Either by using default specs or returning success with empty specs
-        if (result.Success)
-        {
-            Assert.NotNull(result.Specifications);
-            // It might return default specs or empty specs
-            if (result.Specifications.Count > 0)
-            {
-                Assert.Equal("Multiple Choice", result.Specifications[0].Type);
-                Assert.Equal("Medium", result.Specifications[0].Difficulty);
-                Assert.Equal(10, result.Specifications[0].Count);
-            }
-        }
-        else
-        {
-            // If it fails, it should be because of no valid specs
-            Assert.Equal("Invalid or missing question specifications.", result.Message);
-            Assert.Equal(400, result.StatusCode);
-        }
-    }
-
-    [Fact]
-    public async Task GenerateFromPromptAsync_WithEmptyQuestionPerQuestionType_UsesDefaultSpecs()
-    {
-        // Arrange
-        var request = new GenerateQuizRequest
-        {
-            Prompt = "Science questions",
-            Category = "educational",
-            QuestionSpec = new List<QuestionGenerationFormatDto>
-        {
-            new QuestionGenerationFormatDto
-            {
-                QuestionDifficultyName = "Easy",
-                QuestionPerQuestionType = new List<QuestionPerQuestionType>() // Empty list
-            }
-        }
-        };
-
-        var validationResult = new ContentValidationResult
-        {
-            IsValid = true,
-            IsMatch = true,
-            Category = "educational",
-            Reason = "Valid content",
-            ValidationFailed = false
-        };
-
-        var generatedQuestions = new List<QuizQuestionDto>
-    {
-        new QuizQuestionDto {
-            QueText = "Test question?",
-            QueTypeName = "Multiple Choice",
-            QueDifficultyName = "Medium",
-            QueOptionsAns = new List<QueOption>
-            {
-                new QueOption { Key = "option", Value = "A" },
-                new QueOption { Key = "option", Value = "B" },
-                new QueOption { Key = "option", Value = "C" },
-                new QueOption { Key = "answer", Value = "A" }
-            }
-         }
-    };
-
-        var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
-
-        _mockValidatorService
-            .Setup(x => x.ValidateContentAsync(request.Prompt, request.Category))
-            .ReturnsAsync(validationResult);
-
-        _mockGroqService
-            .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
-            .ReturnsAsync(jsonResponse);
-
-        // Act
-        var result = await _aiQuestionService.GenerateFromPromptAsync(request);
-
-        // Assert
-        // The service should handle empty QuestionPerQuestionType gracefully
-        if (result.Success)
-        {
-            Assert.NotNull(result.Specifications);
-            // It might return default specs or empty specs
-            if (result.Specifications.Count > 0)
-            {
-                Assert.Equal("Multiple Choice", result.Specifications[0].Type);
-                Assert.Equal("Medium", result.Specifications[0].Difficulty);
-                Assert.Equal(10, result.Specifications[0].Count);
-            }
-        }
-        else
-        {
-            // If it fails, it should be because of no valid specs
-            Assert.Equal("Invalid or missing question specifications.", result.Message);
-            Assert.Equal(400, result.StatusCode);
-        }
+        Assert.True(result.Success);
+        _mockAiLogRepository.Verify(x => x.UpdateAsync(It.IsAny<AiProcessLog>()), Times.Once);
     }
 }

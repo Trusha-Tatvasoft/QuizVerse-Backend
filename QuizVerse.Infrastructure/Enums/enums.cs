@@ -190,5 +190,6 @@ namespace QuizVerse.Infrastructure.Enums
         QuestionGeneration = 1,
         ExplanationGeneration = 2,
         URLSafetyCheck = 3,
+        ContentValidation = 4
     }
 }

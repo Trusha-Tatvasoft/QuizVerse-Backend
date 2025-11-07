@@ -6,22 +6,24 @@ using System.Net.Http.Json;
 using QuizVerse.Application.Core.Interface;
 using Microsoft.Extensions.Configuration;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.Enums;
+using QuizVerse.Domain.Entities;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class GroqService(HttpClient http, IConfiguration _config, IGroqModelRotationService modelRotation) : IGroqService
+public class GroqService(HttpClient http, IConfiguration _config, IGroqModelRotationService modelRotation, IAiLogService _aiLogService) : IGroqService
 {
     private const int MAX_RETRIES = 5;
 
     private readonly ConcurrentDictionary<string, int> _inFlightRequests = new();
     private readonly object _requestLock = new();
 
-    public async Task<string> GenerateQuesions(string prompt)
+    public async Task<(string ContentString, int AILogId)> GenerateQuesions(string prompt)
     {
         return await GenerateQuizWithRetryAsync(prompt, 0, estimatedTokens: 1500);
     }
 
-    private async Task<string> GenerateQuizWithRetryAsync(string prompt, int retryCount, int estimatedTokens = 1500)
+    private async Task<(string ContentString, int AILogId)> GenerateQuizWithRetryAsync(string prompt, int retryCount, int estimatedTokens = 1500)
     {
         if (retryCount >= MAX_RETRIES)
         {
@@ -54,7 +56,14 @@ public class GroqService(HttpClient http, IConfiguration _config, IGroqModelRota
 
         try
         {
-            var response = await http.PostAsJsonAsync(SystemConstants.GROQ_API_URL, body);
+            AiApiCallStartDetail aiApiCallStartDetail = new AiApiCallStartDetail()
+            {
+                ModelName = (int)Constants.GetGroqModelEnumNumber(body.model),
+                StartTime = DateTime.UtcNow,
+                Purpose = (int)AiApiPurpose.QuestionGeneration,
+            };
+            AiProcessLog aiProcessLog = _aiLogService.StartApiCall(aiApiCallStartDetail);
+            HttpResponseMessage? response = await http.PostAsJsonAsync(SystemConstants.GROQ_API_URL, body);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -66,16 +75,17 @@ public class GroqService(HttpClient http, IConfiguration _config, IGroqModelRota
 
                     int backoffMs = Math.Min(5000, 500 * (int)Math.Pow(2, retryCount));
                     await Task.Delay(backoffMs);
-
+                    _ = _aiLogService.EndApiCall(aiProcessLog, false);
                     return await GenerateQuizWithRetryAsync(prompt, retryCount + 1, estimatedTokens);
                 }
 
                 if ((int)response.StatusCode >= 500)
                 {
                     await Task.Delay(1000);
+                    _ = _aiLogService.EndApiCall(aiProcessLog, false);
                     return await GenerateQuizWithRetryAsync(prompt, retryCount + 1, estimatedTokens);
                 }
-
+                _ = _aiLogService.EndApiCall(aiProcessLog, false);
                 throw new HttpRequestException($"API error: {response.StatusCode} - {errorContent}");
             }
 
@@ -100,10 +110,11 @@ public class GroqService(HttpClient http, IConfiguration _config, IGroqModelRota
 
                     if (string.IsNullOrWhiteSpace(contentString) || contentString == "[]")
                     {
+                        _ = _aiLogService.EndApiCall(aiProcessLog, false);
                         return await GenerateQuizWithRetryAsync(prompt, retryCount + 1, estimatedTokens);
                     }
-
-                    return contentString;
+                    await _aiLogService.EndApiCall(aiProcessLog, true);
+                    return (contentString, aiProcessLog.Id);
                 }
             }
 
