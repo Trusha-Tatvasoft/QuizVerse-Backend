@@ -12,11 +12,13 @@ namespace QuizVerse.Application.Core.Service;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper.QueryableExtensions;
+using Microsoft.EntityFrameworkCore;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.Enums;
 
-public class ContentModerationService(IGenericRepository<QuizIssueReport> _reportedQuizRepository, IHttpContextAccessor _httpContextAccessor, IMapper _mapper) : IContentModerationService
+public class ContentModerationService(IGenericRepository<QuizIssueReport> _reportedQuizRepository,IGenericRepository<Quiz> _quizRepository, IHttpContextAccessor _httpContextAccessor, IMapper _mapper) : IContentModerationService
 {
+    public int UserId => _httpContextAccessor.HttpContext?.User?.GetUserId() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
     public string UserRole => _httpContextAccessor.HttpContext?.User?.GetUserRole() ?? throw new UnauthorizedAccessException(Constants.UNAUTHORIZED_USER);
     #region GetQuizReportByPaginationAsync
     private IQueryable<QuizIssueReport> GetQuizReportData(PageListRequest query)
@@ -81,6 +83,56 @@ public class ContentModerationService(IGenericRepository<QuizIssueReport> _repor
             query,
             q => q.ProjectTo<QuizReportIssueResponseDTO>(_mapper.ConfigurationProvider)
         );
+    }
+    #endregion
+
+    #region QuizReportAction
+    public async Task<string> UpdateQuizReportAction(QuizAndQuestionReportAction actionRequest)
+    {
+        QuizIssueReport report = await _reportedQuizRepository.GetAsync(q => q.Id == actionRequest.ReportId)
+            ?? throw new AppException(Constants.NO_DATA_FOUND, StatusCodes.Status404NotFound);
+
+        // Final states: Accepted or Ignored cannot be modified 
+        if (report.Status == (int)QuestionOrQuizIssueReportStatus.Accepted ||
+            report.Status == (int)QuestionOrQuizIssueReportStatus.Ignore)
+        {
+            throw new AppException(Constants.QUIZ_ISSUE_REPORT_FINALIZED_INFO);
+        }
+
+        // If status is 2 → Inactive quiz
+        if (actionRequest.QuestionOrQuizIssueReportNewStatus == 2)
+        {
+            var quiz = await _reportedQuizRepository
+                .GetQueryableInclude(u => u.Quiz)
+                .Where(u => u.Id == report.Id)
+                .Select(u => u.Quiz)
+                .FirstOrDefaultAsync();
+
+            if (quiz != null)
+            {
+                quiz.Status = (int)QuizStatus.Inactive;
+                quiz.ModifiedBy = UserId;
+                quiz.ModifiedDate = DateTime.UtcNow;
+                await _quizRepository.UpdateAsync(quiz);
+            }
+        }
+
+        // If UnderReview: only reviewer or superadmin can update 
+        if (report.Status == (int)QuestionOrQuizIssueReportStatus.UnderReview
+            && report.ModifiedBy != UserId
+            && !string.Equals(UserRole, "superadmin", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new AppException(Constants.QUIZ_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT);
+        }
+
+        // Update allowed
+        report.Status = actionRequest.QuestionOrQuizIssueReportNewStatus;
+        report.ModifiedBy = UserId;
+        report.ModifiedDate = DateTime.UtcNow;
+
+        await _reportedQuizRepository.UpdateAsync(report);
+
+        return Constants.QUIZ_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE;
     }
     #endregion
 }
