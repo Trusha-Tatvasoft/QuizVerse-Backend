@@ -366,7 +366,11 @@ public static class Constants
     public const string QUIZ_RATING_NOT_FOUND = "No quiz rating found for this quiz.";
     public const string QUIZ_RATING_SUBMITTED = "Quiz rating submitted successfully.";
     public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
+    public const string QUIZ_REPORT_SUBMITTED_SUCCESSFULLY = "Quiz report submitted successfully.";
+    public const string QUIZ_REPORT_SUBMISSION_FAILED = "Failed to submit quiz report.";
     public const string NO_ANSWER_PROVIDED = "No answer was provided.";
+    public const string INVALID_QUIZ_ID = "Invalid Quiz ID.";
+    public const string WRONG_BATCH_NUMBER = "Batch number must greater than 0.";
     public const string GENERATED_QUESTIONS_COUNT_JSON_KEY = "GeneratedQuestionsCount";
     #endregion
 
