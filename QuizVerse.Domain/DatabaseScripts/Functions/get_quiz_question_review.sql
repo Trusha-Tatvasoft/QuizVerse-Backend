@@ -11,7 +11,7 @@
 --                - Questions deleted/removed before attempt
 --                - Questions added after attempt
 -- Usage:       SELECT * FROM get_quiz_question_review(p_quiz_id, p_user_id);
--- Example:     SELECT * FROM get_quiz_question_review(54, 2);
+-- Example:     SELECT * FROM get_quiz_question_review(9, 113);
 -- =============================================
 
 CREATE OR REPLACE FUNCTION public.get_quiz_question_review(
@@ -74,7 +74,10 @@ BEGIN
         ) ca ON ca.question_id = bq.id
         WHERE qbm.quiz_id = p_quiz_id
           AND qbm.created_date <= qps.created_date
-          AND (qbm.is_deleted = false OR qbm.is_deleted IS NULL OR qbm.modified_date >= qps.created_date)
+          AND (
+		    (qbm.is_deleted = false AND qbm.modified_date::timestamp <= qps.modified_date::timestamp)
+		    OR (qbm.is_deleted = true AND qbm.modified_date::timestamp >= qps.created_date::timestamp)
+		)
     )
     SELECT 
         COALESCE(attempted.base_question_id, historical_map.base_question_id) AS question_id,

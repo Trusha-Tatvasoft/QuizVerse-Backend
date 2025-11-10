@@ -995,9 +995,6 @@ public class QuizManagementServiceTests
         // Act
         var csv = await _quizService.ExportQuestionsToCsv(request);
 
-        // Log the CSV output for debugging
-        Console.WriteLine($"CSV Output:\n{csv}");
-
         // Assert
         var csvLines = csv.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
         Assert.True(csvLines.Length >= 2, "CSV should contain at least header and one data row");

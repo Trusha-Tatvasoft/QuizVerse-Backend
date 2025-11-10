@@ -184,4 +184,11 @@ namespace QuizVerse.Infrastructure.Enums
         QuestionIssueReport = 2,
         QuizIssueReport = 3,
     }
+
+    public enum AiApiPurpose
+    {
+        QuestionGeneration = 1,
+        ExplanationGeneration = 2,
+        URLSafetyCheck = 3,
+    }
 }

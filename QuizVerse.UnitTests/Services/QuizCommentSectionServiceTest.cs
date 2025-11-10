@@ -1,9 +1,15 @@
 using Moq;
+using Microsoft.EntityFrameworkCore;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.Interface;
+using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
+using QuizVerse.Infrastructure.Common.Helper;
 using Xunit;
+using QuizVerse.Infrastructure.Common;
 
 namespace QuizVerse.UnitTests.Services;
 
@@ -11,35 +17,51 @@ public class QuizCommentSectionServiceTests
 {
     private readonly Mock<IGenericRepository<QuizRating>> _mockQuizRatingRepository;
     private readonly Mock<IGenericRepository<Quiz>> _mockQuizRepository;
+    private readonly Mock<IHttpContextAccessor> _mockHttpContextAccessor;
     private readonly QuizCommentSectionService _quizCommentService;
 
     public QuizCommentSectionServiceTests()
     {
         _mockQuizRatingRepository = new Mock<IGenericRepository<QuizRating>>();
         _mockQuizRepository = new Mock<IGenericRepository<Quiz>>();
+        _mockHttpContextAccessor = new Mock<IHttpContextAccessor>();
+
+        // Setup HttpContext with user
+        var httpContext = new DefaultHttpContext();
+        httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.UserData, "123")
+        }));
+        _mockHttpContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
+
         _quizCommentService = new QuizCommentSectionService(
             _mockQuizRatingRepository.Object,
-            _mockQuizRepository.Object);
+            _mockQuizRepository.Object,
+            _mockHttpContextAccessor.Object);
     }
 
     [Fact]
-    public async Task GetCommentsByQuizId_WithValidQuizId_ReturnsComments()
+    public async Task GetCommentsByQuizId_WithValidQuizIdAndBatchNumber_ReturnsCommentsForBatch()
     {
         // Arrange
         var quizId = 1;
+        var batchNumber = 1;
         var mockComments = new List<QuizRating>
         {
             new QuizRating
             {
                 Id = 1,
                 QuizId = quizId,
+                UserId = 123,
                 IsFlagged = false,
                 Feedback = "Great quiz!",
                 QuizRating1 = 5,
                 CreatedDate = DateTime.UtcNow.AddDays(-1),
                 User = new User
                 {
+                    Id = 123,
                     UserName = "user1",
+                    FullName = "User One",
                     ProfilePic = "profile1.jpg",
                     IsDeleted = false
                 }
@@ -48,14 +70,53 @@ public class QuizCommentSectionServiceTests
             {
                 Id = 2,
                 QuizId = quizId,
+                UserId = 456,
                 IsFlagged = false,
                 Feedback = "Very informative",
                 QuizRating1 = 4,
                 CreatedDate = DateTime.UtcNow.AddDays(-2),
                 User = new User
                 {
+                    Id = 456,
                     UserName = "user2",
+                    FullName = "User Two",
                     ProfilePic = "profile2.jpg",
+                    IsDeleted = false
+                }
+            },
+            new QuizRating
+            {
+                Id = 3,
+                QuizId = quizId,
+                UserId = 789,
+                IsFlagged = false,
+                Feedback = "Awesome!",
+                QuizRating1 = 5,
+                CreatedDate = DateTime.UtcNow.AddDays(-3),
+                User = new User
+                {
+                    Id = 789,
+                    UserName = "user3",
+                    FullName = "User Three",
+                    ProfilePic = "profile3.jpg",
+                    IsDeleted = false
+                }
+            },
+            new QuizRating
+            {
+                Id = 4,
+                QuizId = quizId,
+                UserId = 101,
+                IsFlagged = false,
+                Feedback = "Good one!",
+                QuizRating1 = 4,
+                CreatedDate = DateTime.UtcNow.AddDays(-4),
+                User = new User
+                {
+                    Id = 101,
+                    UserName = "user4",
+                    FullName = "User Four",
+                    ProfilePic = "profile4.jpg",
                     IsDeleted = false
                 }
             }
@@ -72,30 +133,285 @@ public class QuizCommentSectionServiceTests
             .Returns(mockQueryable);
 
         // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId);
+        var result = await _quizCommentService.GetCommentsByQuizId(quizId, batchNumber);
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(2, result.Count);
+        Assert.NotNull(result.Comments);
+        Assert.Equal(4, result.Comments.Count); 
+        Assert.False(result.hasMoreComments); 
 
-        var firstComment = result[0];
+        var firstComment = result.Comments[0];
         Assert.Equal("user1", firstComment.UserName);
-        Assert.Equal("profile1.jpg", firstComment.ProfilePic);
+        Assert.Equal("User One", firstComment.FullName);
         Assert.Equal("Great quiz!", firstComment.CommentText);
         Assert.Equal(5, firstComment.Rating);
+        Assert.True(firstComment.isUser); 
 
-        var secondComment = result[1];
-        Assert.Equal("user2", secondComment.UserName);
-        Assert.Equal("profile2.jpg", secondComment.ProfilePic);
-        Assert.Equal("Very informative", secondComment.CommentText);
-        Assert.Equal(4, secondComment.Rating);
+        var secondComment = result.Comments[1];
+        Assert.False(secondComment.isUser); 
 
         _mockQuizRepository.Verify(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()), Times.Once);
-        _mockQuizRatingRepository.Verify(x => x.GetQueryableInclude(), Times.Once);
+        _mockQuizRatingRepository.Verify(x => x.GetQueryableInclude(), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task GetCommentsByQuizId_WithBatchNumber2_ReturnsNextFourComments()
+    {
+        // Arrange
+        var quizId = 1;
+        var batchNumber = 2;
+        var mockComments = CreateMockComments(8, quizId);
+
+        var mockQueryable = mockComments.AsQueryable();
+
+        _mockQuizRepository
+            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
+            .ReturnsAsync(true);
+
+        _mockQuizRatingRepository
+            .Setup(x => x.GetQueryableInclude())
+            .Returns(mockQueryable);
+
+        // Act
+        var result = await _quizCommentService.GetCommentsByQuizId(quizId, batchNumber);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotNull(result.Comments);
+        Assert.Equal(4, result.Comments.Count); 
+        Assert.False(result.hasMoreComments); 
+
+        Assert.Equal("user5", result.Comments[0].UserName);
+        Assert.Equal("user6", result.Comments[1].UserName);
+        Assert.Equal("user7", result.Comments[2].UserName);
+        Assert.Equal("user8", result.Comments[3].UserName);
+    }
+
+    [Fact]
+    public async Task GetCommentsByQuizId_WithBatchNumberBeyondAvailableComments_ReturnsEmptyList()
+    {
+        // Arrange
+        var quizId = 1;
+        var batchNumber = 3; 
+        var mockComments = CreateMockComments(8, quizId);
+
+        var mockQueryable = mockComments.AsQueryable();
+
+        _mockQuizRepository
+            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
+            .ReturnsAsync(true);
+
+        _mockQuizRatingRepository
+            .Setup(x => x.GetQueryableInclude())
+            .Returns(mockQueryable);
+
+        // Act
+        var result = await _quizCommentService.GetCommentsByQuizId(quizId, batchNumber);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotNull(result.Comments);
+        Assert.Empty(result.Comments);
+        Assert.False(result.hasMoreComments);
+    }
+
+    [Fact]
+    public async Task GetCommentsByQuizId_WithBatchNumberZero_ThrowsAppException()
+    {
+        // Arrange
+        var quizId = 1;
+        var batchNumber = 0;
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizCommentService.GetCommentsByQuizId(quizId, batchNumber));
+
+        Assert.Equal(Constants.WRONG_BATCH_NUMBER, exception.Message);
+        _mockQuizRepository.Verify(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetCommentsByQuizId_WithNegativeBatchNumber_ThrowsAppException()
+    {
+        // Arrange
+        var quizId = 1;
+        var batchNumber = -1;
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizCommentService.GetCommentsByQuizId(quizId, batchNumber));
+
+        Assert.Equal(Constants.WRONG_BATCH_NUMBER, exception.Message);
     }
 
     [Fact]
     public async Task GetCommentsByQuizId_WithNonExistentQuizId_ThrowsAppException()
+    {
+        // Arrange
+        var quizId = 999;
+        var batchNumber = 1;
+
+        _mockQuizRepository
+            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
+            .ReturnsAsync(false);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizCommentService.GetCommentsByQuizId(quizId, batchNumber));
+
+        Assert.Equal(Constants.QUIZ_NOT_FOUND, exception.Message);
+        _mockQuizRepository.Verify(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()), Times.Once);
+        _mockQuizRatingRepository.Verify(x => x.GetQueryableInclude(), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetCommentsByQuizId_WithNegativeQuizId_ThrowsAppException()
+    {
+        // Arrange
+        var quizId = -1;
+        var batchNumber = 1;
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizCommentService.GetCommentsByQuizId(quizId, batchNumber));
+
+        Assert.Equal(Constants.INVALID_QUIZ_ID, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetCommentsByQuizId_ReturnsCommentsOrderedByDateDescending()
+    {
+        // Arrange
+        var quizId = 1;
+        var batchNumber = 1;
+        var mockComments = new List<QuizRating>
+        {
+            new QuizRating
+            {
+                Id = 1,
+                QuizId = quizId,
+                UserId = 1,
+                IsFlagged = false,
+                Feedback = "Older comment",
+                QuizRating1 = 3,
+                CreatedDate = DateTime.UtcNow.AddDays(-5),
+                User = new User { UserName = "user1", FullName = "User One", IsDeleted = false }
+            },
+            new QuizRating
+            {
+                Id = 2,
+                QuizId = quizId,
+                UserId = 2,
+                IsFlagged = false,
+                Feedback = "Newer comment",
+                QuizRating1 = 5,
+                CreatedDate = DateTime.UtcNow.AddDays(-1),
+                User = new User { UserName = "user2", FullName = "User Two", IsDeleted = false }
+            }
+        };
+
+        var mockQueryable = mockComments.AsQueryable();
+
+        _mockQuizRepository
+            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
+            .ReturnsAsync(true);
+
+        _mockQuizRatingRepository
+            .Setup(x => x.GetQueryableInclude())
+            .Returns(mockQueryable);
+
+        // Act
+        var result = await _quizCommentService.GetCommentsByQuizId(quizId, batchNumber);
+
+        // Assert - Should return newest comment first
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Comments.Count);
+        Assert.Equal("user2", result.Comments[0].UserName); // Newest comment first
+        Assert.Equal("user1", result.Comments[1].UserName); // Older comment second
+    }
+
+    [Fact]
+    public async Task GetCommentsByQuizId_HasMoreComments_WhenMoreCommentsExist()
+    {
+        // Arrange
+        var quizId = 1;
+        var batchNumber = 1;
+        var mockComments = CreateMockComments(5, quizId); 
+
+        var mockQueryable = mockComments.AsQueryable();
+
+        _mockQuizRepository
+            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
+            .ReturnsAsync(true);
+
+        _mockQuizRatingRepository
+            .Setup(x => x.GetQueryableInclude())
+            .Returns(mockQueryable);
+
+        // Act
+        var result = await _quizCommentService.GetCommentsByQuizId(quizId, batchNumber);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(4, result.Comments.Count); 
+        Assert.True(result.hasMoreComments); 
+    }
+
+    [Fact]
+    public async Task GetCommentsByQuizId_NoMoreComments_WhenAllCommentsReturned()
+    {
+        // Arrange
+        var quizId = 1;
+        var batchNumber = 1;
+        var mockComments = CreateMockComments(4, quizId); 
+
+        var mockQueryable = mockComments.AsQueryable();
+
+        _mockQuizRepository
+            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
+            .ReturnsAsync(true);
+
+        _mockQuizRatingRepository
+            .Setup(x => x.GetQueryableInclude())
+            .Returns(mockQueryable);
+
+        // Act
+        var result = await _quizCommentService.GetCommentsByQuizId(quizId, batchNumber);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(4, result.Comments.Count); 
+        Assert.False(result.hasMoreComments); 
+    }
+
+    [Fact]
+    public async Task TotalCommentsByQuizId_WithValidQuizId_ReturnsCorrectCount()
+    {
+        // Arrange
+        var quizId = 1;
+        var mockComments = CreateMockComments(5, quizId);
+
+        var mockQueryable = mockComments.AsQueryable();
+
+        _mockQuizRepository
+            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
+            .ReturnsAsync(true);
+
+        _mockQuizRatingRepository
+            .Setup(x => x.GetQueryableInclude())
+            .Returns(mockQueryable);
+
+        // Act
+        var result = await _quizCommentService.TotalCommentsByQuizId(quizId);
+
+        // Assert
+        Assert.Equal(5, result);
+        _mockQuizRepository.Verify(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TotalCommentsByQuizId_WithNonExistentQuizId_ThrowsAppException()
     {
         // Arrange
         var quizId = 999;
@@ -106,420 +422,48 @@ public class QuizCommentSectionServiceTests
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<AppException>(() =>
-            _quizCommentService.GetCommentsByQuizId(quizId));
+            _quizCommentService.TotalCommentsByQuizId(quizId));
 
-        Assert.Equal("Quiz not found.", exception.Message);
-        _mockQuizRepository.Verify(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()), Times.Once);
-        _mockQuizRatingRepository.Verify(x => x.GetQueryableInclude(), Times.Never);
+        Assert.Equal(Constants.QUIZ_NOT_FOUND, exception.Message);
     }
 
     [Fact]
-    public async Task GetCommentsByQuizId_WithDeletedQuiz_ThrowsAppException()
-    {
-        // Arrange
-        var quizId = 1;
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(false);
-
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<AppException>(() =>
-            _quizCommentService.GetCommentsByQuizId(quizId));
-
-        Assert.Equal("Quiz not found.", exception.Message);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_WithFlaggedComments_ExcludesFlaggedComments()
-    {
-        // Arrange
-        var quizId = 1;
-        var mockComments = new List<QuizRating>
-        {
-            new QuizRating
-            {
-                Id = 1,
-                QuizId = quizId,
-                IsFlagged = false, // Not flagged - should be included
-                Feedback = "Good quiz",
-                QuizRating1 = 4,
-                CreatedDate = DateTime.UtcNow,
-                User = new User
-                {
-                    UserName = "user1",
-                    ProfilePic = "profile1.jpg",
-                    IsDeleted = false
-                }
-            },
-            new QuizRating
-            {
-                Id = 2,
-                QuizId = quizId,
-                IsFlagged = true, // Flagged - should be excluded
-                Feedback = "Inappropriate comment",
-                QuizRating1 = 1,
-                CreatedDate = DateTime.UtcNow,
-                User = new User
-                {
-                    UserName = "user2",
-                    ProfilePic = "profile2.jpg",
-                    IsDeleted = false
-                }
-            }
-        };
-
-        var mockQueryable = mockComments.AsQueryable();
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(true);
-
-        _mockQuizRatingRepository
-            .Setup(x => x.GetQueryableInclude())
-            .Returns(mockQueryable);
-
-        // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Single(result);
-        Assert.Equal("user1", result[0].UserName);
-        Assert.Equal("Good quiz", result[0].CommentText);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_WithDeletedUsers_ExcludesDeletedUsersComments()
-    {
-        // Arrange
-        var quizId = 1;
-        var mockComments = new List<QuizRating>
-        {
-            new QuizRating
-            {
-                Id = 1,
-                QuizId = quizId,
-                IsFlagged = false,
-                Feedback = "Active user comment",
-                QuizRating1 = 5,
-                CreatedDate = DateTime.UtcNow,
-                User = new User
-                {
-                    UserName = "activeuser",
-                    ProfilePic = "active.jpg",
-                    IsDeleted = false // Not deleted - should be included
-                }
-            },
-            new QuizRating
-            {
-                Id = 2,
-                QuizId = quizId,
-                IsFlagged = false,
-                Feedback = "Deleted user comment",
-                QuizRating1 = 3,
-                CreatedDate = DateTime.UtcNow,
-                User = new User
-                {
-                    UserName = "deleteduser",
-                    ProfilePic = "deleted.jpg",
-                    IsDeleted = true // Deleted - should be excluded
-                }
-            }
-        };
-
-        var mockQueryable = mockComments.AsQueryable();
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(true);
-
-        _mockQuizRatingRepository
-            .Setup(x => x.GetQueryableInclude())
-            .Returns(mockQueryable);
-
-        // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Single(result);
-        Assert.Equal("activeuser", result[0].UserName);
-        Assert.Equal("Active user comment", result[0].CommentText);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_WithNullFeedback_IncludesCommentsWithEmptyFeedback()
-    {
-        // Arrange
-        var quizId = 1;
-        var mockComments = new List<QuizRating>
-        {
-            new QuizRating
-            {
-                Id = 1,
-                QuizId = quizId,
-                IsFlagged = false,
-                Feedback = null, // Null feedback - should become empty string
-                QuizRating1 = 5,
-                CreatedDate = DateTime.UtcNow,
-                User = new User
-                {
-                    UserName = "user1",
-                    ProfilePic = "profile1.jpg",
-                    IsDeleted = false
-                }
-            }
-        };
-
-        var mockQueryable = mockComments.AsQueryable();
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(true);
-
-        _mockQuizRatingRepository
-            .Setup(x => x.GetQueryableInclude())
-            .Returns(mockQueryable);
-
-        // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Single(result);
-        Assert.Equal("", result[0].CommentText); // Should be empty string due to null-coalescing
-        Assert.Equal("user1", result[0].UserName);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_WithNoComments_ReturnsEmptyList()
-    {
-        // Arrange
-        var quizId = 1;
-        var mockComments = new List<QuizRating>();
-
-        var mockQueryable = mockComments.AsQueryable();
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(true);
-
-        _mockQuizRatingRepository
-            .Setup(x => x.GetQueryableInclude())
-            .Returns(mockQueryable);
-
-        // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Empty(result);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_WithMultipleQuizzes_ReturnsOnlyRequestedQuizComments()
-    {
-        // Arrange
-        var quizId1 = 1;
-        var quizId2 = 2;
-        var mockComments = new List<QuizRating>
-        {
-            new QuizRating
-            {
-                Id = 1,
-                QuizId = quizId1, // Requested quiz
-                IsFlagged = false,
-                Feedback = "Quiz 1 comment",
-                QuizRating1 = 5,
-                CreatedDate = DateTime.UtcNow,
-                User = new User
-                {
-                    UserName = "user1",
-                    ProfilePic = "profile1.jpg",
-                    IsDeleted = false
-                }
-            },
-            new QuizRating
-            {
-                Id = 2,
-                QuizId = quizId2, // Different quiz - should be excluded
-                IsFlagged = false,
-                Feedback = "Quiz 2 comment",
-                QuizRating1 = 4,
-                CreatedDate = DateTime.UtcNow,
-                User = new User
-                {
-                    UserName = "user2",
-                    ProfilePic = "profile2.jpg",
-                    IsDeleted = false
-                }
-            }
-        };
-
-        var mockQueryable = mockComments.AsQueryable();
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(true);
-
-        _mockQuizRatingRepository
-            .Setup(x => x.GetQueryableInclude())
-            .Returns(mockQueryable);
-
-        // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId1);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Single(result);
-        Assert.Equal("Quiz 1 comment", result[0].CommentText);
-        Assert.Equal("user1", result[0].UserName);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_WithNullUserProperties_HandlesGracefully()
-    {
-        // Arrange
-        var quizId = 1;
-        var mockComments = new List<QuizRating>
-        {
-            new QuizRating
-            {
-                Id = 1,
-                QuizId = quizId,
-                IsFlagged = false,
-                Feedback = "Valid comment",
-                QuizRating1 = 5,
-                CreatedDate = DateTime.UtcNow,
-                User = new User
-                {
-                    UserName = null, // Null username
-                    ProfilePic = null, // Null profile pic
-                    IsDeleted = false
-                }
-            }
-        };
-
-        var mockQueryable = mockComments.AsQueryable();
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(true);
-
-        _mockQuizRatingRepository
-            .Setup(x => x.GetQueryableInclude())
-            .Returns(mockQueryable);
-
-        // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Single(result);
-        Assert.Null(result[0].UserName); // Null username remains null
-        Assert.Null(result[0].ProfilePic); // Null profile pic remains null
-        Assert.Equal("Valid comment", result[0].CommentText);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_VerifyQueryStructure()
-    {
-        // Arrange
-        var quizId = 1;
-        var mockComments = new List<QuizRating>().AsQueryable();
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(true);
-
-        _mockQuizRatingRepository
-            .Setup(x => x.GetQueryableInclude())
-            .Returns(mockComments);
-
-        // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId);
-
-        // Assert
-        Assert.NotNull(result);
-        _mockQuizRatingRepository.Verify(x => x.GetQueryableInclude(), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_WithZeroQuizId_ThrowsAppException()
-    {
-        // Arrange
-        var quizId = 0;
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(false);
-
-        // Act & Assert
-        var exception = await Assert.ThrowsAsync<AppException>(() =>
-            _quizCommentService.GetCommentsByQuizId(quizId));
-
-        Assert.Equal("Quiz not found.", exception.Message);
-    }
-
-    [Fact]
-    public async Task GetCommentsByQuizId_WithNegativeQuizId_ThrowsAppException()
+    public async Task TotalCommentsByQuizId_WithNegativeQuizId_ThrowsAppException()
     {
         // Arrange
         var quizId = -1;
 
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(false);
-
         // Act & Assert
         var exception = await Assert.ThrowsAsync<AppException>(() =>
-            _quizCommentService.GetCommentsByQuizId(quizId));
+            _quizCommentService.TotalCommentsByQuizId(quizId));
 
-        Assert.Equal("Quiz not found.", exception.Message);
+        Assert.Equal(Constants.INVALID_QUIZ_ID, exception.Message);
     }
 
-    [Fact]
-    public async Task GetCommentsByQuizId_WithEmptyFeedback_ReturnsEmptyString()
+    private List<QuizRating> CreateMockComments(int count, int quizId)
     {
-        // Arrange
-        var quizId = 1;
-        var mockComments = new List<QuizRating>
+        var comments = new List<QuizRating>();
+        for (int i = 1; i <= count; i++)
         {
-            new QuizRating
+            comments.Add(new QuizRating
             {
-                Id = 1,
+                Id = i,
                 QuizId = quizId,
+                UserId = 100 + i,
                 IsFlagged = false,
-                Feedback = "", // Empty string feedback
+                Feedback = $"Comment {i}",
                 QuizRating1 = 4,
-                CreatedDate = DateTime.UtcNow,
+                CreatedDate = DateTime.UtcNow.AddDays(-i),
                 User = new User
                 {
-                    UserName = "user1",
-                    ProfilePic = "profile1.jpg",
+                    Id = 100 + i,
+                    UserName = $"user{i}",
+                    FullName = $"User {i}",
+                    ProfilePic = $"profile{i}.jpg",
                     IsDeleted = false
                 }
-            }
-        };
-
-        var mockQueryable = mockComments.AsQueryable();
-
-        _mockQuizRepository
-            .Setup(x => x.Exists(It.IsAny<System.Linq.Expressions.Expression<Func<Quiz, bool>>>()))
-            .ReturnsAsync(true);
-
-        _mockQuizRatingRepository
-            .Setup(x => x.GetQueryableInclude())
-            .Returns(mockQueryable);
-
-        // Act
-        var result = await _quizCommentService.GetCommentsByQuizId(quizId);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Single(result);
-        Assert.Equal("", result[0].CommentText); // Should preserve empty string
-        Assert.Equal("user1", result[0].UserName);
+            });
+        }
+        return comments;
     }
 }

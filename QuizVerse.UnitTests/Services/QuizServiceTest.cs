@@ -11,12 +11,14 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 using QuizVerse.Infrastructure.Mappings;
 using QuizVerse.Infrastructure.Repository;
 using System.Security.Claims;
 using System.Text.Json;
 using Xunit;
+using System.Linq.Expressions;
 namespace QuizVerse.UnitTests.Services;
 
 public class QuizServiceTests
@@ -61,6 +63,7 @@ public class QuizServiceTests
         var quizToQuestionMapRepo = new GenericRepository<QuizToBaseQuestionMap>(_context);
         var quizAttemptedRepo = new GenericRepository<QuizAttempted>(_context);
         var questionIssueReportRepo = new GenericRepository<QuestionIssueReport>(_context);
+        var quizIssueReportRepo = new GenericRepository<QuizIssueReport>(_context);
         var quizRatingRepo = new GenericRepository<QuizRating>(_context);
 
         _quizService = new QuizService(
@@ -70,6 +73,7 @@ public class QuizServiceTests
             quizToQuestionMapRepo,
             quizAttemptedRepo,
             questionIssueReportRepo,
+            quizIssueReportRepo,
             quizRatingRepo,
             _mapper,
             _sqlQueryRepoMock.Object,
@@ -797,5 +801,186 @@ public class QuizServiceTests
             prompt.Contains("No answer was provided.") &&
             prompt.Contains(request.CorrectAnswer)
         )), Times.Once);
+    }
+
+    [Fact]
+    public async Task AddQuizReport_ShouldReturnTrue_WhenValidRequest()
+    {
+        // Arrange
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 1,
+            Reason = "Inappropriate content"
+        };
+
+        // Act
+        var result = await _quizService.AddQuizReport(quizReportRequest);
+
+        // Assert
+        Assert.True(result);
+
+        var addedReport = await _context.QuizIssueReports
+            .FirstOrDefaultAsync(r => r.QuizId == quizReportRequest.QuizId && r.UserId == 1);
+
+        Assert.NotNull(addedReport);
+        Assert.Equal(quizReportRequest.Reason, addedReport.Reason);
+        Assert.Equal((int)QuestionOrQuizIssueReportSeverity.UnderProcessing, addedReport.Severity);
+        Assert.Equal((int)QuestionOrQuizIssueReportStatus.Pending, addedReport.Status);
+        Assert.True(addedReport.Id > 0);
+    }
+
+    [Fact]
+    public async Task AddQuizReport_ShouldThrowAppException_WhenQuizNotFound()
+    {
+        // Arrange
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 999, // Non-existent quiz ID
+            Reason = "Inappropriate content"
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.AddQuizReport(quizReportRequest));
+
+        Assert.Equal(Constants.QUIZ_NOT_FOUND, exception.Message);
+    }
+
+    [Fact]
+    public async Task AddQuizReport_ShouldThrowAppException_WhenQuizIsInactive()
+    {
+        // Arrange
+        var inactiveQuiz = new Quiz
+        {
+            Id = 3,
+            Name = "Inactive Quiz",
+            Description = "This quiz is inactive",
+            CategoryId = 1,
+            DifficultyLevelId = 1,
+            TotalQuestion = 5,
+            Status = (int)QuizStatus.Inactive, 
+            IsDeleted = false
+        };
+
+        _context.Quizzes.Add(inactiveQuiz);
+        await _context.SaveChangesAsync();
+
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 3,
+            Reason = "Inappropriate content"
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.AddQuizReport(quizReportRequest));
+
+        Assert.Equal(Constants.QUIZ_NOT_FOUND, exception.Message);
+    }
+
+    [Fact]
+    public async Task AddQuizReport_ShouldThrowAppException_WhenQuizIsDeleted()
+    {
+        // Arrange
+        var deletedQuiz = new Quiz
+        {
+            Id = 4,
+            Name = "Deleted Quiz",
+            Description = "This quiz is deleted",
+            CategoryId = 1,
+            DifficultyLevelId = 1,
+            TotalQuestion = 5,
+            Status = (int)QuizStatus.Active,
+            IsDeleted = true 
+        };
+
+        _context.Quizzes.Add(deletedQuiz);
+        await _context.SaveChangesAsync();
+
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 4,
+            Reason = "Inappropriate content"
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.AddQuizReport(quizReportRequest));
+
+        Assert.Equal(Constants.QUIZ_NOT_FOUND, exception.Message);
+    }
+
+    [Fact]
+    public async Task AddQuizReport_ShouldSetCorrectDefaultValues_WhenReportIsAdded()
+    {
+        // Arrange
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 1,
+            Reason = "Technical issues with the quiz"
+        };
+
+        // Act
+        var result = await _quizService.AddQuizReport(quizReportRequest);
+
+        // Assert
+        Assert.True(result);
+
+        var addedReport = await _context.QuizIssueReports
+            .FirstOrDefaultAsync(r => r.QuizId == quizReportRequest.QuizId && r.UserId == 1);
+
+        Assert.NotNull(addedReport);
+        Assert.Equal((int)QuestionOrQuizIssueReportSeverity.UnderProcessing, addedReport.Severity);
+        Assert.Equal((int)QuestionOrQuizIssueReportStatus.Pending, addedReport.Status);
+        Assert.Equal(1, addedReport.UserId);
+        Assert.InRange(addedReport.CreatedDate, DateTime.UtcNow.AddMinutes(-1), DateTime.UtcNow.AddMinutes(1));
+    }
+
+    [Fact]
+    public async Task AddQuizReport_ShouldAllowMultipleReports_ForDifferentQuizzesFromSameUser()
+    {
+        // Arrange
+        var secondQuiz = new Quiz
+        {
+            Id = 2,
+            Name = "Second Quiz",
+            Description = "Another sample quiz",
+            CategoryId = 1,
+            DifficultyLevelId = 1,
+            TotalQuestion = 3,
+            Status = (int)QuizStatus.Active,
+            IsDeleted = false
+        };
+
+        _context.Quizzes.Add(secondQuiz);
+        await _context.SaveChangesAsync();
+
+        var firstReport = new QuizReportRequestDto
+        {
+            QuizId = 1,
+            Reason = "First report"
+        };
+
+        var secondReport = new QuizReportRequestDto
+        {
+            QuizId = 2,
+            Reason = "Second report"
+        };
+
+        // Act
+        var firstResult = await _quizService.AddQuizReport(firstReport);
+        var secondResult = await _quizService.AddQuizReport(secondReport);
+
+        // Assert
+        Assert.True(firstResult);
+        Assert.True(secondResult);
+
+        var userReports = await _context.QuizIssueReports
+            .Where(r => r.UserId == 1)
+            .ToListAsync();
+
+        Assert.Equal(2, userReports.Count);
+        Assert.Contains(userReports, r => r.QuizId == 1 && r.Reason == "First report");
+        Assert.Contains(userReports, r => r.QuizId == 2 && r.Reason == "Second report");
     }
 }
