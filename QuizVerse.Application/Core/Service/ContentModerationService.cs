@@ -24,7 +24,7 @@ public class ContentModerationService(IGenericRepository<QuizIssueReport> _repor
     private IQueryable<QuizIssueReport> GetQuizReportData(PageListRequest query)
     {
         IQueryable<QuizIssueReport> quizIssueReportsQuery = _reportedQuizRepository
-            .GetQueryableInclude(q => q.Quiz, q => q.User, q => q.Quiz.CreatedByNavigation);
+            .GetQueryableInclude(q => q.Quiz, q => q.User, q => q.Quiz.CreatedByNavigation, q => q.ModifiedByNavigation);
 
         // Sorting
         if (!string.IsNullOrEmpty(query.SortColumn))

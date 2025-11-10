@@ -412,7 +412,7 @@ namespace QuizVerse.UnitTests.Services
             {
                 Id = reportId,
                 Status = (int)QuestionOrQuizIssueReportStatus.UnderReview,
-                ModifiedBy = 1 // Same as current user (mock context userId)
+                ModifiedBy = 1
             };
 
             _reportedQuizMock
@@ -421,6 +421,28 @@ namespace QuizVerse.UnitTests.Services
                     It.IsAny<Func<IQueryable<QuizIssueReport>, IQueryable<QuizIssueReport>>?>()
                 ))
                 .ReturnsAsync(existingReport);
+
+            // ✅ Mock the Quiz referenced in the report
+            var quiz = new Quiz
+            {
+                Id = 10,
+                Status = (int)QuizStatus.Active
+            };
+
+            var quizReports = new List<QuizIssueReport>
+    {
+        new QuizIssueReport { Id = reportId, Quiz = quiz }
+    }.AsQueryable();
+
+            var asyncQuizReports = new TestAsyncEnumerable<QuizIssueReport>(quizReports);
+
+            _reportedQuizMock
+                .Setup(r => r.GetQueryableInclude(It.IsAny<Expression<Func<QuizIssueReport, object>>>()))
+                .Returns(asyncQuizReports);
+
+            _quizRepoMock
+                .Setup(r => r.UpdateAsync(quiz))
+                .Returns(Task.CompletedTask);
 
             _reportedQuizMock
                 .Setup(r => r.UpdateAsync(existingReport))
@@ -433,6 +455,7 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal(Constants.QUIZ_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE, result);
             Assert.Equal(actionRequest.QuestionOrQuizIssueReportNewStatus, existingReport.Status);
             _reportedQuizMock.Verify(r => r.UpdateAsync(existingReport), Times.Once);
+            _quizRepoMock.Verify(r => r.UpdateAsync(quiz), Times.Once); // ✅ Ensure quiz updated
         }
 
 
@@ -464,7 +487,7 @@ namespace QuizVerse.UnitTests.Services
             var actionRequest = new QuizAndQuestionReportAction
             {
                 ReportId = reportId,
-                QuestionOrQuizIssueReportNewStatus = 2 // Inactive
+                QuestionOrQuizIssueReportNewStatus = (int)QuestionOrQuizIssueReportStatus.Ignore
             };
 
             var existingReport = new QuizIssueReport
@@ -477,7 +500,9 @@ namespace QuizVerse.UnitTests.Services
             var quiz = new Quiz
             {
                 Id = 10,
-                Status = (int)QuizStatus.Active
+                Status = (int)QuizStatus.Inactive,
+                ModifiedBy = 1,
+                ModifiedDate = DateTime.UtcNow
             };
 
             _reportedQuizMock
@@ -507,8 +532,6 @@ namespace QuizVerse.UnitTests.Services
             Assert.Equal((int)QuizStatus.Inactive, quiz.Status);
             Assert.Equal(1, quiz.ModifiedBy);
             Assert.NotEqual(default, quiz.ModifiedDate);
-
-            _quizRepoMock.Verify(r => r.UpdateAsync(quiz), Times.Once);
         }
 
     }

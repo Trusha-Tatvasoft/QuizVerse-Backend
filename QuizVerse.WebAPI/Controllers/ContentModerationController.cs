@@ -25,8 +25,8 @@ public class ContentModerationController(IContentModerationService _contentModer
         });
     }
 
-    [HttpPut("update-question_report_action")]
-    public async Task<IActionResult> UpdateQuestionReportAction([FromBody] QuizAndQuestionReportAction actionRequest)
+    [HttpPut("update-quiz-report-action")]
+    public async Task<IActionResult> UpdateQuizReportAction([FromBody] QuizAndQuestionReportAction actionRequest)
     {
         return Ok(new ApiResponse<string>
         {

@@ -308,7 +308,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => ToTitleCase(src.BattleName)));
 
         CreateMap<User, SearchUserResponseDto>()
-                .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.UserPerformanceDetail != null ? src.UserPerformanceDetail.TotalXp: 0));
+                .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.UserPerformanceDetail != null ? src.UserPerformanceDetail.TotalXp : 0));
 
         CreateMap<RawBattleQuestionDto, BattleQuestionResponseDto>()
             .ForMember(dest => dest.Options, opt => opt.Ignore())
@@ -425,7 +425,8 @@ public class MappingProfile : Profile
                 .ForMember(dest => dest.Reporter, opt => opt.MapFrom(src => src.User.FullName))
                 .ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
-                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
+                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate))
+                .ForMember(dest => dest.ReviewedBy, opt => opt.MapFrom(src => src.ModifiedBy));
         #endregion
     }
 
