@@ -146,6 +146,11 @@ public class ContentModerationService(
     {
         QuestionIssueReport report = await _reportedQuestionRepository.GetAsync(q => q.Id == actionRequest.ReportId)
             ?? throw new AppException(Constants.NO_DATA_FOUND, StatusCodes.Status404NotFound);
+            
+        if(report.Severity == (int)QuestionOrQuizIssueReportSeverity.UnderProcessing)
+        {
+            throw new AppException(Constants.SEVERITY_UNDER_PROCESS_WARNING);
+        }
 
         // Final states: Accepted or Ignored cannot be modified 
         if (report.Status == (int)QuestionOrQuizIssueReportStatus.Accepted ||

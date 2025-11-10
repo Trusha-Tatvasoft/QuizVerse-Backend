@@ -602,6 +602,6 @@ public static class Constants
     public const string QUESTION_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE = "Action Updated Successfully!!";
     public const string QUESTION_ISSUE_REPORT_FINALIZED_INFO = "This report has already been finalized and cannot be modified.";
     public const string QUESTION_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT = "Only the assigned reviewer or SuperAdmin can update this report.";
-
+    public const string SEVERITY_UNDER_PROCESS_WARNING = "Severity under process!, Yow can wait for some time";
     #endregion
 }
