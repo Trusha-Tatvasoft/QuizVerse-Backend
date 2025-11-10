@@ -6,6 +6,7 @@ using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
@@ -60,7 +61,7 @@ public class QuizCommentSectionService(
 
         List<QuizCommentsDto> comments = _quizRatingRepository
             .GetQueryableInclude()
-            .Where(q => q.QuizId == quizId && q.IsFlagged == false && q.User.IsDeleted == false)
+            .Where(q => q.QuizId == quizId && q.Status != (int)QuizRatingStatus.Pending && q.Status != (int)QuizRatingStatus.Accepted && q.User.IsDeleted == false)
             .Include(q => q.User)
             .OrderByDescending(q => q.CreatedDate)
             .Skip(skipCount)
