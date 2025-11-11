@@ -98,5 +98,19 @@ public class ContentModerationController(IContentModerationService _contentModer
             Data = await _contentModerationService.GetAffectedQuizAndBattle(queId)
         });
     }
+
+    [HttpPost("update-reported-question/{reportId:int}")]
+    public async Task<IActionResult> UpdateReportedQuestion(int reportId, [FromBody] QuestionRequestDTO dto)
+    {
+        ApiResponse<object> response = new()
+        {
+            Result = true,
+            StatusCode = StatusCodes.Status200OK,
+            Message = await _contentModerationService.UpdateReportedQuestion(reportId, dto),
+            Data = null
+        };
+
+        return Ok(response);
+    }
     #endregion
 }

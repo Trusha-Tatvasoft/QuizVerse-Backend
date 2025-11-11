@@ -12,4 +12,5 @@ public interface IContentModerationService
     public Task<string> UpdateQuestionReportAction(QuizAndQuestionReportAction actionRequest);
     public Task<QuestionIssuePreviewRequestDto> GetQuestionIssueReportPreview(int queId);
     public Task<List<ActiveQuizBattleAffectedDTO>> GetAffectedQuizAndBattle(int queId);
+    public Task<string> UpdateReportedQuestion(int reportId,QuestionRequestDTO dto);
 }

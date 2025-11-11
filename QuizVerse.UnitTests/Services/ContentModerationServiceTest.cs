@@ -625,5 +625,159 @@ namespace QuizVerse.UnitTests.Services
         }
         #endregion
 
+        #region UpdateReportedQuestion Tests
+        [Fact]
+        public async Task UpdateReportedQuestion_ShouldThrowNotFound_WhenReportDoesNotExist()
+        {
+            // Arrange
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync((QuestionIssueReport)null!);
+
+            var dto = new QuestionRequestDTO { QuestionText = "Test" };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateReportedQuestion(99, dto));
+
+            Assert.Equal(Constants.NO_DATA_FOUND, ex.Message);
+            Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
+        }
+
+        [Fact]
+        public async Task UpdateReportedQuestion_ShouldThrow_WhenSeverityUnderProcessing()
+        {
+            var report = new QuestionIssueReport
+            {
+                Id = 1,
+                Severity = (int)QuestionOrQuizIssueReportSeverity.UnderProcessing
+            };
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync(report);
+
+            var dto = new QuestionRequestDTO { QuestionText = "UnderProcessing" };
+
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateReportedQuestion(1, dto));
+
+            Assert.Equal(Constants.SEVERITY_UNDER_PROCESS_WARNING, ex.Message);
+        }
+
+        [Theory]
+        [InlineData((int)QuestionOrQuizIssueReportStatus.Accepted)]
+        [InlineData((int)QuestionOrQuizIssueReportStatus.Ignore)]
+        public async Task UpdateReportedQuestion_ShouldThrow_WhenFinalizedStatus(int finalizedStatus)
+        {
+            var report = new QuestionIssueReport
+            {
+                Id = 2,
+                Status = finalizedStatus
+            };
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync(report);
+
+            var dto = new QuestionRequestDTO { QuestionText = "Finalized" };
+
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateReportedQuestion(2, dto));
+
+            Assert.Equal(Constants.QUESTION_ISSUE_REPORT_FINALIZED_INFO, ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateReportedQuestion_ShouldThrow_WhenUnderReviewByDifferentUser_AndNotSuperAdmin()
+        {
+            var report = new QuestionIssueReport
+            {
+                Id = 3,
+                Status = (int)QuestionOrQuizIssueReportStatus.UnderReview,
+                ModifiedBy = 999 // different user than current mock (1)
+            };
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync(report);
+
+            var dto = new QuestionRequestDTO { QuestionText = "Unauthorized" };
+
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateReportedQuestion(3, dto));
+
+            Assert.Equal(Constants.QUESTION_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT, ex.Message);
+        }
+
+        [Fact]
+        public async Task UpdateReportedQuestion_ShouldSucceed_WhenValidReport()
+        {
+            // Arrange
+            var report = new QuestionIssueReport
+            {
+                Id = 10,
+                QuestionId = 100,
+                Status = (int)QuestionOrQuizIssueReportStatus.Pending,
+                Severity = (int)QuestionOrQuizIssueReportSeverity.Medium,
+                ModifiedBy = 1 // current user from context
+            };
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync(report);
+
+            _questionPoolServiceMock
+                .Setup(q => q.CreateOrUpdateQuestion(report.QuestionId, It.IsAny<QuestionRequestDTO>()))
+                .ReturnsAsync("Question updated successfully");
+
+            // The UpdateQuestionReportAction method exists inside same service
+            // So we mock it indirectly by spying on repository update call
+            _reportedQuestionRepoMock
+                .Setup(r => r.UpdateAsync(It.IsAny<QuestionIssueReport>()))
+                .Returns(Task.CompletedTask);
+
+            var dto = new QuestionRequestDTO { QuestionText = "Valid Update" };
+
+            // Act
+            var result = await _service.UpdateReportedQuestion(report.Id, dto);
+
+            // Assert
+            Assert.Contains("Question updated successfully", result);
+            Assert.Contains(Constants.QUESTION_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE, result);
+        }
+
+        [Fact]
+        public async Task UpdateReportedQuestion_ShouldRollbackAndThrow_WhenQuestionUpdateFails()
+        {
+            // Arrange
+            var report = new QuestionIssueReport
+            {
+                Id = 20,
+                QuestionId = 200,
+                Status = (int)QuestionOrQuizIssueReportStatus.Pending,
+                Severity = (int)QuestionOrQuizIssueReportSeverity.Medium,
+                ModifiedBy = 1
+            };
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.GetAsync(It.IsAny<Expression<Func<QuestionIssueReport, bool>>>(), null))
+                .ReturnsAsync(report);
+
+            _questionPoolServiceMock
+                .Setup(q => q.CreateOrUpdateQuestion(report.QuestionId, It.IsAny<QuestionRequestDTO>()))
+                .ThrowsAsync(new Exception("Failed to update question"));
+
+            _reportedQuestionRepoMock
+                .Setup(r => r.UpdateAsync(It.IsAny<QuestionIssueReport>()))
+                .Returns(Task.CompletedTask);
+
+            var dto = new QuestionRequestDTO { QuestionText = "Rollback Test" };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppException>(() => _service.UpdateReportedQuestion(report.Id, dto));
+
+            Assert.Contains("Failed to update question", ex.Message);
+            Assert.Contains(Constants.REVERT_TO_PENDING_REPORT_QUESTION_STATUS, ex.Message);
+        }
+        #endregion
+
+
     }
 }

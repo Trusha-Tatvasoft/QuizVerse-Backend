@@ -146,8 +146,8 @@ public class ContentModerationService(
     {
         QuestionIssueReport report = await _reportedQuestionRepository.GetAsync(q => q.Id == actionRequest.ReportId)
             ?? throw new AppException(Constants.NO_DATA_FOUND, StatusCodes.Status404NotFound);
-            
-        if(report.Severity == (int)QuestionOrQuizIssueReportSeverity.UnderProcessing)
+
+        if (report.Severity == (int)QuestionOrQuizIssueReportSeverity.UnderProcessing)
         {
             throw new AppException(Constants.SEVERITY_UNDER_PROCESS_WARNING);
         }
@@ -160,8 +160,8 @@ public class ContentModerationService(
         }
 
         // If UnderReview: only reviewer or superadmin can update 
-        if (report.Status == (int)QuestionOrQuizIssueReportStatus.UnderReview 
-            && report.ModifiedBy != UserId 
+        if (report.Status == (int)QuestionOrQuizIssueReportStatus.UnderReview
+            && report.ModifiedBy != UserId
             && !string.Equals(UserRole, "superadmin", StringComparison.OrdinalIgnoreCase))
         {
             throw new AppException(Constants.QUESTION_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT);
@@ -211,6 +211,60 @@ public class ContentModerationService(
         };
         return _mapper.Map<List<ActiveQuizBattleAffectedDTO>>
             (await _sqlQueryRepository.SqlQueryListAsync<ActiveQuizBattleAffectedDTO>(query, parameters));
+    }
+    #endregion
+
+    #region Update Reported Question
+    public async Task<string> UpdateReportedQuestion(int reportId, QuestionRequestDTO dto)
+    {
+        QuestionIssueReport report = await _reportedQuestionRepository.GetAsync(q => q.Id == reportId)
+           ?? throw new AppException(Constants.NO_DATA_FOUND, StatusCodes.Status404NotFound);
+
+        if (report.Severity == (int)QuestionOrQuizIssueReportSeverity.UnderProcessing)
+        {
+            throw new AppException(Constants.SEVERITY_UNDER_PROCESS_WARNING);
+        }
+
+        // Final states: Accepted or Ignored cannot be modified 
+        if (report.Status == (int)QuestionOrQuizIssueReportStatus.Accepted ||
+            report.Status == (int)QuestionOrQuizIssueReportStatus.Ignore)
+        {
+            throw new AppException(Constants.QUESTION_ISSUE_REPORT_FINALIZED_INFO);
+        }
+
+        // If UnderReview: only reviewer or superadmin can update 
+        if (report.Status == (int)QuestionOrQuizIssueReportStatus.UnderReview
+            && report.ModifiedBy != UserId
+            && !string.Equals(UserRole, "superadmin", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new AppException(Constants.QUESTION_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT);
+        }
+
+        try
+        {
+            var questionResponse = await _questionPoolService.CreateOrUpdateQuestion(report.QuestionId, dto);
+
+            var request = new QuizAndQuestionReportAction
+            {
+                ReportId = reportId,
+                QuestionOrQuizIssueReportNewStatus = (int)QuestionOrQuizIssueReportStatus.Accepted
+            };
+
+            var reportResponse = await UpdateQuestionReportAction(request);
+
+            return $"{questionResponse}\n{reportResponse}";
+        }
+        catch (Exception ex)
+        {
+            QuizAndQuestionReportAction request = new QuizAndQuestionReportAction
+            {
+                ReportId = reportId,
+                QuestionOrQuizIssueReportNewStatus = (int)QuestionOrQuizIssueReportStatus.Pending,
+            };
+
+            await UpdateQuestionReportAction(request);
+            throw new AppException($"{ex.Message}\n{ Constants.REVERT_TO_PENDING_REPORT_QUESTION_STATUS}");
+        }
     }
     #endregion
 }
