@@ -14,4 +14,6 @@ public class FilterDto
     public int? QuizDifficultyId { get; set; }
     public int? QuestionDifficultyId { get; set; }
     public int? QuestionTypeId { get; set; }
+    public QuestionOrQuizIssueReportSeverity? Severity { get; set; }
+    public QuestionOrQuizIssueReportStatus? QuestionOrQuizIssueReportStatus { get; set; }
 }

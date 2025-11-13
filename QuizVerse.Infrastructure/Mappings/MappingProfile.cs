@@ -1,4 +1,4 @@
-    using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
@@ -308,7 +308,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => ToTitleCase(src.BattleName)));
 
         CreateMap<User, SearchUserResponseDto>()
-                .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.UserPerformanceDetail != null ? src.UserPerformanceDetail.TotalXp: 0));
+                .ForMember(dest => dest.TotalXp, opt => opt.MapFrom(src => src.UserPerformanceDetail != null ? src.UserPerformanceDetail.TotalXp : 0));
 
         CreateMap<RawBattleQuestionDto, BattleQuestionResponseDto>()
             .ForMember(dest => dest.Options, opt => opt.Ignore())
@@ -418,7 +418,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => src.QuizRating1));
         #endregion
 
-        #region  QuizIssueReport
+        #region  Content Moderation
         CreateMap<QuizIssueReport, QuizReportIssueResponseDTO>()
                 .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Name))
                 .ForMember(dest => dest.Creator, opt => opt.MapFrom(src => src.Quiz.CreatedByNavigation.UserName))
@@ -426,6 +426,11 @@ public class MappingProfile : Profile
                 .ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
+
+        CreateMap<ActiveQuizBattleAffectedDTO, ActiveQuizBattleAffectedDTO>()
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => ToTitleCase(src.CategoryName)))
+            .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => ToTitleCase(src.QuizTitle)))
+            .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => ToTitleCase(src.QuizDifficultyLevel)));
         #endregion
     }
 

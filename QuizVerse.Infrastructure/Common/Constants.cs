@@ -598,6 +598,14 @@ public static class Constants
         };
     #endregion
 
+    #region Contest Moderation
+    public const string QUESTION_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE = "Action Updated Successfully!!";
+    public const string QUESTION_ISSUE_REPORT_FINALIZED_INFO = "This report has already been finalized and cannot be modified.";
+    public const string QUESTION_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT = "Only the assigned reviewer or SuperAdmin can update this report.";
+    public const string SEVERITY_UNDER_PROCESS_WARNING = "Severity under process!, Yow can wait for some time";
+    public const string REVERT_TO_PENDING_REPORT_QUESTION_STATUS = "Marked Reported question as Pending";
+    #endregion
+
     #region Flagged Comment
     public const string FLAGGED_COMMENT_NOT_FOUND = "Flagged comment not found.";
     public const string CAN_NOT_UPDATE_STATUS_COMMENT = "Can't update status of already updated comments.";
