@@ -13,4 +13,7 @@ public interface IContentModerationService
     public Task<QuestionIssuePreviewRequestDto> GetQuestionIssueReportPreview(int queId);
     public Task<List<ActiveQuizBattleAffectedDTO>> GetAffectedQuizAndBattle(int queId);
     public Task<string> UpdateReportedQuestion(int reportId,QuestionRequestDTO dto);
+    Task<PageListResponse<FlaggedCommentDto>> GetFlaggedComments(PageListRequest request);
+    Task<FlaggedCommentViewDto> GetFlaggedCommentById(int id);
+    Task UpdateFlaggedCommentStatus(UpdateFlaggedCommentStatusRequest request);
 }

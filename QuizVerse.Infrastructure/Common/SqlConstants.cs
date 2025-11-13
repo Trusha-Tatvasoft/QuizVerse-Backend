@@ -137,4 +137,12 @@ public class SqlConstants
     public const string GET_QUESTION_ISSUE_REPORT_PREVIEW_TEMPLATE = "SELECT * FROM {0}({{0}})";
     public const string GET_AFFECTED_QUIZ_AND_BATTLE_LIST_FUNCTION = "get_affected_quiz_and_battle_list";
     #endregion
+
+    #region Flagged Comments
+    public const string GET_FLAGGED_COMMENTS_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})";
+    public const string GET_FLAGGED_COMMENTS_FUNCTION = "get_flagged_comments";
+    public const string GET_FLAGGED_COMMENT_By_Id_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_id)";
+    public const string GET_FLAGGED_COMMENT_By_Id_FUNCTION = "get_flagged_comment_by_id";
+
+    #endregion
 }

@@ -7,6 +7,7 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers;
 
@@ -41,6 +42,47 @@ public class ContentModerationController(IContentModerationService _contentModer
         });
     }
     #endregion
+
+    #region FlaggedComments
+    [HttpPost("get-flagged-comments")]
+    public async Task<IActionResult> GetFlaggedComments([FromBody] PageListRequest request)
+    {
+        return Ok(new ApiResponse<PageListResponse<FlaggedCommentDto>>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = 200,
+            Data = await _contentModerationService.GetFlaggedComments(request)
+        });
+    }
+
+    [HttpGet("get-flagged-comment-by-id/{id}")]
+    public async Task<IActionResult> GetFlaggedCommentById(int id)
+    {
+        return Ok(new ApiResponse<FlaggedCommentViewDto>
+        {
+            Result = true,
+            Message = Constants.FETCH_SUCCESS,
+            StatusCode = 200,
+            Data = await _contentModerationService.GetFlaggedCommentById(id)
+        });
+    }
+
+    [HttpPut("update-flagged-comment-status")]
+    public async Task<IActionResult> UpdateFlaggedCommentStatus([FromBody] UpdateFlaggedCommentStatusRequest request)
+    {
+        await _contentModerationService.UpdateFlaggedCommentStatus(request);
+
+        return Ok(new ApiResponse<object>
+        {
+            Result = true,
+            Message = Constants.UPDATE_SUCCESS,
+            StatusCode = 200,
+            Data = null
+        });
+    }
+    #endregion
+
 
     #region QuestionReport
     [HttpPost("get-question-report-by-pagination")]

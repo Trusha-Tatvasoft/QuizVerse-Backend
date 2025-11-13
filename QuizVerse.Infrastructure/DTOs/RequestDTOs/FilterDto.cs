@@ -9,6 +9,7 @@ public class FilterDto
     public QuizStatus? QuizStatus { get; set; }
     public QuestionOrQuizIssueReportSeverity? IssueReportSeverity{ get; set; }
     public QuestionOrQuizIssueReportStatus? IssueReportStatus{ get; set; }
+    public QuizRatingStatus? CommentStatus { get; set; }
     public int? QuizCategoryId { get; set; }
     public int? QuizDifficultyId { get; set; }
     public int? QuestionDifficultyId { get; set; }
