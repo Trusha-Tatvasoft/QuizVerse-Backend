@@ -23,7 +23,9 @@ RETURNS TABLE (
     question_text VARCHAR,
     user_answer VARCHAR,
     correct_answer VARCHAR,
-    is_correct BOOLEAN
+    is_correct BOOLEAN,
+    report_id INT,
+    "IsEditable" BOOLEAN
 ) 
 AS $$
 BEGIN
@@ -54,7 +56,6 @@ BEGIN
         ) ca ON ca.question_id = bq.id
     ),
     historical_map AS (
-        -- Include questions that were in the map when attempt started
         SELECT 
             qbm.id AS quiz_que_id,
             bq.id AS base_question_id,
@@ -75,19 +76,45 @@ BEGIN
         WHERE qbm.quiz_id = p_quiz_id
           AND qbm.created_date <= qps.created_date
           AND (
-		    (qbm.is_deleted = false AND qbm.modified_date::timestamp <= qps.modified_date::timestamp)
-		    OR (qbm.is_deleted = true AND qbm.modified_date::timestamp >= qps.created_date::timestamp)
-		)
+              (qbm.is_deleted = false AND qbm.modified_date::timestamp <= qps.modified_date::timestamp)
+              OR (qbm.is_deleted = true AND qbm.modified_date::timestamp >= qps.created_date::timestamp)
+          )
+    ),
+    combined AS (
+        SELECT 
+            COALESCE(a.base_question_id, h.base_question_id) AS question_id,
+            COALESCE(a.question_text, h.question_text)::VARCHAR AS question_text,
+            a.given_answer::VARCHAR AS user_answer,
+            COALESCE(a.correct_answer, h.correct_answer)::VARCHAR AS correct_answer,
+            a.is_correct
+        FROM attempted a
+        FULL OUTER JOIN historical_map h 
+            ON a.base_question_id = h.base_question_id
     )
     SELECT 
-        COALESCE(attempted.base_question_id, historical_map.base_question_id) AS question_id,
-        COALESCE(attempted.question_text, historical_map.question_text)::VARCHAR AS question_text,
-        attempted.given_answer::VARCHAR AS user_answer,
-        COALESCE(attempted.correct_answer, historical_map.correct_answer)::VARCHAR AS correct_answer,
-        attempted.is_correct
-    FROM attempted
-    FULL OUTER JOIN historical_map 
-        ON attempted.base_question_id = historical_map.base_question_id
-    ORDER BY question_id ASC;
+        c.question_id,
+        c.question_text,
+        c.user_answer,
+        c.correct_answer,
+        c.is_correct,
+        qir.report_id,
+        COALESCE(qir."IsEditable", FALSE) AS "IsEditable"
+    FROM combined c
+    LEFT JOIN LATERAL (
+        SELECT 
+            qir2.id AS report_id,
+            CASE 
+                WHEN qir2.severity = 4 OR qir2.status = 4 THEN FALSE 
+                ELSE TRUE 
+            END AS "IsEditable"
+        FROM public."QuestionIssueReports" qir2
+        WHERE qir2.quiz_id = p_quiz_id
+          AND qir2.question_id = c.question_id
+          AND qir2.user_id = p_user_id
+          AND qir2.is_deleted = FALSE
+          AND qir2.status NOT IN (1, 2)
+        LIMIT 1
+    ) qir ON TRUE
+    ORDER BY c.question_id ASC;
 END;
 $$ LANGUAGE plpgsql STABLE;

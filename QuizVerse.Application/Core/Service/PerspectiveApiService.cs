@@ -72,7 +72,7 @@ public class PerspectiveApiService : IPerspectiveApiService
             Purpose = (int)AiApiPurpose.SeverityAnalysis,
         };
 
-        AiProcessLog aiProcessLog = _aiLogService.StartApiCall(aiApiCallStartDetail);
+        AiProcessLog aiProcessLog = _aiLogService.StartApiCall(aiApiCallStartDetail);   
 
         try
         {
@@ -84,13 +84,13 @@ public class PerspectiveApiService : IPerspectiveApiService
                 _logger.LogError("Perspective API error: {StatusCode}, {Content}",
                     response.StatusCode, errorContent);
 
-                _ = _aiLogService.EndApiCall(aiProcessLog, false);
+                 await _aiLogService.EndApiCall(aiProcessLog, false);
 
                 result.IsSuccess = false;
                 result.ErrorMessage = $"API returned {response.StatusCode}, {errorContent}";
                 return result;
             }
-            _ = _aiLogService.EndApiCall(aiProcessLog, true);
+            await _aiLogService.EndApiCall(aiProcessLog, true);
 
             var apiResponse = await response.Content.ReadFromJsonAsync<PerspectiveApiResponse>();
 
@@ -142,7 +142,7 @@ public class PerspectiveApiService : IPerspectiveApiService
             _logger.LogError(ex, "Error calling Perspective API for {ReportType} ID: {ReportId}",
                 reportDataDto.ReportType, reportDataDto.ReportId);
 
-            _ = _aiLogService.EndApiCall(aiProcessLog, false);
+            await _aiLogService.EndApiCall(aiProcessLog, false);
             result.IsSuccess = false;
             result.ErrorMessage = ex.Message;
         }

@@ -20,4 +20,8 @@ public class QuizQuestionReviewDTO
 
     [Column("is_correct")]
     public bool? IsCorrect { get; set; }
+
+    [Column("report_id")]
+    public int? ReportId { get; set; }
+    public bool IsEditable { get; set; }
 }
