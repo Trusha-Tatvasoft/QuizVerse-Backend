@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
@@ -7,7 +8,7 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidatorService _validator, ICommonService _commonService) : IAiQuestionGenerationService
+public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidatorService _validator, IFetchContentFromUrlService _fetchContentFromUrlService, ICommonService _commonService) : IAiQuestionGenerationService
 {
     public async Task<GenerateQuizResponseDto> GenerateFromPromptAsync(GenerateQuizRequest request)
     {
@@ -92,6 +93,32 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
                 StatusCode = 500
             };
         }
+    }
+    
+    public async Task<GenerateQuizResponseDto> GenerateQuestionUsingWebURL(GenerateQuestionUsingWebRequestDTO request)
+    {
+        if (string.IsNullOrEmpty(request.Url))
+        {
+            throw new AppException(Constants.INVALID_URL_PROVIDED, StatusCodes.Status404NotFound);
+        }
+
+        string Content = await _fetchContentFromUrlService.FetchAndValidateAsync(request.Url!);
+
+        if (string.IsNullOrEmpty(Content))
+        {
+            throw new AppException(Constants.WEB_CONTENT_NOT_FOUND, StatusCodes.Status404NotFound);
+        }
+        
+        GenerateQuizRequest questionGenerationRequest = new GenerateQuizRequest
+        {
+            Prompt = Content,
+            QuestionSpec = request.QuestionSpec,
+            Category = request.Category,
+            CategoryId = request.CategoryId
+        };
+        GenerateQuizResponseDto response = await GenerateFromPromptAsync(questionGenerationRequest);
+
+        return response;
     }
 
     #region Generate from PDF 

@@ -20,6 +20,11 @@ public class GenerateQuizRequest : GenerateQuestionRequestCommonFields
     public string? Prompt { get; set; }
 }
 
+public class  GenerateQuestionUsingWebRequestDTO: GenerateQuestionRequestCommonFields
+{
+    public string Url { get; set; } = null!;
+}
+
 public class GenerateQuizFromPDFRequest
 {
     [Required]

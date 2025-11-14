@@ -1,11 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
+using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
@@ -20,6 +22,10 @@ public class PerspectiveApiServiceTest
     private readonly Mock<HttpMessageHandler> _httpMessageHandlerMock;
     private readonly HttpClient _httpClient;
     private readonly PerspectiveApiService _service;
+    private readonly Mock<IAiLogService> _aiLogService;
+    private readonly Mock<IServiceScopeFactory> _serviceScopeFactoryMock;
+    private readonly Mock<IServiceScope> _serviceScopeMock;
+    private readonly Mock<IServiceProvider> _serviceProviderMock;
     private const string API_KEY = "test-api-key";
 
     public PerspectiveApiServiceTest()
@@ -27,6 +33,10 @@ public class PerspectiveApiServiceTest
         _loggerMock = new Mock<ILogger<PerspectiveApiService>>();
         _configurationMock = new Mock<IConfiguration>();
         _httpMessageHandlerMock = new Mock<HttpMessageHandler>();
+        _aiLogService = new Mock<IAiLogService>();
+        _serviceScopeFactoryMock = new Mock<IServiceScopeFactory>();
+        _serviceScopeMock = new Mock<IServiceScope>();
+        _serviceProviderMock = new Mock<IServiceProvider>();
 
         // Setup configuration
         _configurationMock.Setup(c => c["PerspectiveApi:ApiKey"]).Returns(API_KEY);
@@ -34,12 +44,24 @@ public class PerspectiveApiServiceTest
         // Setup HttpClient with mock handler
         _httpClient = new HttpClient(_httpMessageHandlerMock.Object);
 
+        // Setup scope -> provider -> service
+        _serviceProviderMock
+            .Setup(sp => sp.GetService(typeof(IAiLogService)))
+            .Returns(_aiLogService.Object);
+
+        _serviceScopeMock.Setup(s => s.ServiceProvider).Returns(_serviceProviderMock.Object);
+        _serviceScopeFactoryMock
+            .Setup(f => f.CreateScope())
+            .Returns(_serviceScopeMock.Object);
+
+        // Create service under test
         _service = new PerspectiveApiService(
             _httpClient,
             _configurationMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            _serviceScopeFactoryMock.Object);
     }
-
+    
     [Fact]
     public async Task AnalyzeTextAsync_WhenApiKeyIsNull_ReturnsFailureResult()
     {
@@ -47,7 +69,7 @@ public class PerspectiveApiServiceTest
         var configMock = new Mock<IConfiguration>();
         configMock.Setup(c => c["PerspectiveApi:ApiKey"]).Returns((string)null);
 
-        var service = new PerspectiveApiService(_httpClient, configMock.Object, _loggerMock.Object);
+        var service = new PerspectiveApiService(_httpClient, configMock.Object, _loggerMock.Object, _serviceScopeFactoryMock.Object);
 
         var reportData = new GcpApiReportDataDto
         {
@@ -219,7 +241,7 @@ public class PerspectiveApiServiceTest
         // Assert
         Assert.True(result.IsSuccess);
         Assert.Equal(QuestionOrQuizIssueReportSeverity.High, result.Severity);
-        Assert.Equal(0.8, result.AttributeScore); 
+        Assert.Equal(0.8, result.AttributeScore);
     }
 
     [Fact]
@@ -528,6 +550,38 @@ public class PerspectiveApiServiceTest
         Assert.True(result.IsFlagged);
     }
 
+    [Fact]
+    public async Task AnalyzeTextAsync_CallsAiLogService_StartAndEnd()
+    {
+        // Arrange
+        var reportData = new GcpApiReportDataDto
+        {
+            ReportId = 1,
+            ReportType = ReportType.QuizRatingFeedback,
+            ReportComment = "Simple test"
+        };
+
+        var apiResponse = new PerspectiveApiResponse
+        {
+            AttributeScores = new Dictionary<string, AttributeScore>
+            {
+                ["TOXICITY"] = new AttributeScore
+                {
+                    SummaryScore = new SummaryScore { Value = 0.2 }
+                }
+            }
+        };
+
+        SetupHttpResponse(HttpStatusCode.OK, apiResponse);
+
+        // Act
+        var result = await _service.AnalyzeTextAsync(reportData);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        _aiLogService.Verify(x => x.StartApiCall(It.IsAny<AiApiCallStartDetail>()), Times.Once);
+        _aiLogService.Verify(x => x.EndApiCall(It.IsAny<AiProcessLog>(), true), Times.Once);
+    }
 
     // Helper method to setup HTTP response
     private void SetupHttpResponse(HttpStatusCode statusCode, object content)

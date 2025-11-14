@@ -126,4 +126,23 @@ public class SqlConstants
     public const string GET_PENDING_GCP_REPORTS_FUNCTION = "get_pending_gcp_reports";
     public const string GET_PENDING_GCP_REPORTS_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}})";
     #endregion
+
+    #region Content Moderation
+    public const string GET_CONTENT_MODERATION_METRICS = "SELECT * FROM get_content_moderation_metrics()";
+    public const string GET_CONTENT_MODERATION_QUESTION_REPORT_LIST_FUNCTION = "get_content_moderation_question_report_list";
+    public const string GET_CONTENT_MODERATION_QUESTION_REPORT_LIST_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}}, {{5}})";
+    public const string GET_CONTENT_MODERATION_QUESTION_REPORT_TOTAL_COUNT_FUNCTION = "get_content_moderation_question_report_total_count";
+    public const string GET_CONTENT_MODERATION_QUESTION_REPORT_TOTAL_COUNT_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}})";
+    public const string GET_QUESTION_ISSUE_REPORT_PREVIEW_FUNCTION = "get_question_issue_report_preview";
+    public const string GET_QUESTION_ISSUE_REPORT_PREVIEW_TEMPLATE = "SELECT * FROM {0}({{0}})";
+    public const string GET_AFFECTED_QUIZ_AND_BATTLE_LIST_FUNCTION = "get_affected_quiz_and_battle_list";
+    #endregion
+
+    #region Flagged Comments
+    public const string GET_FLAGGED_COMMENTS_QUERY_TEMPLATE = "SELECT * FROM {0}({{0}}, {{1}}, {{2}}, {{3}}, {{4}})";
+    public const string GET_FLAGGED_COMMENTS_FUNCTION = "get_flagged_comments";
+    public const string GET_FLAGGED_COMMENT_By_Id_QUERY_TEMPLATE = "SELECT * FROM {0}(@p_id)";
+    public const string GET_FLAGGED_COMMENT_By_Id_FUNCTION = "get_flagged_comment_by_id";
+
+    #endregion
 }
