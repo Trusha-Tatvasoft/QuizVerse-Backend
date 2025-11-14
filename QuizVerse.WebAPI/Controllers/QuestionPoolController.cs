@@ -167,4 +167,30 @@ public class QuestionPoolController(IQuestionPoolService _questionPoolService, I
             Data = result.Data
         });
     }
+
+    [HttpPost("generate-question-using-web-url")]
+    [Consumes("application/json")]
+    public async Task<IActionResult> GenerateQuestionUsingWebURL([FromBody] GenerateQuestionUsingWebRequestDTO request)
+    {
+        var result = await _questionFromText.GenerateQuestionUsingWebURL(request);
+
+        if (!result.Success)
+        {
+            return StatusCode(result.StatusCode, new ApiResponse<object>
+            {
+                Result = false,
+                Message = result.Message,
+                StatusCode = result.StatusCode,
+                Data = null
+            });
+        }
+
+        return Ok(new ApiResponse<List<QuizQuestionDto>>
+        {
+            Result = true,
+            Message = result.Message,
+            StatusCode = 200,
+            Data = result.Data
+        });
+    }
 }
