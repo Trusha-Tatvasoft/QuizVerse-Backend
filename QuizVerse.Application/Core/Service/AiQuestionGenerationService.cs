@@ -1,16 +1,18 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidatorService _validator, IServiceScopeFactory _scopeFactory) : IAiQuestionGenerationService
+public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidatorService _validator, IServiceScopeFactory _scopeFactory, IFetchContentFromUrlService _fetchContentFromUrlService) : IAiQuestionGenerationService
 {
     public async Task<GenerateQuizResponseDto> GenerateFromPromptAsync(GenerateQuizRequest request)
     {
@@ -106,6 +108,32 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
                 StatusCode = 500
             };
         }
+    }
+    
+    public async Task<GenerateQuizResponseDto> GenerateQuestionUsingWebURL(GenerateQuestionUsingWebRequestDTO request)
+    {
+        if (string.IsNullOrEmpty(request.Url))
+        {
+            throw new AppException(Constants.INVALID_URL_PROVIDED, StatusCodes.Status404NotFound);
+        }
+
+        string Content = await _fetchContentFromUrlService.FetchAndValidateAsync(request.Url!);
+
+        if (string.IsNullOrEmpty(Content))
+        {
+            throw new AppException(Constants.WEB_CONTENT_NOT_FOUND, StatusCodes.Status404NotFound);
+        }
+        
+        GenerateQuizRequest questionGenerationRequest = new GenerateQuizRequest
+        {
+            Prompt = Content,
+            QuestionSpec = request.QuestionSpec,
+            Category = request.Category,
+            CategoryId = request.CategoryId
+        };
+        GenerateQuizResponseDto response = await GenerateFromPromptAsync(questionGenerationRequest);
+
+        return response;
     }
 
     private List<QuizQuestionDto> MapIdsToGeneratedQuestions(List<QuizQuestionDto> quiz, GenerateQuizRequest request)

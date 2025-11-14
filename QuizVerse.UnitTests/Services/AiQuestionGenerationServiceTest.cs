@@ -1,10 +1,12 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Interface;
@@ -17,6 +19,7 @@ public class AiQuestionGenerationServiceTests
     private readonly Mock<IGroqService> _mockGroqService;
     private readonly Mock<IGroqContentValidatorService> _mockValidatorService;
     private readonly Mock<IServiceScopeFactory> _mockScopeFactory;
+    private readonly Mock<IFetchContentFromUrlService> _mockFetchContentFromUrlService;
     private readonly Mock<IServiceScope> _mockServiceScope;
     private readonly Mock<IServiceProvider> _mockServiceProvider;
     private readonly Mock<IGenericRepository<AiProcessLog>> _mockAiLogRepository;
@@ -27,6 +30,7 @@ public class AiQuestionGenerationServiceTests
         _mockGroqService = new Mock<IGroqService>();
         _mockValidatorService = new Mock<IGroqContentValidatorService>();
         _mockScopeFactory = new Mock<IServiceScopeFactory>();
+        _mockFetchContentFromUrlService = new Mock<IFetchContentFromUrlService>();
         _mockServiceScope = new Mock<IServiceScope>();
         _mockServiceProvider = new Mock<IServiceProvider>();
         _mockAiLogRepository = new Mock<IGenericRepository<AiProcessLog>>();
@@ -40,9 +44,12 @@ public class AiQuestionGenerationServiceTests
         _aiQuestionService = new AiQuestionGenerationService(
             _mockGroqService.Object,
             _mockValidatorService.Object,
-            _mockScopeFactory.Object
+            _mockScopeFactory.Object,
+            _mockFetchContentFromUrlService.Object
         );
     }
+
+    #region GenerateFromPromptAsync Tests
 
     [Fact]
     public async Task GenerateFromPromptAsync_WithValidInput_ReturnsSuccessResponse()
@@ -189,7 +196,7 @@ public class AiQuestionGenerationServiceTests
         {
             Prompt = "Science questions",
             Category = "educational",
-            QuestionSpec = null! 
+            QuestionSpec = null!
         };
 
         var validationResult = new ContentValidationResult
@@ -677,4 +684,124 @@ public class AiQuestionGenerationServiceTests
         Assert.True(result.Success);
         _mockAiLogRepository.Verify(x => x.UpdateAsync(It.IsAny<AiProcessLog>()), Times.Once);
     }
+
+    #endregion
+
+    #region GenerateQuestionUsingWebURL Tests
+
+    [Fact]
+    public async Task GenerateQuestionUsingWebURL_WithValidUrl_ReturnsSuccessResponse()
+    {
+        // Arrange
+        var webRequest = new GenerateQuestionUsingWebRequestDTO
+        {
+            Url = "https://example.com/physics",
+            QuestionSpec = new List<QuestionGenerationFormatDto>
+            {
+                new QuestionGenerationFormatDto
+                {
+                    QuestionDifficultyName = "Medium",
+                    QuestionPerQuestionType = new List<QuestionPerQuestionType>
+                    {
+                        new QuestionPerQuestionType
+                        {
+                            QuestionPerQuestionTypeName = "Multiple Choice",
+                            NoOfQuesitons = 2
+                        }
+                    }
+                }
+            },
+            Category = "educational",
+            CategoryId = 5
+        };
+
+        const string webContent = "Physics is the study of matter and energy...";
+
+        var validationResult = new ContentValidationResult
+        {
+            Reason = "Valid web content",
+            IsValid = true,
+            IsMatch = true,
+            Category = "educational",
+            ValidationFailed = false,
+        };
+
+        var generatedQuestions = new List<QuizQuestionDto>
+        {
+            new QuizQuestionDto { QueText = "What is physics?", QueTypeName = "Multiple Choice", QueDifficultyName = "Medium" }
+        };
+
+        var jsonResponse = JsonSerializer.Serialize(generatedQuestions);
+        var aiLogId = 999;
+
+        _mockFetchContentFromUrlService
+            .Setup(x => x.FetchAndValidateAsync(webRequest.Url!))
+            .ReturnsAsync(webContent);
+
+        _mockValidatorService
+            .Setup(x => x.ValidateContentAsync(webContent, webRequest.Category))
+            .ReturnsAsync(validationResult);
+
+        _mockGroqService
+            .Setup(x => x.GenerateQuesions(It.IsAny<string>()))
+            .ReturnsAsync((jsonResponse, aiLogId));
+
+        var aiLogs = new List<AiProcessLog> { new AiProcessLog { Id = aiLogId } }.AsQueryable();
+        _mockAiLogRepository.Setup(x => x.GetQueryableInclude()).Returns(aiLogs);
+        _mockAiLogRepository.Setup(x => x.UpdateAsync(It.IsAny<AiProcessLog>())).Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _aiQuestionService.GenerateQuestionUsingWebURL(webRequest);
+
+        // Assert
+        Assert.True(result.Success);
+        Assert.Equal(Constants.QUESTION_GENERATION_SUCCESS, result.Message);
+        Assert.Single(result.Data);
+        Assert.Equal(5, result.Data[0].CategoryId);
+        Assert.Equal("educational", result.Data[0].CategoryName);
+
+        _mockFetchContentFromUrlService.Verify(x => x.FetchAndValidateAsync(webRequest.Url!), Times.Once);
+        _mockValidatorService.Verify(x => x.ValidateContentAsync(webContent, webRequest.Category), Times.Once);
+        _mockGroqService.Verify(x => x.GenerateQuesions(It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GenerateQuestionUsingWebURL_WithInvalidUrl_ThrowsAppException()
+    {
+        // Arrange
+        var webRequest = new GenerateQuestionUsingWebRequestDTO
+        {
+            Url = null
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<AppException>(
+            () => _aiQuestionService.GenerateQuestionUsingWebURL(webRequest));
+
+        Assert.Equal(Constants.INVALID_URL_PROVIDED, ex.Message);
+        Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task GenerateQuestionUsingWebURL_WithEmptyContent_ThrowsAppException()
+    {
+        // Arrange
+        var webRequest = new GenerateQuestionUsingWebRequestDTO
+        {
+            Url = "https://example.com/empty"
+        };
+
+        _mockFetchContentFromUrlService
+            .Setup(x => x.FetchAndValidateAsync(webRequest.Url!))
+            .ReturnsAsync(string.Empty);
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<AppException>(
+            () => _aiQuestionService.GenerateQuestionUsingWebURL(webRequest));
+
+        Assert.Equal(Constants.WEB_CONTENT_NOT_FOUND, ex.Message);
+        Assert.Equal(StatusCodes.Status404NotFound, ex.StatusCode);
+    }
+
+    #endregion
 }
