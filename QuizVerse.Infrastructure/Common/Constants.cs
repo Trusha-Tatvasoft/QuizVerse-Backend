@@ -2,6 +2,7 @@
 using QuizVerse.Infrastructure.Common.Helper;
 using System.Text.RegularExpressions;
 using QuizVerse.Infrastructure.Enums;
+using QuizVerse.Infrastructure.DTOs;
 
 namespace QuizVerse.Infrastructure.Common;
 
@@ -489,6 +490,59 @@ public static class Constants
     public const string GEMINI_2_POINT_0_FLASH_EXP = "gemini-2.0-flash-exp";
     public const string ROTATION_STATE_CACHE_KEY = "GeminiModelRotationState";
     public const int CACHE_EXPIRATION_HOURS = 24;
+    public static readonly List<GeminiModelConfig> GeminiAIModels =
+       [
+           new()
+            {
+                Name = AiModelName.Gemini2Point5FlashLite,
+                ApiEndpoint = $"{AiModelName.Gemini2Point5FlashLite.ToModelString()}:generateContent",
+                RPM = 15,
+                RPD = 1000,
+                Priority = 1
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point5Flash,
+                ApiEndpoint = $"{AiModelName.Gemini2Point5Flash.ToModelString()}:generateContent",
+                RPM = 10,
+                RPD = 250,
+                Priority = 2
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point0FlashLite,
+                ApiEndpoint = $"{AiModelName.Gemini2Point0FlashLite.ToModelString()}:generateContent",
+                RPM = 30,
+                RPD = 200,
+                Priority = 3
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point0Flash,
+                ApiEndpoint = $"{AiModelName.Gemini2Point0Flash.ToModelString()}:generateContent",
+                RPM = 15,
+                RPD = 200,
+                Priority = 4
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point5Pro,
+                ApiEndpoint = $"{AiModelName.Gemini2Point5Pro.ToModelString()}:generateContent",
+                RPM = 5,
+                RPD = 100,
+                Priority = 5
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point0FlashExp,
+                ApiEndpoint = $"{AiModelName.Gemini2Point0FlashExp.ToModelString()}:generateContent",
+                RPM = 10,
+                RPD = 50,
+                Priority = 6
+            }
+       ];
+    public const string ENCODING_TYPE = "application/json";
+
     #endregion
 
     #region web scraping
@@ -504,6 +558,7 @@ public static class Constants
     public const string GEMINI_API_EMPTY_RESPONSE = "Gemini API returned empty response for URL {0}";
     public const string GEMINI_HTTP_ERROR = "Gemini API HTTP error for {0} using model {1}: {2}";
     public const string WEB_SAFE_MESSAGE_GEMINI = "The website is safe.";
+    public const string WEB_CONTENT_NOT_FOUND = "The website is safe.";
     public const string UNKNOWN_MODEL = "unknown model";
     public const string UNEXPECTED_GEMINI_CHECK_ERROR = "Unexpected error in Gemini check for {0}: {1}";
     public const string COMMENT_FORMATE = "//comment()";
