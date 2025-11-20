@@ -76,7 +76,26 @@ BEGIN
                 FROM "QuizAttempted" qa2
                 WHERE qa2.quiz_id = q.id
                   AND qa2.user_id = p_user_id
-            ) AS "isAttempted"
+            ) AS "isAttempted",
+            COALESCE((
+			    SELECT jsonb_build_object(
+			        'reportId', qir2.id,
+			        'status', qir2.status,
+			        'severity', qir2.severity,
+                    'reportReason', qir2.reason,
+			        'isEditable',
+			            CASE 
+			                WHEN qir2.severity = 4 OR qir2.status = 4 THEN false 
+			                ELSE true 
+			            END
+			    )
+			    FROM "QuizIssueReports" qir2
+			    WHERE qir2.quiz_id = q.id 
+			      AND qir2.user_id = p_user_id
+			      AND qir2.status NOT IN (1, 2)
+			    LIMIT 1
+			), '{}'::jsonb) AS "report"
+
         FROM "Quiz" q
         INNER JOIN "QuizCategory" qc ON qc.id = q.category_id
         INNER JOIN "QuizDifficulty" qd ON qd.id = q.difficulty_level_id

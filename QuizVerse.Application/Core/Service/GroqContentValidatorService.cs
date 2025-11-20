@@ -6,10 +6,12 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using System.Net.Http.Json;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.Common;
+using QuizVerse.Domain.Entities;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class GroqContentValidatorService(HttpClient http, IConfiguration config, IGroqModelRotationService modelRotation) : IGroqContentValidatorService
+public class GroqContentValidatorService(HttpClient http, IConfiguration config, IGroqModelRotationService modelRotation, IAiLogService _aiLogService) : IGroqContentValidatorService
 {
     private readonly HttpClient _http = http;
     private readonly IConfiguration _config = config;
@@ -68,8 +70,15 @@ public class GroqContentValidatorService(HttpClient http, IConfiguration config,
                 temperature = 0.3,
                 max_completion_tokens = 200
             };
+            AiApiCallStartDetail aiApiCallStartDetail = new AiApiCallStartDetail()
+            {
+                ModelName = (int)Constants.GetGroqModelEnumNumber(body.model),
+                StartTime = DateTime.UtcNow,
+                Purpose = (int)AiApiPurpose.ContentValidation,
+            };
+            AiProcessLog aiProcessLog = _aiLogService.StartApiCall(aiApiCallStartDetail);
 
-            var response = await _http.PostAsJsonAsync(SystemConstants.GROQ_API_URL, body);
+            HttpResponseMessage? response = await _http.PostAsJsonAsync(SystemConstants.GROQ_API_URL, body);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -82,6 +91,7 @@ public class GroqContentValidatorService(HttpClient http, IConfiguration config,
 
                     int backoffMs = Math.Min(3000, 300 * (int)Math.Pow(2, retryCount));
                     await Task.Delay(backoffMs);
+                    _ = _aiLogService.EndApiCall(aiProcessLog, false);
 
                     return await ValidateWithRetryAsync(content, requestedCategory, retryCount + 1, estimatedTokens);
                 }
@@ -91,9 +101,10 @@ public class GroqContentValidatorService(HttpClient http, IConfiguration config,
                 if ((int)response.StatusCode >= 500)
                 {
                     await Task.Delay(1000);
+                    _ = _aiLogService.EndApiCall(aiProcessLog, false);
                     return await ValidateWithRetryAsync(content, requestedCategory, retryCount + 1, estimatedTokens);
                 }
-
+                _ = _aiLogService.EndApiCall(aiProcessLog, false);
                 throw new HttpRequestException($"Validation API error: {response.StatusCode} - {errorContent}");
             }
 
@@ -104,7 +115,7 @@ public class GroqContentValidatorService(HttpClient http, IConfiguration config,
             DecrementInFlightRequest(modelConfig.ModelName);
 
             var result = ParseValidationResponse(json, requestedCategory);
-
+            _ = _aiLogService.EndApiCall(aiProcessLog, true);
             return result;
         }
         catch (HttpRequestException)

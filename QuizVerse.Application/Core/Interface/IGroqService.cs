@@ -2,5 +2,5 @@ namespace QuizVerse.Application.Core.Interface;
 
 public interface IGroqService
 {
-    Task<string> GenerateQuesions(string prompt);
+    Task<(string ContentString, int AILogId)> GenerateQuesions(string prompt);
 }

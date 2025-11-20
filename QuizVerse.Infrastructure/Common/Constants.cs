@@ -369,6 +369,7 @@ public static class Constants
     public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
     public const string QUIZ_REPORT_SUBMITTED_SUCCESSFULLY = "Quiz report submitted successfully.";
     public const string QUIZ_REPORT_SUBMISSION_FAILED = "Failed to submit quiz report.";
+    public const string QUIZ_REPORT_NOT_FOUND_OR_CANNOT_EDIT = "Quiz report not found or cannot be edited.";
     public const string NO_ANSWER_PROVIDED = "No answer was provided.";
     public const string INVALID_QUIZ_ID = "Invalid Quiz ID.";
     public const string WRONG_BATCH_NUMBER = "Batch number must greater than 0.";
