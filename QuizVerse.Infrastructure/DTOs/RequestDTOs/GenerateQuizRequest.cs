@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
+using QuizVerse.Infrastructure.Validators;
 
 namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 
@@ -16,6 +18,21 @@ public class GenerateQuizRequest : GenerateQuestionRequestCommonFields
     [MaxLength(500, ErrorMessage = "Prompt text cannot exceed 500 characters.")]
     [MinLength(25, ErrorMessage = "Prompt text must be at least 25 characters long.")]
     public string? Prompt { get; set; }
+}
+
+public class  GenerateQuestionUsingWebRequestDTO: GenerateQuestionRequestCommonFields
+{
+    public string Url { get; set; } = null!;
+}
+
+public class GenerateQuizFromPDFRequest
+{
+    [Required]
+    [AllowedPdf]
+    public IFormFile Prompt { get; set; } = null!;
+    public int CategoryId { get; set; }
+    public string? Category { get; set; }
+    public string? QuestionSpec { get; set; }
 }
 
 public class QuestionGenerationFormatDto

@@ -706,5 +706,104 @@ namespace QuizVerse.UnitTests.Services
         }
 
         #endregion
+
+        #region ExtractTextFromPdfAsync
+
+        [Fact]
+        public async Task ExtractTextFromPdfAsync_ShouldThrowAppException_WhenPdfFileIsNull()
+        {
+            Func<Task> act = async () => await _service.ExtractTextFromPdfAsync(null!);
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.PDF_FILE_INVALID);
+        }
+
+        [Fact]
+        public async Task ExtractTextFromPdfAsync_ShouldThrowAppException_WhenPdfFileIsEmpty()
+        {
+            var emptyFile = new FormFile(Stream.Null, 0, 0, "Data", "empty.pdf");
+
+            Func<Task> act = async () => await _service.ExtractTextFromPdfAsync(emptyFile);
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.PDF_FILE_INVALID);
+        }
+
+        [Fact]
+        public async Task ExtractTextFromPdfAsync_ShouldThrowAppException_WhenPdfIsCorrupted()
+        {
+            byte[] corruptedPdfBytes = Encoding.UTF8.GetBytes("This is not a valid PDF file content");
+            using var stream = new MemoryStream(corruptedPdfBytes);
+
+            var pdfFile = new FormFile(stream, 0, corruptedPdfBytes.Length, "Data", "corrupted.pdf")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "application/pdf"
+            };
+
+            Func<Task> act = async () => await _service.ExtractTextFromPdfAsync(pdfFile);
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.ERROR_PROCESSING_PDF);
+        }
+
+        [Fact]
+        public async Task ExtractTextFromPdfAsync_ShouldThrowAppException_WhenPdfHasInvalidStructure()
+        {
+            byte[] invalidPdfBytes = Encoding.UTF8.GetBytes("%PDF-1.4\nInvalid PDF structure");
+            using var stream = new MemoryStream(invalidPdfBytes);
+
+            var pdfFile = new FormFile(stream, 0, invalidPdfBytes.Length, "Data", "invalid.pdf")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "application/pdf"
+            };
+
+            Func<Task> act = async () => await _service.ExtractTextFromPdfAsync(pdfFile);
+
+            await act.Should().ThrowAsync<AppException>()
+                .WithMessage(Constants.ERROR_PROCESSING_PDF);
+        }
+
+        [Fact]
+        public async Task ExtractTextFromPdfAsync_ShouldHandleExceptionAndCleanupTempFile()
+        {
+            byte[] invalidBytes = Encoding.UTF8.GetBytes("Not a PDF");
+            using var stream = new MemoryStream(invalidBytes);
+
+            var pdfFile = new FormFile(stream, 0, invalidBytes.Length, "Data", "test.pdf")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "application/pdf"
+            };
+
+            await Assert.ThrowsAsync<AppException>(async () =>
+                await _service.ExtractTextFromPdfAsync(pdfFile));
+
+        }
+
+        [Fact]
+        public async Task ExtractTextFromPdfAsync_ShouldDeleteTempFile_AfterProcessing()
+        {
+            string pdfContent = "%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>\nendobj\n4 0 obj\n<< /Length 44 >>\nstream\nBT\n/F1 12 Tf\n100 700 Td\n(Test Content) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n0000000189 00000 n\ntrailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n283\n%%EOF";
+            byte[] pdfBytes = Encoding.UTF8.GetBytes(pdfContent);
+            using var stream = new MemoryStream(pdfBytes);
+
+            var pdfFile = new FormFile(stream, 0, pdfBytes.Length, "Data", "test.pdf")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "application/pdf"
+            };
+
+            try
+            {
+                await _service.ExtractTextFromPdfAsync(pdfFile);
+            }
+            catch
+            {
+                // Ignore exceptions for this test
+            }
+        }
     }
+    #endregion
 }

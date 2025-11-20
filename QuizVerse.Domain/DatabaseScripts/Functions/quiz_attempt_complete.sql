@@ -48,14 +48,19 @@ BEGIN
         COALESCE(SUM(qd.xp_gained), 0) AS total_xp
     INTO v_corrected_que, v_xp_earned
     FROM "AttemptedQuizQuestionsAnswer" a
-    JOIN "QuizToBaseQuestionMap" qmap ON a.quiz_que_id = qmap.id
-    JOIN "BaseQuestions" bq ON qmap.que_id = bq.id
-    JOIN "QuestionDifficulty" qd ON bq.que_difficulty_id = qd.id
-    WHERE qmap.quiz_id = p_quiz_id
-      AND a.is_correct = true
-      AND qmap.is_deleted = false
-      AND bq.is_deleted = false
-      AND qd.is_deleted = false;
+    JOIN "QuizPlayStatus" qps 
+        ON a.quiz_play_status_id = qps.id
+    JOIN "QuizToBaseQuestionMap" qmap 
+        ON a.quiz_que_id = qmap.id
+    JOIN "BaseQuestions" bq 
+        ON qmap.que_id = bq.id
+    JOIN "QuestionDifficulty" qd 
+        ON bq.que_difficulty_id = qd.id
+    WHERE qps.quiz_id = p_quiz_id
+        AND qps.user_id = p_user_id
+        AND a.is_correct = true
+        AND qmap.is_deleted = false
+        AND qd.is_deleted = false;
 
     -- 4. Percentage and grade lookup
     IF v_total_que > 0 THEN

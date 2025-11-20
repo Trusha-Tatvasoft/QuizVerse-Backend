@@ -2,6 +2,7 @@
 using QuizVerse.Infrastructure.Common.Helper;
 using System.Text.RegularExpressions;
 using QuizVerse.Infrastructure.Enums;
+using QuizVerse.Infrastructure.DTOs;
 
 namespace QuizVerse.Infrastructure.Common;
 
@@ -368,6 +369,7 @@ public static class Constants
     public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
     public const string QUIZ_REPORT_SUBMITTED_SUCCESSFULLY = "Quiz report submitted successfully.";
     public const string QUIZ_REPORT_SUBMISSION_FAILED = "Failed to submit quiz report.";
+    public const string QUIZ_REPORT_NOT_FOUND_OR_CANNOT_EDIT = "Quiz report not found or cannot be edited.";
     public const string NO_ANSWER_PROVIDED = "No answer was provided.";
     public const string INVALID_QUIZ_ID = "Invalid Quiz ID.";
     public const string WRONG_BATCH_NUMBER = "Batch number must greater than 0.";
@@ -473,6 +475,16 @@ public static class Constants
     }
     #endregion
 
+    #region Generate que from PDF
+    public const string TESSERACT_DIR_NOT_FOUND = "Tesseract data directory not found.";
+    public const string ERROR_PROCESSING_PDF = "Error at processing PDF.";
+    public const string OCR_FAILED_FOR_PAGE = "OCR failed for page {0}";
+    public const string FAILED_TO_CONVERT_IMAGE = "Failed to convert image";
+    public const string NO_READABLE_TEXT_FOUND = "No readable text found in the PDF.";
+    public const string PDF_FILE_INVALID = "Uploaded PDF file is empty or invalid.";
+    public const string INVALID_PDF_FILE_TYPE_MESSAGE = "Only PDF files are supported";
+    #endregion
+
     #region Quiz Comment Section
     public const string QUIZ_COMMENTS_FETCHED_SUCCESSFULLY = "Quiz comments fetched successfully.";
     #endregion 
@@ -486,6 +498,59 @@ public static class Constants
     public const string GEMINI_2_POINT_0_FLASH_EXP = "gemini-2.0-flash-exp";
     public const string ROTATION_STATE_CACHE_KEY = "GeminiModelRotationState";
     public const int CACHE_EXPIRATION_HOURS = 24;
+    public static readonly List<GeminiModelConfig> GeminiAIModels =
+       [
+           new()
+            {
+                Name = AiModelName.Gemini2Point5FlashLite,
+                ApiEndpoint = $"{AiModelName.Gemini2Point5FlashLite.ToModelString()}:generateContent",
+                RPM = 15,
+                RPD = 1000,
+                Priority = 1
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point5Flash,
+                ApiEndpoint = $"{AiModelName.Gemini2Point5Flash.ToModelString()}:generateContent",
+                RPM = 10,
+                RPD = 250,
+                Priority = 2
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point0FlashLite,
+                ApiEndpoint = $"{AiModelName.Gemini2Point0FlashLite.ToModelString()}:generateContent",
+                RPM = 30,
+                RPD = 200,
+                Priority = 3
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point0Flash,
+                ApiEndpoint = $"{AiModelName.Gemini2Point0Flash.ToModelString()}:generateContent",
+                RPM = 15,
+                RPD = 200,
+                Priority = 4
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point5Pro,
+                ApiEndpoint = $"{AiModelName.Gemini2Point5Pro.ToModelString()}:generateContent",
+                RPM = 5,
+                RPD = 100,
+                Priority = 5
+            },
+            new()
+            {
+                Name = AiModelName.Gemini2Point0FlashExp,
+                ApiEndpoint = $"{AiModelName.Gemini2Point0FlashExp.ToModelString()}:generateContent",
+                RPM = 10,
+                RPD = 50,
+                Priority = 6
+            }
+       ];
+    public const string ENCODING_TYPE = "application/json";
+
     #endregion
 
     #region web scraping
@@ -501,6 +566,7 @@ public static class Constants
     public const string GEMINI_API_EMPTY_RESPONSE = "Gemini API returned empty response for URL {0}";
     public const string GEMINI_HTTP_ERROR = "Gemini API HTTP error for {0} using model {1}: {2}";
     public const string WEB_SAFE_MESSAGE_GEMINI = "The website is safe.";
+    public const string WEB_CONTENT_NOT_FOUND = "The website is safe.";
     public const string UNKNOWN_MODEL = "unknown model";
     public const string UNEXPECTED_GEMINI_CHECK_ERROR = "Unexpected error in Gemini check for {0}: {1}";
     public const string COMMENT_FORMATE = "//comment()";
@@ -605,5 +671,12 @@ public static class Constants
     public const string QUIZ_ISSUE_ACTION_UPDATE_SUCCESS_MESSAGE = "Action Updated Successfully!!";
     public const string QUIZ_ISSUE_REPORT_FINALIZED_INFO = "This report has already been finalized and cannot be modified.";
     public const string QUIZ_ISSUE_REPORT_NOT_HAVE_PERMISSION_EDIT = "Only the assigned reviewer or SuperAdmin can update this report.";
+    public const string SEVERITY_UNDER_PROCESS_WARNING = "Severity under process!, Yow can wait for some time";
+    public const string REVERT_TO_PENDING_REPORT_QUESTION_STATUS = "Marked Reported question as Pending";
+    #endregion
+
+    #region Flagged Comment
+    public const string FLAGGED_COMMENT_NOT_FOUND = "Flagged comment not found.";
+    public const string CAN_NOT_UPDATE_STATUS_COMMENT = "Can't update status of already updated comments.";
     #endregion
 }

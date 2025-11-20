@@ -30,6 +30,7 @@ public class QuizServiceTests
     private readonly Mock<IAiService> _aiServiceMock;
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
     private readonly Mock<ILeaderboardService> _leaderboardServiceMock;
+    private readonly Mock<IGcpApiQueueService> _queueServiceMock;
 
     public QuizServiceTests()
     {
@@ -47,6 +48,7 @@ public class QuizServiceTests
         _sqlQueryRepoMock = new Mock<ISqlQueryRepository>();
         _aiServiceMock = new Mock<IAiService>();
         _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
+        _queueServiceMock = new Mock<IGcpApiQueueService>();
 
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
@@ -79,7 +81,8 @@ public class QuizServiceTests
             _sqlQueryRepoMock.Object,
             _httpContextAccessorMock.Object,
             _aiServiceMock.Object,
-            _leaderboardServiceMock.Object
+            _leaderboardServiceMock.Object,
+            _queueServiceMock.Object
         );
     }
 
@@ -804,17 +807,22 @@ public class QuizServiceTests
     }
 
     [Fact]
-    public async Task AddQuizReport_ShouldReturnTrue_WhenValidRequest()
+    public async Task AddEditQuizReport_ShouldAddNewReport_WhenReportIdIsZero()
     {
         // Arrange
         var quizReportRequest = new QuizReportRequestDto
         {
             QuizId = 1,
-            Reason = "Inappropriate content"
+            Reason = "Inappropriate content",
+            ReportId = 0
         };
 
+        _queueServiceMock
+            .Setup(x => x.EnqueueAsync(It.IsAny<GcpApiReportDataDto>()))
+            .Returns(Task.CompletedTask);
+
         // Act
-        var result = await _quizService.AddQuizReport(quizReportRequest);
+        var result = await _quizService.AddEditQuizReport(quizReportRequest);
 
         // Assert
         Assert.True(result);
@@ -827,27 +835,34 @@ public class QuizServiceTests
         Assert.Equal((int)QuestionOrQuizIssueReportSeverity.UnderProcessing, addedReport.Severity);
         Assert.Equal((int)QuestionOrQuizIssueReportStatus.Pending, addedReport.Status);
         Assert.True(addedReport.Id > 0);
-    }
 
+        _queueServiceMock.Verify(x => x.EnqueueAsync(It.Is<GcpApiReportDataDto>(dto =>
+            dto.ReportId == addedReport.Id &&
+            dto.ReportType == ReportType.QuizIssueReport &&
+            dto.ReportComment == quizReportRequest.Reason
+        )), Times.Once);
+    }
+    
     [Fact]
-    public async Task AddQuizReport_ShouldThrowAppException_WhenQuizNotFound()
+    public async Task AddEditQuizReport_ShouldThrowAppException_WhenQuizNotFound()
     {
         // Arrange
         var quizReportRequest = new QuizReportRequestDto
         {
-            QuizId = 999, // Non-existent quiz ID
-            Reason = "Inappropriate content"
+            QuizId = 999,
+            Reason = "Inappropriate content",
+            ReportId = 0
         };
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<AppException>(() =>
-            _quizService.AddQuizReport(quizReportRequest));
+            _quizService.AddEditQuizReport(quizReportRequest));
 
         Assert.Equal(Constants.QUIZ_NOT_FOUND, exception.Message);
     }
 
     [Fact]
-    public async Task AddQuizReport_ShouldThrowAppException_WhenQuizIsInactive()
+    public async Task AddEditQuizReport_ShouldThrowAppException_WhenQuizIsInactive()
     {
         // Arrange
         var inactiveQuiz = new Quiz
@@ -858,7 +873,7 @@ public class QuizServiceTests
             CategoryId = 1,
             DifficultyLevelId = 1,
             TotalQuestion = 5,
-            Status = (int)QuizStatus.Inactive, 
+            Status = (int)QuizStatus.Inactive,
             IsDeleted = false
         };
 
@@ -868,18 +883,19 @@ public class QuizServiceTests
         var quizReportRequest = new QuizReportRequestDto
         {
             QuizId = 3,
-            Reason = "Inappropriate content"
+            Reason = "Inappropriate content",
+            ReportId = 0
         };
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<AppException>(() =>
-            _quizService.AddQuizReport(quizReportRequest));
+            _quizService.AddEditQuizReport(quizReportRequest));
 
         Assert.Equal(Constants.QUIZ_NOT_FOUND, exception.Message);
     }
 
     [Fact]
-    public async Task AddQuizReport_ShouldThrowAppException_WhenQuizIsDeleted()
+    public async Task AddEditQuizReport_ShouldThrowAppException_WhenQuizIsDeleted()
     {
         // Arrange
         var deletedQuiz = new Quiz
@@ -891,7 +907,7 @@ public class QuizServiceTests
             DifficultyLevelId = 1,
             TotalQuestion = 5,
             Status = (int)QuizStatus.Active,
-            IsDeleted = true 
+            IsDeleted = true
         };
 
         _context.Quizzes.Add(deletedQuiz);
@@ -900,28 +916,114 @@ public class QuizServiceTests
         var quizReportRequest = new QuizReportRequestDto
         {
             QuizId = 4,
-            Reason = "Inappropriate content"
+            Reason = "Inappropriate content",
+            ReportId = 0
         };
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<AppException>(() =>
-            _quizService.AddQuizReport(quizReportRequest));
+            _quizService.AddEditQuizReport(quizReportRequest));
 
         Assert.Equal(Constants.QUIZ_NOT_FOUND, exception.Message);
     }
 
     [Fact]
-    public async Task AddQuizReport_ShouldSetCorrectDefaultValues_WhenReportIsAdded()
+    public async Task AddEditQuizReport_ShouldThrowAppException_WhenReportNotFoundForEdit()
     {
         // Arrange
         var quizReportRequest = new QuizReportRequestDto
         {
             QuizId = 1,
-            Reason = "Technical issues with the quiz"
+            Reason = "Updated reason",
+            ReportId = 999 
         };
 
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.AddEditQuizReport(quizReportRequest));
+
+        Assert.Equal(Constants.QUIZ_REPORT_NOT_FOUND_OR_CANNOT_EDIT, exception.Message);
+    }
+
+    [Fact]
+    public async Task AddEditQuizReport_ShouldThrowAppException_WhenReportCannotBeEdited()
+    {
+        // Arrange
+        var processedReport = new QuizIssueReport
+        {
+            Id = 101,
+            QuizId = 1,
+            UserId = 1,
+            Reason = "Already processed",
+            Severity = (int)QuestionOrQuizIssueReportSeverity.Low,
+            Status = (int)QuestionOrQuizIssueReportStatus.Accepted,
+            CreatedDate = DateTime.UtcNow.AddDays(-1)
+        };
+        _context.QuizIssueReports.Add(processedReport);
+        await _context.SaveChangesAsync();
+
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 1,
+            Reason = "Updated reason",
+            ReportId = 101
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.AddEditQuizReport(quizReportRequest));
+
+        Assert.Equal(Constants.QUIZ_REPORT_NOT_FOUND_OR_CANNOT_EDIT, exception.Message);
+    }
+
+    [Fact]
+    public async Task AddEditQuizReport_ShouldThrowAppException_WhenReportBelongsToDifferentUser()
+    {
+        // Arrange
+        var otherUserReport = new QuizIssueReport
+        {
+            Id = 102,
+            QuizId = 1,
+            UserId = 999, 
+            Reason = "Other user's report",
+            Severity = (int)QuestionOrQuizIssueReportSeverity.UnderProcessing,
+            Status = (int)QuestionOrQuizIssueReportStatus.Pending,
+            CreatedDate = DateTime.UtcNow.AddDays(-1)
+        };
+        _context.QuizIssueReports.Add(otherUserReport);
+        await _context.SaveChangesAsync();
+
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 1,
+            Reason = "Updated reason",
+            ReportId = 102
+        };
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            _quizService.AddEditQuizReport(quizReportRequest));
+
+        Assert.Equal(Constants.QUIZ_REPORT_NOT_FOUND_OR_CANNOT_EDIT, exception.Message);
+    }
+
+    [Fact]
+    public async Task AddEditQuizReport_ShouldSetCorrectDefaultValues_WhenAddingNewReport()
+    {
+        // Arrange
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 1,
+            Reason = "Technical issues with the quiz",
+            ReportId = 0
+        };
+
+        _queueServiceMock
+            .Setup(x => x.EnqueueAsync(It.IsAny<GcpApiReportDataDto>()))
+            .Returns(Task.CompletedTask);
+
         // Act
-        var result = await _quizService.AddQuizReport(quizReportRequest);
+        var result = await _quizService.AddEditQuizReport(quizReportRequest);
 
         // Assert
         Assert.True(result);
@@ -937,50 +1039,134 @@ public class QuizServiceTests
     }
 
     [Fact]
-    public async Task AddQuizReport_ShouldAllowMultipleReports_ForDifferentQuizzesFromSameUser()
+    public async Task AddEditQuizReport_ShouldThrowAppException_WhenAddFails()
     {
         // Arrange
-        var secondQuiz = new Quiz
-        {
-            Id = 2,
-            Name = "Second Quiz",
-            Description = "Another sample quiz",
-            CategoryId = 1,
-            DifficultyLevelId = 1,
-            TotalQuestion = 3,
-            Status = (int)QuizStatus.Active,
-            IsDeleted = false
-        };
-
-        _context.Quizzes.Add(secondQuiz);
-        await _context.SaveChangesAsync();
-
-        var firstReport = new QuizReportRequestDto
+        var quizReportRequest = new QuizReportRequestDto
         {
             QuizId = 1,
-            Reason = "First report"
+            Reason = "Test report",
+            ReportId = 0
         };
 
-        var secondReport = new QuizReportRequestDto
+        // Mock the repository to simulate a failure
+        var mockQuizIssueReportRepository = new Mock<IGenericRepository<QuizIssueReport>>();
+        mockQuizIssueReportRepository.Setup(x => x.AddAsync(It.IsAny<QuizIssueReport>()))
+            .Returns(Task.CompletedTask);
+        mockQuizIssueReportRepository
+            .Setup(x => x.GetAsync(
+                It.IsAny<Expression<Func<QuizIssueReport, bool>>>(),
+                It.IsAny<Func<IQueryable<QuizIssueReport>, IQueryable<QuizIssueReport>>?>()
+            ))
+            .ReturnsAsync((QuizIssueReport)null!);
+
+
+
+        var quizServiceWithMock = new QuizService(
+            new GenericRepository<QuizPlayStatus>(_context),
+            new GenericRepository<AttemptedQuizQuestionsAnswer>(_context),
+            new GenericRepository<Quiz>(_context),
+            new GenericRepository<QuizToBaseQuestionMap>(_context),
+            new GenericRepository<QuizAttempted>(_context),
+            new GenericRepository<QuestionIssueReport>(_context),
+            mockQuizIssueReportRepository.Object,
+            new GenericRepository<QuizRating>(_context),
+            _mapper,
+            _sqlQueryRepoMock.Object,
+            _httpContextAccessorMock.Object,
+            _aiServiceMock.Object,
+            _leaderboardServiceMock.Object,
+            _queueServiceMock.Object
+        );
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            quizServiceWithMock.AddEditQuizReport(quizReportRequest));
+
+        Assert.Equal(Constants.QUIZ_REPORT_SUBMISSION_FAILED, exception.Message);
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddEditQuizReport_ShouldThrowAppException_WhenEditFails()
+    {
+        // Arrange
+        var existingReport = new QuizIssueReport
         {
-            QuizId = 2,
-            Reason = "Second report"
+            Id = 103,
+            QuizId = 1,
+            UserId = 1,
+            Reason = "Old reason",
+            Severity = (int)QuestionOrQuizIssueReportSeverity.UnderProcessing,
+            Status = (int)QuestionOrQuizIssueReportStatus.Pending,
+            CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
+        _context.QuizIssueReports.Add(existingReport);
+        await _context.SaveChangesAsync();
+
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 1,
+            Reason = "Updated reason",
+            ReportId = 103
+        };
+
+        var mockQuizIssueReportRepository = new Mock<IGenericRepository<QuizIssueReport>>();
+        mockQuizIssueReportRepository
+            .Setup(x => x.GetAsync(
+                It.IsAny<Expression<Func<QuizIssueReport, bool>>>(),
+                It.IsAny<Func<IQueryable<QuizIssueReport>, IQueryable<QuizIssueReport>>?>()
+            ))
+            .ReturnsAsync((QuizIssueReport)null!);
+
+        mockQuizIssueReportRepository.Setup(x => x.UpdateAsync(It.IsAny<QuizIssueReport>()))
+            .Returns(Task.CompletedTask);
+
+        var quizServiceWithMock = new QuizService(
+            new GenericRepository<QuizPlayStatus>(_context),
+            new GenericRepository<AttemptedQuizQuestionsAnswer>(_context),
+            new GenericRepository<Quiz>(_context),
+            new GenericRepository<QuizToBaseQuestionMap>(_context),
+            new GenericRepository<QuizAttempted>(_context),
+            new GenericRepository<QuestionIssueReport>(_context),
+            mockQuizIssueReportRepository.Object,
+            new GenericRepository<QuizRating>(_context),
+            _mapper,
+            _sqlQueryRepoMock.Object,
+            _httpContextAccessorMock.Object,
+            _aiServiceMock.Object,
+            _leaderboardServiceMock.Object,
+            _queueServiceMock.Object
+        );
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<AppException>(() =>
+            quizServiceWithMock.AddEditQuizReport(quizReportRequest));
+
+        Assert.Equal(Constants.QUIZ_REPORT_NOT_FOUND_OR_CANNOT_EDIT, exception.Message);
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Fact]
+    public async Task AddEditQuizReport_ShouldEnqueueToGcpQueue_ForBothAddAndEdit()
+    {
+        // Arrange
+        var quizReportRequest = new QuizReportRequestDto
+        {
+            QuizId = 1,
+            Reason = "Test report for GCP queue",
+            ReportId = 0
+        };
+
+        _queueServiceMock
+            .Setup(x => x.EnqueueAsync(It.IsAny<GcpApiReportDataDto>()))
+            .Returns(Task.CompletedTask);
 
         // Act
-        var firstResult = await _quizService.AddQuizReport(firstReport);
-        var secondResult = await _quizService.AddQuizReport(secondReport);
+        var result = await _quizService.AddEditQuizReport(quizReportRequest);
 
         // Assert
-        Assert.True(firstResult);
-        Assert.True(secondResult);
-
-        var userReports = await _context.QuizIssueReports
-            .Where(r => r.UserId == 1)
-            .ToListAsync();
-
-        Assert.Equal(2, userReports.Count);
-        Assert.Contains(userReports, r => r.QuizId == 1 && r.Reason == "First report");
-        Assert.Contains(userReports, r => r.QuizId == 2 && r.Reason == "Second report");
+        Assert.True(result);
+        _queueServiceMock.Verify(x => x.EnqueueAsync(It.IsAny<GcpApiReportDataDto>()), Times.Once);
     }
 }

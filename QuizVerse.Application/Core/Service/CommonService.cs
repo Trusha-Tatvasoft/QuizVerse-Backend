@@ -5,6 +5,7 @@ using QuizVerse.Application.Core.Interface;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
+using QuizVerse.Infrastructure.Common.Helper;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.Interface;
 
@@ -179,6 +180,39 @@ namespace QuizVerse.Application.Core.Service
             return emailSent
                 ? string.Format(Constants.EMAIL_SENT_SUCCESS, dto.ToEmail)
                 : Constants.EMAIL_NOT_SENT;
+        }
+        #endregion
+
+        #region PDF Extarct OCR
+        public async Task<string> ExtractTextFromPdfAsync(IFormFile pdfFile)
+        {
+            if (pdfFile == null || pdfFile.Length == 0)
+                throw new AppException(Constants.PDF_FILE_INVALID);
+
+            string tempPath = Path.GetTempFileName();
+
+            try
+            {
+                using (var stream = new FileStream(tempPath, FileMode.Create))
+                {
+                    await pdfFile.CopyToAsync(stream);
+                }
+                string extractedText = PdfTextExtractor.ExtractText(tempPath, 5000);
+
+                if (string.IsNullOrWhiteSpace(extractedText))
+                    throw new AppException(Constants.NO_READABLE_TEXT_FOUND);
+
+                return extractedText;
+            }
+            catch (Exception ex)
+            {
+                throw new AppException(Constants.ERROR_PROCESSING_PDF);
+            }
+            finally
+            {
+                if (File.Exists(tempPath))
+                    File.Delete(tempPath);
+            }
         }
         #endregion
     }

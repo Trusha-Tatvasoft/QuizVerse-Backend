@@ -1,13 +1,11 @@
-    using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
-using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
-using UserRole = QuizVerse.Infrastructure.Enums.UserRoles;
 
 namespace QuizVerse.Infrastructure.Mappings;
 
@@ -418,7 +416,7 @@ public class MappingProfile : Profile
                 opt => opt.MapFrom(src => src.QuizRating1));
         #endregion
 
-        #region  QuizIssueReport
+        #region  Content Moderation
         CreateMap<QuizIssueReport, QuizReportIssueResponseDTO>()
                 .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Name))
                 .ForMember(dest => dest.Creator, opt => opt.MapFrom(src => src.Quiz.CreatedByNavigation.UserName))
@@ -426,7 +424,13 @@ public class MappingProfile : Profile
                 .ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate))
-                .ForMember(dest => dest.ReviewedBy, opt => opt.MapFrom(src => src.ModifiedBy));
+                .ForMember(dest => dest.ReviewedBy, opt => opt.MapFrom(src => src.ModifiedBy))
+                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
+
+        CreateMap<ActiveQuizBattleAffectedDTO, ActiveQuizBattleAffectedDTO>()
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => ToTitleCase(src.CategoryName)))
+            .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => ToTitleCase(src.QuizTitle)))
+            .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => ToTitleCase(src.QuizDifficultyLevel)));
         #endregion
     }
 

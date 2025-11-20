@@ -151,7 +151,8 @@ namespace QuizVerse.Infrastructure.Enums
         Llama3Point370BVersatile = 8,
         GroqCompound = 9,
         MoonshotAiKimiK2Instruct = 10,
-        OpenAiGptOss20B = 11
+        OpenAiGptOss20B = 11,
+        PerspectiveApi = 12
     }
 
     public enum QuestionOrQuizIssueReportSeverity
@@ -184,11 +185,13 @@ namespace QuizVerse.Infrastructure.Enums
         QuestionIssueReport = 2,
         QuizIssueReport = 3,
     }
-
+    
     public enum AiApiPurpose
     {
         QuestionGeneration = 1,
         ExplanationGeneration = 2,
         URLSafetyCheck = 3,
+        ContentValidation = 4,
+        SeverityAnalysis = 5,
     }
 }

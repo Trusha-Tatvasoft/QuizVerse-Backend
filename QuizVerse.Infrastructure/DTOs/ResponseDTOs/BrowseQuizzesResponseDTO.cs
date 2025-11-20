@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
@@ -60,4 +61,17 @@ public class BrowseQuizz
 
     [JsonPropertyName("isAttempted")]
     public bool IsAttempted { get; set; }
+
+    [JsonPropertyName("report")]
+    public QuizReport? Report { get; set; }
+}
+
+public class QuizReport
+{
+    [JsonPropertyName("reportId")]
+    public int ReportId { get; set; }
+    [JsonPropertyName("reportReason")]
+    public string ReportReason { get; set; } = string.Empty;
+    [JsonPropertyName("isEditable")]
+    public bool IsEditable { get; set; }
 }
