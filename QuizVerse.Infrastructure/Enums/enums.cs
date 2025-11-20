@@ -163,7 +163,7 @@ namespace QuizVerse.Infrastructure.Enums
         UnderProcessing = 4
     }
 
-    public enum QuestionOrQuizIssueReportStatus
+    public enum   QuestionOrQuizIssueReportStatus
     {
         Accepted = 1,
         Ignore = 2,

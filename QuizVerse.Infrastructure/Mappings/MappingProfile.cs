@@ -2,12 +2,10 @@ using System.Globalization;
 using System.Text.Json;
 using AutoMapper;
 using QuizVerse.Domain.Entities;
-using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 using QuizVerse.Infrastructure.Enums;
-using UserRole = QuizVerse.Infrastructure.Enums.UserRoles;
 
 namespace QuizVerse.Infrastructure.Mappings;
 
@@ -425,6 +423,8 @@ public class MappingProfile : Profile
                 .ForMember(dest => dest.Reporter, opt => opt.MapFrom(src => src.User.FullName))
                 .ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate))
+                .ForMember(dest => dest.ReviewedBy, opt => opt.MapFrom(src => src.ModifiedBy))
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.CreatedDate));
 
         CreateMap<ActiveQuizBattleAffectedDTO, ActiveQuizBattleAffectedDTO>()

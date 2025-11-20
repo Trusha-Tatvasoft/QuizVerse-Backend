@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Moq;
-using QuizVerse.Application.Core.Service;
 using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
@@ -14,15 +13,14 @@ using QuizVerse.Infrastructure.Common;
 using QuizVerse.Application.Core.Interface;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.Enums;
-using QuizVerse.Infrastructure.Common;
-using Npgsql;
 using System.Text.Json;
+using Npgsql;
+
 
 namespace QuizVerse.UnitTests.Services
 {
     public class ContentModerationServiceTests
     {
-        private readonly Mock<IGenericRepository<QuizIssueReport>> _repoMock;
         private readonly Mock<IMapper> _mapperMock;
         private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock;
         private readonly Mock<ISqlQueryRepository> _sqlQueryRepositoryMock;
@@ -31,9 +29,15 @@ namespace QuizVerse.UnitTests.Services
         private readonly Mock<ISqlQueryRepository> _sqlRepoMock;
         private readonly Mock<IGenericRepository<QuizRating>> _quizRatingRepoMock;
         private readonly ContentModerationService _service;
+        private readonly Mock<IGenericRepository<QuizIssueReport>> _reportedQuizMock = new();
+        private readonly Mock<IGenericRepository<Quiz>> _quizRepoMock;
+        private readonly Mock<IGenericRepository<QuizIssueReport>> _repoMock;
+
 
         public ContentModerationServiceTests()
         {
+
+           
             _repoMock = new Mock<IGenericRepository<QuizIssueReport>>();
             _mapperMock = new Mock<IMapper>();
             _httpContextAccessorMock = new Mock<IHttpContextAccessor>();
@@ -42,6 +46,7 @@ namespace QuizVerse.UnitTests.Services
             _questionPoolServiceMock = new Mock<IQuestionPoolService>();
             _sqlRepoMock = new Mock<ISqlQueryRepository>();
             _quizRatingRepoMock = new Mock<IGenericRepository<QuizRating>>();
+
 
             var httpContext = new DefaultHttpContext
             {
@@ -54,61 +59,54 @@ namespace QuizVerse.UnitTests.Services
             };
             _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
 
-            _service = new ContentModerationService(
-                _sqlQueryRepositoryMock.Object,
-                _repoMock.Object,
-                _reportedQuestionRepoMock.Object,
-                _questionPoolServiceMock.Object,
-                _httpContextAccessorMock.Object,
-                _mapperMock.Object,
-                _sqlRepoMock.Object,
-                _quizRatingRepoMock.Object
-            );
         }
 
         #region GetQuizReportByPaginationAsync Tests
         private static IQueryable<QuizIssueReport> GetDummyReports()
         {
             return new List<QuizIssueReport>
-            {
-                new()
                 {
-                    Id = 1,
-                    Severity = 2,
-                    Quiz = new Quiz
+                    new()
                     {
-                        Name = "C# Basics",
-                        CreatedByNavigation = new User { FullName = "Creator A" }
+                        Id = 1,
+                        Severity = 2,
+                        Status = 3,
+                        Quiz = new Quiz
+                        {
+                            Name = "C# Basics",
+                            CreatedByNavigation = new User { FullName = "Creator A" }
+                        },
+                        User = new User { FullName = "Reporter A" }
                     },
-                    User = new User { FullName = "Reporter A" }
-                },
-                new()
-                {
-                    Id = 2,
-                    Severity = 3,
-                    Quiz = new Quiz
+                    new()
                     {
-                        Name = "ASP.NET",
-                        CreatedByNavigation = new User { FullName = "Creator B" }
+                        Id = 2,
+                        Severity = 3,
+                        Status = 3,
+                        Quiz = new Quiz
+                        {
+                            Name = "ASP.NET",
+                            CreatedByNavigation = new User { FullName = "Creator B" }
+                        },
+                        User = new User { FullName = "Reporter B" }
                     },
-                    User = new User { FullName = "Reporter B" }
-                },
-                new()
-                {
-                    Id = 3,
-                    Severity = 1,
-                    Quiz = new Quiz
+                    new()
                     {
-                        Name = "Entity Framework",
-                        CreatedByNavigation = new User { FullName = "Creator C" }
-                    },
-                    User = new User { FullName = "Reporter C" }
-                }
-            }.AsQueryable();
+                        Id = 3,
+                        Severity = 1,
+                        Status = 1,
+                        Quiz = new Quiz
+                        {
+                            Name = "Entity Framework",
+                            CreatedByNavigation = new User { FullName = "Creator C" }
+                        },
+                        User = new User { FullName = "Reporter C" }
+                    }
+                }.AsQueryable();
         }
         private void SetupRepositoryAndPagination(IQueryable<QuizIssueReport> reports)
         {
-            _repoMock.Setup(r => r.GetQueryableInclude(
+            _reportedQuizMock.Setup(r => r.GetQueryableInclude(
                     It.IsAny<Expression<Func<QuizIssueReport, object>>>(),
                     It.IsAny<Expression<Func<QuizIssueReport, object>>>(),
                     It.IsAny<Expression<Func<QuizIssueReport, object>>>()))

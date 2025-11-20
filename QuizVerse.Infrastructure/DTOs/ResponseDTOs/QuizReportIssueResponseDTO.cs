@@ -7,6 +7,7 @@ public class QuizReportIssueResponseDTO
     public string QuizTitle { get; set; } = null!;
     public string Creator { get; set; } = null!;
     public string Reporter { get; set; } = null!;
+    public int ReviewedBy { get; set; }
     public string Reason { get; set; } = null!;
     public int Severity { get; set; }
     public int Status { get; set; }

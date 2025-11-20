@@ -50,7 +50,7 @@ namespace QuizVerse.UnitTests.Services
             // Raw result returned from SQL — JSON string for battles
             var rawRepoResult = new BattleManagementRawResult
             {
-                Battles = "[{\"Id\":1,\"BattleName\":\"B1\"}]", // ✅ JSON string
+                Battles = "[{\"Id\":1,\"BattleName\":\"B1\"}]",
                 HasMore = false
             };
 

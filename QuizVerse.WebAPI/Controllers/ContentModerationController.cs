@@ -7,7 +7,6 @@ using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
-using QuizVerse.Infrastructure.Enums;
 
 namespace QuizVerse.WebAPI.Controllers;
 
@@ -25,6 +24,18 @@ public class ContentModerationController(IContentModerationService _contentModer
             Message = Constants.FETCH_SUCCESS,
             StatusCode = 200,
             Data = await _contentModerationService.GetQuizReportByPaginationAsync(query)
+        });
+    }
+
+    [HttpPut("update-quiz-report-action")]
+    public async Task<IActionResult> UpdateQuizReportAction([FromBody] QuizAndQuestionReportAction actionRequest)
+    {
+        return Ok(new ApiResponse<string>
+        {
+            Result = true,
+            Message = await _contentModerationService.UpdateQuizReportAction(actionRequest),
+            StatusCode = 200,
+            Data = null
         });
     }
 
