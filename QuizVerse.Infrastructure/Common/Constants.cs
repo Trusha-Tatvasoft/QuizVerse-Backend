@@ -474,6 +474,16 @@ public static class Constants
     }
     #endregion
 
+    #region Generate que from PDF
+    public const string TESSERACT_DIR_NOT_FOUND = "Tesseract data directory not found.";
+    public const string ERROR_PROCESSING_PDF = "Error at processing PDF.";
+    public const string OCR_FAILED_FOR_PAGE = "OCR failed for page {0}";
+    public const string FAILED_TO_CONVERT_IMAGE = "Failed to convert image";
+    public const string NO_READABLE_TEXT_FOUND = "No readable text found in the PDF.";
+    public const string PDF_FILE_INVALID = "Uploaded PDF file is empty or invalid.";
+    public const string INVALID_PDF_FILE_TYPE_MESSAGE = "Only PDF files are supported";
+    #endregion
+
     #region Quiz Comment Section
     public const string QUIZ_COMMENTS_FETCHED_SUCCESSFULLY = "Quiz comments fetched successfully.";
     #endregion 

@@ -15,5 +15,6 @@ namespace QuizVerse.Application.Core.Interface
         string EscapeCsv(string input);
         Task<string> GenerateOtp(string email);
         Task<string> SendEmailFromTemplate(TemplatedEmailRequestDto dto);
+        Task<string> ExtractTextFromPdfAsync(IFormFile pdfFile);
     }
 }

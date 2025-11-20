@@ -193,4 +193,31 @@ public class QuestionPoolController(IQuestionPoolService _questionPoolService, I
             Data = result.Data
         });
     }
+
+    [HttpPost("generate-from-pdf")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> GenerateFromPdf([FromForm] GenerateQuizFromPDFRequest request)
+    {
+        var result = await _questionFromText.GenerateFromPdfAsync(request);
+
+        if (!result.Success)
+        {
+            return StatusCode(result.StatusCode, new ApiResponse<object>
+            {
+                Result = false,
+                Message = result.Message,
+                StatusCode = result.StatusCode,
+                Data = null
+            });
+        }
+
+        return Ok(new ApiResponse<List<QuizQuestionDto>>
+        {
+            Result = true,
+            Message = result.Message,
+            StatusCode = 200,
+            Data = result.Data
+        });
+    }
+
 }

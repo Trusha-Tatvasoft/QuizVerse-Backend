@@ -8,7 +8,7 @@ using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidatorService _validator, IFetchContentFromUrlService _fetchContentFromUrlService) : IAiQuestionGenerationService
+public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidatorService _validator, IFetchContentFromUrlService _fetchContentFromUrlService, ICommonService _commonService) : IAiQuestionGenerationService
 {
     public async Task<GenerateQuizResponseDto> GenerateFromPromptAsync(GenerateQuizRequest request)
     {
@@ -120,6 +120,47 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
 
         return response;
     }
+
+    #region Generate from PDF 
+    public async Task<GenerateQuizResponseDto> GenerateFromPdfAsync(GenerateQuizFromPDFRequest request)
+    {
+        var extractedText = await _commonService.ExtractTextFromPdfAsync(request.Prompt);
+
+        if (string.IsNullOrWhiteSpace(extractedText))
+            throw new AppException(Constants.NO_READABLE_TEXT_FOUND);
+
+        // converting json to list formate
+        List<QuestionGenerationFormatDto> questionSpec = new();
+        if (!string.IsNullOrWhiteSpace(request.QuestionSpec))
+        {
+            try
+            {
+                questionSpec = JsonSerializer.Deserialize<List<QuestionGenerationFormatDto>>(
+                    request.QuestionSpec ?? "[]",
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
+                ) ?? [];
+            }
+            catch (JsonException ex)
+            {
+                throw new AppException(Constants.INVALID_QUESTION_SPECIFICATION);
+            }
+        }
+
+        var newRequest = new GenerateQuizRequest
+        {
+            Prompt = extractedText,
+            Category = request.Category,
+            CategoryId = request.CategoryId,
+            QuestionSpec = questionSpec
+        };
+
+        return await GenerateFromPromptAsync(newRequest);
+    }
+    #endregion
+
 
     private List<QuizQuestionDto> MapIdsToGeneratedQuestions(List<QuizQuestionDto> quiz, GenerateQuizRequest request)
     {

@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
+using QuizVerse.Infrastructure.Validators;
 
 namespace QuizVerse.Infrastructure.DTOs.RequestDTOs;
 
@@ -21,6 +23,16 @@ public class GenerateQuizRequest : GenerateQuestionRequestCommonFields
 public class  GenerateQuestionUsingWebRequestDTO: GenerateQuestionRequestCommonFields
 {
     public string Url { get; set; } = null!;
+}
+
+public class GenerateQuizFromPDFRequest
+{
+    [Required]
+    [AllowedPdf]
+    public IFormFile Prompt { get; set; } = null!;
+    public int CategoryId { get; set; }
+    public string? Category { get; set; }
+    public string? QuestionSpec { get; set; }
 }
 
 public class QuestionGenerationFormatDto
