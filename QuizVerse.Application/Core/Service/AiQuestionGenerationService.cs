@@ -1,14 +1,18 @@
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Http;
 using QuizVerse.Application.Core.Interface;
+using QuizVerse.Domain.Entities;
 using QuizVerse.Infrastructure.Common;
 using QuizVerse.Infrastructure.Common.Exceptions;
 using QuizVerse.Infrastructure.DTOs.RequestDTOs;
 using QuizVerse.Infrastructure.DTOs.ResponseDTOs;
+using QuizVerse.Infrastructure.Interface;
 
 namespace QuizVerse.Application.Core.Service;
 
-public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidatorService _validator, IFetchContentFromUrlService _fetchContentFromUrlService) : IAiQuestionGenerationService
+public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidatorService _validator, IServiceScopeFactory _scopeFactory, IFetchContentFromUrlService _fetchContentFromUrlService, ICommonService _commonService) : IAiQuestionGenerationService
 {
     public async Task<GenerateQuizResponseDto> GenerateFromPromptAsync(GenerateQuizRequest request)
     {
@@ -41,7 +45,7 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
                 };
 
             var formattedPrompt = BuildPromptWithSpecs(request.Prompt!, specs);
-            var rawJson = await _groq.GenerateQuesions(formattedPrompt);
+            var (rawJson, aiLogId) = await _groq.GenerateQuesions(formattedPrompt);
 
             if (string.IsNullOrWhiteSpace(rawJson) || rawJson == "[]")
                 return new GenerateQuizResponseDto
@@ -71,7 +75,18 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
 
             // Map IDs to the generated questions
             quiz = MapIdsToGeneratedQuestions(quiz, request);
+            using var scope = _scopeFactory.CreateScope();
+            var battleSvc = scope.ServiceProvider.GetRequiredService<IGenericRepository<AiProcessLog>>();
 
+            AiProcessLog? aiLog = battleSvc.GetQueryableInclude().AsNoTracking().FirstOrDefault(a => a.Id == aiLogId);
+            if (aiLog != null)
+            {
+                aiLog!.ExtraInfo = JsonSerializer.Serialize(new Dictionary<string, object?>
+                {
+                    [Constants.GENERATED_QUESTIONS_COUNT_JSON_KEY] = quiz.Count
+                });
+                await battleSvc.UpdateAsync(aiLog);
+            }
             return new GenerateQuizResponseDto
             {
                 Success = true,
@@ -120,6 +135,47 @@ public class AiQuestionGenerationService(IGroqService _groq, IGroqContentValidat
 
         return response;
     }
+
+    #region Generate from PDF 
+    public async Task<GenerateQuizResponseDto> GenerateFromPdfAsync(GenerateQuizFromPDFRequest request)
+    {
+        var extractedText = await _commonService.ExtractTextFromPdfAsync(request.Prompt);
+
+        if (string.IsNullOrWhiteSpace(extractedText))
+            throw new AppException(Constants.NO_READABLE_TEXT_FOUND);
+
+        // converting json to list formate
+        List<QuestionGenerationFormatDto> questionSpec = new();
+        if (!string.IsNullOrWhiteSpace(request.QuestionSpec))
+        {
+            try
+            {
+                questionSpec = JsonSerializer.Deserialize<List<QuestionGenerationFormatDto>>(
+                    request.QuestionSpec ?? "[]",
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
+                ) ?? [];
+            }
+            catch (JsonException ex)
+            {
+                throw new AppException(Constants.INVALID_QUESTION_SPECIFICATION);
+            }
+        }
+
+        var newRequest = new GenerateQuizRequest
+        {
+            Prompt = extractedText,
+            Category = request.Category,
+            CategoryId = request.CategoryId,
+            QuestionSpec = questionSpec
+        };
+
+        return await GenerateFromPromptAsync(newRequest);
+    }
+    #endregion
+
 
     private List<QuizQuestionDto> MapIdsToGeneratedQuestions(List<QuizQuestionDto> quiz, GenerateQuizRequest request)
     {

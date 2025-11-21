@@ -372,6 +372,7 @@ public static class Constants
     public const string QUIZ_ANSWER_EXPLANATION_GENERATED = "Answer explanation generated successfully.";
     public const string QUIZ_REPORT_SUBMITTED_SUCCESSFULLY = "Quiz report submitted successfully.";
     public const string QUIZ_REPORT_SUBMISSION_FAILED = "Failed to submit quiz report.";
+    public const string QUIZ_REPORT_NOT_FOUND_OR_CANNOT_EDIT = "Quiz report not found or cannot be edited.";
     public const string NO_ANSWER_PROVIDED = "No answer was provided.";
     public const string INVALID_QUIZ_ID = "Invalid Quiz ID.";
     public const string WRONG_BATCH_NUMBER = "Batch number must greater than 0.";
@@ -475,6 +476,16 @@ public static class Constants
             _ => throw new ArgumentException($"Unknown model name: {modelName}")
         };
     }
+    #endregion
+
+    #region Generate que from PDF
+    public const string TESSERACT_DIR_NOT_FOUND = "Tesseract data directory not found.";
+    public const string ERROR_PROCESSING_PDF = "Error at processing PDF.";
+    public const string OCR_FAILED_FOR_PAGE = "OCR failed for page {0}";
+    public const string FAILED_TO_CONVERT_IMAGE = "Failed to convert image";
+    public const string NO_READABLE_TEXT_FOUND = "No readable text found in the PDF.";
+    public const string PDF_FILE_INVALID = "Uploaded PDF file is empty or invalid.";
+    public const string INVALID_PDF_FILE_TYPE_MESSAGE = "Only PDF files are supported";
     #endregion
 
     #region Quiz Comment Section

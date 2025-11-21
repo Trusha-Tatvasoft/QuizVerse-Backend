@@ -175,17 +175,15 @@ namespace QuizVerse.WebAPI.Controllers
             });
         }
 
-        [HttpPost("add-quiz-report")]
-        public async Task<IActionResult> AddQuizReport([FromBody] QuizReportRequestDto quizReportRequestDto)
+        [HttpPost("add-edit-quiz-report")]
+        public async Task<IActionResult> AddEditQuizReport([FromBody] QuizReportRequestDto quizReportRequestDto)
         {
-            bool isSuccess = await _quizService.AddQuizReport(quizReportRequestDto);
-
             return Ok(new ApiResponse<object>
             {
                 Result = true,
                 StatusCode = StatusCodes.Status200OK,
                 Message = Constants.QUIZ_REPORT_SUBMITTED_SUCCESSFULLY,
-                Data = null,
+                Data = await _quizService.AddEditQuizReport(quizReportRequestDto),
             });
         }
     }
