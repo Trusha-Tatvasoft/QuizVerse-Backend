@@ -76,7 +76,7 @@ namespace QuizVerse.WebAPI.Controllers
                 Data = await _quizService.GetQuizSummary(quizId)
             });
         }
-
+        #region Question Issue Report
         [HttpGet("quiz-question-review/{quizId:int}")]
         public async Task<IActionResult> GetQuizQuestionReview(int quizId)
         {
@@ -89,18 +89,30 @@ namespace QuizVerse.WebAPI.Controllers
             });
         }
 
-        [HttpPost("report-question-issue")]
-        public async Task<IActionResult> ReportQuestionIssue([FromBody] QuestionIssueReportRequestDTO request)
+        [HttpPost("create-or-update-question-issue-report")]
+        public async Task<IActionResult> CreateOrUpdateQuestionIssueReport([FromBody] QuestionIssueReportRequestDTO request)
         {
             return Ok(new ApiResponse<QuizCompletedSummaryDTO>
             {
                 Result = true,
                 StatusCode = StatusCodes.Status200OK,
-                Message = await _quizService.ReportQuestionIssue(request),
+                Message = await _quizService.CreateOrUpdateQuestionIssueReport(request),
                 Data = null
             });
         }
 
+        [HttpGet("get-report-question-issue/{reportId:int}")]
+        public async Task<IActionResult> GetQuizReportQuestionIssue(int reportId)
+        {
+            return Ok(new ApiResponse<QuestionIssueReportResponseDTO>
+            {
+                Result = true,
+                StatusCode = StatusCodes.Status200OK,
+                Message = Constants.FETCH_SUCCESS,
+                Data = await _quizService.GetQuizReportQuestionIssue(reportId)
+            });
+        }
+        #endregion
         [HttpGet("quiz-rating/{quizId:int}")]
         public async Task<IActionResult> GetMyQuizRating(int quizId)
         {
@@ -135,7 +147,7 @@ namespace QuizVerse.WebAPI.Controllers
                 Result = true,
                 StatusCode = StatusCodes.Status200OK,
                 Message = Constants.QUIZ_COMMENTS_FETCHED_SUCCESSFULLY,
-                Data = await _quizCommentSectionService.GetCommentsByQuizId(quizId,batchNumber),
+                Data = await _quizCommentSectionService.GetCommentsByQuizId(quizId, batchNumber),
             });
         }
 

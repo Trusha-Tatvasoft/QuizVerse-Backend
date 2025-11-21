@@ -12,9 +12,10 @@ public interface IQuizService
     public Task<bool> SubmitQuiz(SubmitQuizRequestDTO request);
     Task<QuizCompletedSummaryDTO> GetQuizSummary(int quizAttemptId);
     Task<List<QuizQuestionReviewDTO>> GetQuizQuestionReview(int quizId);
-    Task<string> ReportQuestionIssue(QuestionIssueReportRequestDTO request);
+    Task<string> CreateOrUpdateQuestionIssueReport(QuestionIssueReportRequestDTO request);
     Task<QuizRatingDTO?> GetMyQuizRating(int quizId);
     Task<string> SubmitQuizRating(QuizRatingDTO request);
     Task<string> GetAnswerExplanation(AnswerExplanationRequestDTO request);
+    Task<QuestionIssueReportResponseDTO> GetQuizReportQuestionIssue(int reportId);
     Task<bool> AddEditQuizReport(QuizReportRequestDto quizReportRequestDto);
 }

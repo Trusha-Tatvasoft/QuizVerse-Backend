@@ -401,12 +401,6 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.XpEarned,
                 opt => opt.MapFrom(src => src.XpEarned));
 
-        CreateMap<QuestionIssueReportRequestDTO, QuestionIssueReport>()
-            .ForMember(dest => dest.IsDeleted,
-                opt => opt.MapFrom(_ => false))
-            .ForMember(dest => dest.CreatedDate,
-                opt => opt.MapFrom(_ => DateTime.UtcNow));
-
         CreateMap<QuizRatingDTO, QuizRating>()
             .ForMember(dest => dest.QuizRating1,
                 opt => opt.MapFrom(src => src.QuizRating))
@@ -431,6 +425,12 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => ToTitleCase(src.CategoryName)))
             .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => ToTitleCase(src.QuizTitle)))
             .ForMember(dest => dest.QuizDifficultyLevel, opt => opt.MapFrom(src => ToTitleCase(src.QuizDifficultyLevel)));
+
+        CreateMap<QuestionIssueReport, QuestionIssueReportResponseDTO>()
+                .ForMember(dest => dest.ReportId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.QuizId, opt => opt.MapFrom(src => src.QuizId))
+                .ForMember(dest => dest.QuestionId, opt => opt.MapFrom(src => src.QuestionId))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
         #endregion
     }
 

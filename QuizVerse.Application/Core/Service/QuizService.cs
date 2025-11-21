@@ -223,6 +223,7 @@ public class QuizService(
         return summaryDto;
     }
 
+    #region Get Question Attempted
     public async Task<List<QuizQuestionReviewDTO>> GetQuizQuestionReview(int quizId)
     {
         List<QuizQuestionReviewDTO> quizQuestionReviews = await _sqlQueryRepository.SqlQueryListAsync<QuizQuestionReviewDTO>(string.Format(
@@ -241,23 +242,100 @@ public class QuizService(
 
         return quizQuestionReviews;
     }
+    #endregion
 
-    public async Task<string> ReportQuestionIssue(QuestionIssueReportRequestDTO request)
+    #region Question issue report
+    public async Task<string> CreateOrUpdateQuestionIssueReport(QuestionIssueReportRequestDTO request)
     {
-        bool alreadyExists = await _questionIssueReportRepository.Exists(r => r.UserId == UserId
-                                && r.QuestionId == request.QuestionId
-                                && r.QuizId == request.QuizId);
+        // Validate quiz existence
+        bool quizExists = await _quizRepostory.Exists(q =>
+            q.Id == request.QuizId &&
+            q.Status == (int)QuizStatus.Active &&
+            !q.IsDeleted);
 
-        if (alreadyExists)
-            throw new AppException(Constants.DUPLICATE_QUESTION_ISSUE_REPORT);
+        if (!quizExists)
+        {
+            throw new AppException(Constants.QUIZ_NOT_FOUND);
+        }
 
-        QuestionIssueReport entity = _mapper.Map<QuestionIssueReport>(request);
-        entity.UserId = UserId;
+        // ----- CREATE -----
+        if (request.ReportId == null || request.ReportId == 0)
+        {
 
-        await _questionIssueReportRepository.AddAsync(entity);
+            QuestionIssueReport questionIssueReport = new()
+            {
+                UserId = UserId,
+                QuizId = request.QuizId,
+                QuestionId = request.QuestionId,
+                Description = request.Description,
+                Severity = (int)QuestionOrQuizIssueReportSeverity.UnderProcessing,
+                Status = (int)QuestionOrQuizIssueReportStatus.Pending,
+                CreatedDate = DateTime.UtcNow
+            };
 
-        return Constants.QUESTION_ISSUE_REPORTED;
+            await _questionIssueReportRepository.AddAsync(questionIssueReport);
+
+            if (questionIssueReport.Id <= 0)
+            {
+                throw new AppException(Constants.QUESTION_ISSUE_REPORT_SUBMISSION_FAILED, 400);
+            }
+
+            // Push to queue
+            GcpApiReportDataDto questionReport = new()
+            {
+                ReportId = questionIssueReport.Id,
+                ReportType = ReportType.QuestionIssueReport,
+                ReportComment = request.Description,
+            };
+
+            await _queueService.EnqueueAsync(questionReport);
+
+            return Constants.QUESTION_ISSUE_REPORTED;
+        }
+
+        // ----- UPDATE -----
+        QuestionIssueReport existingReport = await _questionIssueReportRepository.GetAsync(q =>
+            q.Id == request.ReportId &&
+            q.UserId == UserId &&
+            q.Severity != (int)QuestionOrQuizIssueReportSeverity.UnderProcessing &&
+            q.Status == (int)QuestionOrQuizIssueReportStatus.Pending)
+            ?? throw new AppException(Constants.QUESTION_ISSUE_REPORT_NOT_FOUND_OR_CANNOT_EDIT);
+
+        existingReport.Description = request.Description;
+        existingReport.Severity = (int)QuestionOrQuizIssueReportSeverity.UnderProcessing;
+        existingReport.Status = (int)QuestionOrQuizIssueReportStatus.Pending;
+        existingReport.CreatedDate = DateTime.UtcNow;
+
+        await _questionIssueReportRepository.UpdateAsync(existingReport);
+
+        if (existingReport.Id <= 0)
+        {
+            throw new AppException(Constants.QUESTION_ISSUE_REPORT_SUBMISSION_FAILED, 400);
+        }
+
+        // Push edit to queue
+        GcpApiReportDataDto questionEditReport = new()
+        {
+            ReportId = existingReport.Id,
+            ReportType = ReportType.QuestionIssueReport,
+            ReportComment = request.Description,
+        };
+
+        await _queueService.EnqueueAsync(questionEditReport);
+
+        return Constants.QUESTION_ISSUE_UPDATED;
     }
+    #endregion
+
+    #region Get Question Report
+    public async Task<QuestionIssueReportResponseDTO> GetQuizReportQuestionIssue(int reportId)
+    {
+        QuestionIssueReport report = await _questionIssueReportRepository.GetAsync(q => q.Id == reportId)
+        ?? throw new AppException(Constants.QUESTION_ISSUE_REPORT_NOT_FOUND);
+
+        return _mapper.Map<QuestionIssueReportResponseDTO>(report);
+    }
+    #endregion
 
     public async Task<QuizRatingDTO?> GetMyQuizRating(int quizId)
     {
